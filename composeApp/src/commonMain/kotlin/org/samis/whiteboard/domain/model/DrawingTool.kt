@@ -4,6 +4,7 @@ import org.jetbrains.compose.resources.DrawableResource
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.ic_arrow
 import whiteboard.composeapp.generated.resources.ic_circle
+import whiteboard.composeapp.generated.resources.ic_laser_pointer
 import whiteboard.composeapp.generated.resources.ic_line
 import whiteboard.composeapp.generated.resources.ic_rectangle
 import whiteboard.composeapp.generated.resources.ic_triangle

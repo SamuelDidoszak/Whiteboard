@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
 import org.samis.whiteboard.presentation.util.UiType
 import org.samis.whiteboard.presentation.util.getUiType
@@ -42,6 +43,7 @@ import org.samis.whiteboard.presentation.util.rememberScreenSizeSize
 import org.samis.whiteboard.presentation.whiteboard.component.ColorSelectionDialog
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteCard
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteDrawerContent
+import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolBar
 import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolFAB
 import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolsCardHorizontal
 import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolsCardVertical
@@ -114,9 +116,10 @@ fun WhiteboardScreen(
                             .align(Alignment.TopCenter)
                             .padding(20.dp),
                         onHomeIconClick = onHomeIconClick,
+                        onMenuIconClick = { scope.launch { drawerState.open() } },
+                        onSaveIconClick = {},
                         onUndoIconClick = {},
-                        onRedoIconClick = {},
-                        onMenuIconClick = { scope.launch { drawerState.open() } }
+                        onRedoIconClick = {}
                     )
                     DrawingToolFAB(
                         modifier = Modifier
@@ -153,9 +156,10 @@ fun WhiteboardScreen(
                 ) {
                     TopBarVertical(
                         onHomeIconClick = onHomeIconClick,
+                        onMenuIconClick = { isCommandPaletteOpen = !isCommandPaletteOpen },
+                        onSaveIconClick = {},
                         onUndoIconClick = {},
                         onRedoIconClick = {},
-                        onMenuIconClick = { isCommandPaletteOpen != isCommandPaletteOpen }
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     CommandPaletteCard(
@@ -184,6 +188,14 @@ fun WhiteboardScreen(
                         }
                     )
                 }
+                DrawingToolBar(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(20.dp),
+                    onDrawingToolClick = { drawingTool: DrawingTool ->
+                        onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
+                    }
+                )
                 DrawingToolFAB(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)

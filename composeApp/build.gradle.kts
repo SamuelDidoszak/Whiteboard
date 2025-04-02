@@ -63,6 +63,9 @@ kotlin {
 
             //Color Picker
             implementation(libs.compose.colorpicker)
+
+            //Images Extender
+            implementation(libs.compose.iconsExteded)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)

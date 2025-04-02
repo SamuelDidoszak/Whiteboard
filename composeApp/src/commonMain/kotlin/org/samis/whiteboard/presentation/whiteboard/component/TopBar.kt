@@ -3,8 +3,11 @@ package org.samis.whiteboard.presentation.whiteboard.component
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.FilledIconButton
@@ -22,9 +25,10 @@ import whiteboard.composeapp.generated.resources.ic_undo
 fun TopBarHorizontal(
     modifier: Modifier = Modifier,
     onHomeIconClick: () -> Unit,
+    onMenuIconClick: () -> Unit,
+    onSaveIconClick: () -> Unit,
     onUndoIconClick: () -> Unit,
-    onRedoIconClick: () -> Unit,
-    onMenuIconClick: () -> Unit
+    onRedoIconClick: () -> Unit
 ) {
     Row(modifier = modifier) {
         FilledIconButton(onClick = { onHomeIconClick() }) {
@@ -60,6 +64,14 @@ fun TopBarHorizontal(
                 modifier = Modifier.size(25.dp)
             )
         }
+        FilledIconButton(onClick = { onSaveIconClick() }) {
+            Icon(
+                imageVector = Icons.Filled.Download,
+                contentDescription = "Save As Picture",
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(25.dp)
+            )
+        }
     }
 }
 
@@ -67,9 +79,10 @@ fun TopBarHorizontal(
 fun TopBarVertical(
     modifier: Modifier = Modifier,
     onHomeIconClick: () -> Unit,
+    onMenuIconClick: () -> Unit,
+    onSaveIconClick: () -> Unit,
     onUndoIconClick: () -> Unit,
-    onRedoIconClick: () -> Unit,
-    onMenuIconClick: () -> Unit
+    onRedoIconClick: () -> Unit
 ) {
     Column(modifier = modifier) {
         FilledIconButton(onClick = { onHomeIconClick() }) {
@@ -88,7 +101,7 @@ fun TopBarVertical(
                 modifier = Modifier.size(25.dp)
             )
         }
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(12.dp))
         FilledIconButton(onClick = { onUndoIconClick() }) {
             Icon(
                 painter = painterResource(Res.drawable.ic_undo),
@@ -101,6 +114,15 @@ fun TopBarVertical(
             Icon(
                 painter = painterResource(Res.drawable.ic_redo),
                 contentDescription = "Redo",
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(25.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        FilledIconButton(onClick = { onSaveIconClick() }) {
+            Icon(
+                imageVector = Icons.Filled.Download,
+                contentDescription = "Save As Picture",
                 tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(25.dp)
             )
