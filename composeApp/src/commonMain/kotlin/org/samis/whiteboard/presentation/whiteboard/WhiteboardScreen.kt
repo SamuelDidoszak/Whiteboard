@@ -47,6 +47,7 @@ import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolBar
 import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolFAB
 import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolsCardHorizontal
 import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolsCardVertical
+import org.samis.whiteboard.presentation.whiteboard.component.MarkerColorBar
 import org.samis.whiteboard.presentation.whiteboard.component.TopBarHorizontal
 import org.samis.whiteboard.presentation.whiteboard.component.TopBarVertical
 
@@ -194,6 +195,16 @@ fun WhiteboardScreen(
                         .padding(20.dp),
                     onDrawingToolClick = { drawingTool: DrawingTool ->
                         onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
+                    }
+                )
+                MarkerColorBar(
+                    modifier = Modifier.align(Alignment.BottomStart),
+                    penWidth = 30.dp,
+                    penHeight = 60.dp,
+                    selectedColor = state.strokeColor,
+                    strokeColors = state.preferredStrokeColors,
+                    onClick = { newColor: Color ->
+                        onEvent(WhiteboardEvent.StrokeColorChange(newColor))
                     }
                 )
                 DrawingToolFAB(

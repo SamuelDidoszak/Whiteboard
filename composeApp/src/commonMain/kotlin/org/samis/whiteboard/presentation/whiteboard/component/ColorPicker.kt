@@ -128,8 +128,6 @@ private fun ColorPickerContent(
     onColorPaletteIconClick: (ColorPaletteType) -> Unit,
     onCloseIconClick: () -> Unit
 ) {
-    val updatedStrokeColors = listOf(Color.Black) + strokeColors
-
     Column(
         modifier = modifier.padding(10.dp)
     ) {
@@ -137,7 +135,7 @@ private fun ColorPickerContent(
         ColorSection(
             sectionTitle = if (showExtraContent) "Stroke" else "",
             showCloseButton = showExtraContent,
-            colors = updatedStrokeColors,
+            colors = strokeColors,
             selectedColor = selectedStrokeColor,
             onColorChange = onStrokeColorChange,
             onColorPaletteClick = { onColorPaletteIconClick(ColorPaletteType.STROKE) },

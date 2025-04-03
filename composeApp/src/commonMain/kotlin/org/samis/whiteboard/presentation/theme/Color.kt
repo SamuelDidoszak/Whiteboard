@@ -92,6 +92,7 @@ val defaultCanvasColors = listOf(
 )
 
 val defaultDrawingColors = listOf(
+    Color.Black,
     Red40,
     Blue40,
     Green40,
