@@ -25,11 +25,11 @@ import androidx.compose.ui.unit.Dp
 
 @Composable
 fun MarkerColorBar(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     penWidth: Dp,
     penHeight: Dp,
     selectedColor: Color,
-    strokeColors: List<Color>,
+    markerColors: List<Color>,
     onClick: (Color) -> Unit
 ) {
     Row(
@@ -37,7 +37,7 @@ fun MarkerColorBar(
         verticalAlignment = Alignment.Bottom
     ) {
         for (i in 0 until 4) {
-            Marker(strokeColors[i], selectedColor, penWidth, penHeight, onClick)
+            Marker(markerColors[i], selectedColor, penWidth, penHeight, onClick)
             Spacer(Modifier.width(10.dp))
         }
     }

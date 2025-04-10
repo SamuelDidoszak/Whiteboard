@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,7 +44,6 @@ import whiteboard.composeapp.generated.resources.img_color_wheel
 @Composable
 fun ColorPickerDrawer(
     modifier: Modifier = Modifier,
-    selectedColorNumber: Int,
     selectedDrawingTool: DrawingTool,
     strokeColors: List<Color>,
     selectedStrokeColor: Color,
@@ -60,7 +60,6 @@ fun ColorPickerDrawer(
             .fillMaxHeight()
     ) {
         ColorPickerContent(
-            selectedColorNumber = selectedColorNumber,
             selectedDrawingTool = selectedDrawingTool,
             strokeColors = strokeColors,
             selectedStrokeColor = selectedStrokeColor,
@@ -78,7 +77,6 @@ fun ColorPickerDrawer(
 fun ColorPickerCard(
     modifier: Modifier = Modifier,
     isVisible: Boolean,
-    selectedColorNumber: Int,
     selectedDrawingTool: DrawingTool,
     strokeColors: List<Color>,
     selectedStrokeColor: Color,
@@ -99,7 +97,6 @@ fun ColorPickerCard(
             modifier = modifier.width(250.dp)
         ) {
             ColorPickerContent(
-                selectedColorNumber = selectedColorNumber,
                 selectedDrawingTool = selectedDrawingTool,
                 strokeColors = strokeColors,
                 selectedStrokeColor = selectedStrokeColor,
@@ -117,7 +114,6 @@ fun ColorPickerCard(
 @Composable
 private fun ColorPickerContent(
     modifier: Modifier = Modifier,
-    selectedColorNumber: Int,
     selectedDrawingTool: DrawingTool,
     strokeColors: List<Color>,
     selectedStrokeColor: Color,
@@ -129,20 +125,19 @@ private fun ColorPickerContent(
     onCloseIconClick: () -> Unit
 ) {
     Column(
-        modifier = modifier.padding(10.dp)
+        modifier = modifier.padding(6.dp)
     ) {
-        val showExtraContent = selectedDrawingTool.isFillable()
         ColorSection(
-            sectionTitle = if (showExtraContent) "Stroke" else "",
-            showCloseButton = showExtraContent,
+            sectionTitle = "Stroke",
+            showCloseButton = true,
             colors = strokeColors,
             selectedColor = selectedStrokeColor,
             onColorChange = onStrokeColorChange,
-            onColorPaletteClick = { onColorPaletteIconClick(ColorPaletteType.STROKE) },
+            onColorPaletteClick = { onColorPaletteIconClick(ColorPaletteType.MARKER) },
             onCloseIconClick = onCloseIconClick
         )
         if (selectedDrawingTool.isFillable()) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             ColorSection(
                 sectionTitle = "Fill",
                 showCloseButton = false,
@@ -169,13 +164,23 @@ private fun ColorSection(
     onCloseIconClick: () -> Unit
 ) {
     Column {
-        Row(horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(
                 text = sectionTitle,
                 style = MaterialTheme.typography.titleSmall
             )
             if (showCloseButton) {
-                IconButton(onClick = onCloseIconClick) {
+                IconButton(
+                    onClick = onCloseIconClick,
+                    modifier = Modifier
+                        .align(Alignment.Top)
+                        .size(25.dp)
+                        .padding(0.dp)
+                ) {
                     Icon(
                         Icons.Default.Close,
                         contentDescription = "Close ${sectionTitle.replaceFirstChar { it.uppercaseChar() }} Color Picker"
@@ -184,6 +189,7 @@ private fun ColorSection(
             }
         }
         Spacer(modifier = Modifier.height(5.dp))
+
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -210,6 +216,7 @@ private fun ColorSection(
                 }
             }
             items(colors) { color ->
+                val index = colors.indexOf(color)
                 Box(
                     modifier = Modifier
                         .size(30.dp)
@@ -226,7 +233,6 @@ private fun ColorSection(
                 )
             }
             item {
-                Spacer(modifier = Modifier.width(5.dp))
                 IconButton(
                     modifier = Modifier.size(25.dp),
                     onClick = { onColorPaletteClick() }

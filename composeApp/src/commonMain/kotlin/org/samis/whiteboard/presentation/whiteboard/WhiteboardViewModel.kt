@@ -150,7 +150,35 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.StrokeColorChange -> {
-                _state.update { it.copy(strokeColor = event.strokeColor) }
+                val markerNum = state.value.markerColors.indexOf(state.value.strokeColor)
+                if (event.strokeColor == state.value.strokeColor) {
+                    val open = !state.value.isColorPickerOpen
+                    _state.update {
+                        it.copy(
+                            isColorPickerOpen = open,
+                            selectedMarker = markerNum
+                        ) }
+                } else {
+                    if (event.modifyColor) {
+                        _state.update {
+                            it.copy(
+                                markerColors = it.markerColors.mapIndexed { index, color ->
+                                    if (index == markerNum)
+                                        event.strokeColor
+                                    else
+                                        color
+                                }
+                            )
+                        }
+                    }
+                    _state.update {
+                        it.copy(
+                            strokeColor = event.strokeColor,
+                            selectedMarker = markerNum,
+                            isColorPickerOpen = false,
+                        )
+                    }
+                }
             }
 
             is WhiteboardEvent.StrokeSliderValueChange -> {
@@ -182,6 +210,7 @@ class WhiteboardViewModel(
                     colors = when (state.selectedColorPaletteType) {
                         ColorPaletteType.CANVAS -> state.preferredCanvasColors
                         ColorPaletteType.STROKE -> state.preferredStrokeColors
+                        ColorPaletteType.MARKER -> state.preferredStrokeColors
                         ColorPaletteType.FILL -> state.preferredFillColors
                     }
                 )
@@ -198,8 +227,21 @@ class WhiteboardViewModel(
                     ColorPaletteType.FILL -> {
                         _state.update { it.copy(fillColor = color) }
                     }
+
+                    ColorPaletteType.MARKER -> {
+                        onEvent(WhiteboardEvent.StrokeColorChange(color, true))
+
+                    }
                 }
                 savePreferredColors(updatedColors, state.selectedColorPaletteType)
+            }
+
+            is WhiteboardEvent.OnCardClose -> {
+                _state.update { it.copy(
+                    isColorPickerOpen = false,
+                    isStrokeWidthSliderOpen = false,
+                    isColorSelectionDialogOpen = false
+                ) }
             }
         }
     }

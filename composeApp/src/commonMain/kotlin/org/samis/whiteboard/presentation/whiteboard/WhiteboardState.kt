@@ -17,6 +17,9 @@ data class WhiteboardState(
     val selectedDrawingTool: DrawingTool = DrawingTool.PEN,
     val isDrawingToolsCardVisible: Boolean = false,
     val isColorSelectionDialogOpen: Boolean = false,
+    val isColorPickerOpen: Boolean = false,
+    val isStrokeWidthSliderOpen: Boolean = false,
+    val selectedMarker: Int = 0,
     val strokeWidth: Float = 5f,
     val opacity: Float = 100f,
     val selectedColorPaletteType: ColorPaletteType = ColorPaletteType.STROKE,
@@ -27,4 +30,5 @@ data class WhiteboardState(
     val preferredStrokeColors: List<Color> = defaultDrawingColors,
     val preferredFillColors: List<Color> = defaultDrawingColors,
     val preferredCanvasColors: List<Color> = defaultCanvasColors,
+    val markerColors: List<Color> = defaultDrawingColors
 )

@@ -4,8 +4,10 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -35,11 +37,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
 import org.samis.whiteboard.presentation.util.UiType
 import org.samis.whiteboard.presentation.util.getUiType
 import org.samis.whiteboard.presentation.util.rememberScreenSizeSize
+import org.samis.whiteboard.presentation.whiteboard.component.ColorPickerCard
 import org.samis.whiteboard.presentation.whiteboard.component.ColorSelectionDialog
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteCard
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteDrawerContent
@@ -66,6 +70,8 @@ fun WhiteboardScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     var isCommandPaletteOpen by rememberSaveable { mutableStateOf(false) }
+    var selectedMarker by rememberSaveable { mutableStateOf(0) }
+    var isStrokeWidthSliderOpen by rememberSaveable { mutableStateOf(false) }
 
     ColorSelectionDialog(
         isOpen = state.isColorSelectionDialogOpen,
@@ -91,7 +97,7 @@ fun WhiteboardScreen(
                             strokeColors = state.preferredStrokeColors,
                             fillColors = state.preferredFillColors,
                             onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
-                            onStrokeColorChange = { onEvent(WhiteboardEvent.StrokeColorChange(it)) },
+                            onStrokeColorChange = { onEvent(WhiteboardEvent.StrokeColorChange(it, true)) },
                             onFillColorChange = { onEvent(WhiteboardEvent.FillColorChange(it)) },
                             strokeWidthSliderValue = state.strokeWidth,
                             opacitySliderValue = state.opacity,
@@ -108,7 +114,15 @@ fun WhiteboardScreen(
                     },
                 ) {
                     DrawingCanvas(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize()
+                            .pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val down = awaitFirstDown(requireUnconsumed = false)
+                                        onEvent(WhiteboardEvent.OnCardClose)
+                                        down.consume()
+                                    }
+                                }},
                         state = state,
                         onEvent = onEvent
                     )
@@ -143,9 +157,16 @@ fun WhiteboardScreen(
             }
 
             else -> {
-                println("Not compact")
                 DrawingCanvas(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize()
+                        .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val down = awaitFirstDown(requireUnconsumed = false)
+                                onEvent(WhiteboardEvent.OnCardClose)
+                                down.consume()
+                            }
+                        }},
                     state = state,
                     onEvent = onEvent
                 )
@@ -174,7 +195,7 @@ fun WhiteboardScreen(
                         strokeColors = state.preferredStrokeColors,
                         fillColors = state.preferredFillColors,
                         onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
-                        onStrokeColorChange = { onEvent(WhiteboardEvent.StrokeColorChange(it)) },
+                        onStrokeColorChange = { onEvent(WhiteboardEvent.StrokeColorChange(it, true)) },
                         onFillColorChange = { onEvent(WhiteboardEvent.FillColorChange(it)) },
                         strokeWidthSliderValue = state.strokeWidth,
                         opacitySliderValue = state.opacity,
@@ -197,16 +218,37 @@ fun WhiteboardScreen(
                         onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
                     }
                 )
-                MarkerColorBar(
-                    modifier = Modifier.align(Alignment.BottomStart),
-                    penWidth = 30.dp,
-                    penHeight = 60.dp,
-                    selectedColor = state.strokeColor,
-                    strokeColors = state.preferredStrokeColors,
-                    onClick = { newColor: Color ->
-                        onEvent(WhiteboardEvent.StrokeColorChange(newColor))
-                    }
-                )
+                Column(
+                    modifier = Modifier.align(Alignment.BottomStart)
+                ) {
+                    ColorPickerCard(
+                        modifier = Modifier.padding(start = 20.dp * state.selectedMarker, bottom = 6.dp),
+                        isVisible = state.isColorPickerOpen,
+                        selectedDrawingTool = state.selectedDrawingTool,
+                        strokeColors = state.preferredStrokeColors,
+                        selectedStrokeColor = state.strokeColor,
+                        onStrokeColorChange = { newColor: Color ->
+                            onEvent(WhiteboardEvent.StrokeColorChange(newColor, true))
+                        },
+                        fillColors = state.preferredFillColors,
+                        selectedFillColor = state.fillColor,
+                        onFillColorChange =  { newColor: Color ->
+                            onEvent(WhiteboardEvent.FillColorChange(newColor))
+                        },
+                        onColorPaletteIconClick = { colorPaletteType: ColorPaletteType ->
+                            onEvent(WhiteboardEvent.OnColorPaletteIconClick(colorPaletteType))
+                        },
+                        onCloseIconClick = { onEvent(WhiteboardEvent.OnCardClose) }
+                    )
+                    MarkerColorBar(
+                        penWidth = 30.dp,
+                        penHeight = 60.dp,
+                        selectedColor = state.strokeColor,
+                        markerColors = state.markerColors,
+                        onClick = { newColor: Color -> onEvent(WhiteboardEvent.StrokeColorChange(newColor, false)) }
+                    )
+                }
+
                 DrawingToolFAB(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -248,14 +290,12 @@ private fun DrawingCanvas(
                         val offset = Offset(x = change.position.x, y = change.position.y)
                         onEvent(WhiteboardEvent.ContinueDrawing(offset))
                     },
-                    // Here?
                     onDragEnd = {
                         onEvent(WhiteboardEvent.FinishDrawing)
                     }
                 )
             }
     ) {
-        // Hereby
         state.paths.forEach { path ->
             drawCustomPath(path)
         }
@@ -317,7 +357,6 @@ fun AnimateLaserPath(
             destination = trimmedPath //stores the resulting path segment in trimmedPath.
         )
     }
-    // Hereby2
     Canvas(modifier = Modifier.fillMaxSize()) {
         laserPenPath?.let {
             drawPath(

@@ -71,6 +71,7 @@ class SettingRepositoryImpl(
         val key = when(colorPaletteType) {
             ColorPaletteType.CANVAS -> PREFERRED_CANVAS_COLORS_KEY
             ColorPaletteType.STROKE -> PREFERRED_STROKE_COLORS_KEY
+            ColorPaletteType.MARKER -> PREFERRED_STROKE_COLORS_KEY
             ColorPaletteType.FILL -> PREFERRED_FILL_COLORS_KEY
         }
         prefs.edit { preference ->

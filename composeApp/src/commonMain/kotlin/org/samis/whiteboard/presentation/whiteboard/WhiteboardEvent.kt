@@ -15,10 +15,11 @@ sealed class WhiteboardEvent {
     data class StrokeSliderValueChange(val strokeWidth: Float) : WhiteboardEvent()
     data class OpacitySliderValueChange(val opacity: Float) : WhiteboardEvent()
     data class CanvasColorChange(val canvasColor: Color) : WhiteboardEvent()
-    data class StrokeColorChange(val strokeColor: Color) : WhiteboardEvent()
+    data class StrokeColorChange(val strokeColor: Color, val modifyColor: Boolean) : WhiteboardEvent()
     data class FillColorChange(val backgroundColor: Color) : WhiteboardEvent()
     data class OnColorPaletteIconClick(val colorPaletteType: ColorPaletteType): WhiteboardEvent()
     data class OnColorSelected(val color: Color): WhiteboardEvent()
     data object ColorSelectionDialogDismiss : WhiteboardEvent()
     data object OnLaserPathAnimationComplete : WhiteboardEvent()
+    data object OnCardClose: WhiteboardEvent()
 }
