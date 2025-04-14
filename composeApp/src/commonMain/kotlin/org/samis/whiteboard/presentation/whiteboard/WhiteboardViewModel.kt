@@ -39,6 +39,7 @@ class WhiteboardViewModel(
 
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
     private var isFirstPath = true
+    private var firstInit = true
 
     private var updatedWhiteboardId = MutableStateFlow(whiteboardId)
 
@@ -46,11 +47,17 @@ class WhiteboardViewModel(
     val state = combine(
         _state,
         settingsRepository.getPreferredStrokeColors(),
+        settingsRepository.getPreferredMarkerColors(),
         settingsRepository.getPreferredFillColors(),
         settingsRepository.getPreferredCanvasColors(),
-    ){ state, prefStrokeColors, prefFillColors, prefCanvasColors ->
+    ){ state, prefStrokeColors, prefMarkerColors, prefFillColors, prefCanvasColors ->
+        if (firstInit) {
+            firstInit = false
+            _state.update { it.copy(strokeColor = prefMarkerColors[0]) }
+        }
         state.copy(
             preferredStrokeColors = prefStrokeColors,
+            markerColors = prefMarkerColors,
             preferredFillColors = prefFillColors,
             preferredCanvasColors = prefCanvasColors
         )
@@ -150,7 +157,9 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.StrokeColorChange -> {
-                val markerNum = state.value.markerColors.indexOf(state.value.strokeColor)
+                var markerNum = state.value.markerColors.indexOf(event.strokeColor)
+                if (markerNum == -1)
+                    markerNum = state.value.markerColors.indexOf(state.value.strokeColor)
                 if (event.strokeColor == state.value.strokeColor) {
                     val open = !state.value.isColorPickerOpen
                     _state.update {
@@ -158,26 +167,23 @@ class WhiteboardViewModel(
                             isColorPickerOpen = open,
                             selectedMarker = markerNum
                         ) }
-                } else {
-                    if (event.modifyColor) {
-                        _state.update {
-                            it.copy(
-                                markerColors = it.markerColors.mapIndexed { index, color ->
-                                    if (index == markerNum)
-                                        event.strokeColor
-                                    else
-                                        color
-                                }
-                            )
-                        }
+                    return
+                }
+                if (event.modifyColor) {
+                    val markerColors = state.value.markerColors.mapIndexed { index, color ->
+                        if (index == markerNum)
+                            event.strokeColor
+                        else
+                            color
                     }
-                    _state.update {
-                        it.copy(
-                            strokeColor = event.strokeColor,
-                            selectedMarker = markerNum,
-                            isColorPickerOpen = false,
-                        )
-                    }
+                    savePreferredColors(markerColors, ColorPaletteType.MARKER)
+                }
+                _state.update {
+                    it.copy(
+                        strokeColor = event.strokeColor,
+                        selectedMarker = markerNum,
+                        isColorPickerOpen = false,
+                    )
                 }
             }
 
@@ -210,7 +216,7 @@ class WhiteboardViewModel(
                     colors = when (state.selectedColorPaletteType) {
                         ColorPaletteType.CANVAS -> state.preferredCanvasColors
                         ColorPaletteType.STROKE -> state.preferredStrokeColors
-                        ColorPaletteType.MARKER -> state.preferredStrokeColors
+                        ColorPaletteType.MARKER -> state.markerColors
                         ColorPaletteType.FILL -> state.preferredFillColors
                     }
                 )
@@ -229,8 +235,9 @@ class WhiteboardViewModel(
                     }
 
                     ColorPaletteType.MARKER -> {
+                        savePreferredColors(updatedColors, ColorPaletteType.STROKE)
                         onEvent(WhiteboardEvent.StrokeColorChange(color, true))
-
+                        return
                     }
                 }
                 savePreferredColors(updatedColors, state.selectedColorPaletteType)
@@ -432,7 +439,7 @@ class WhiteboardViewModel(
         newColor: Color,
         colors: List<Color>
     ): List<Color> {
-        return listOf(newColor) + colors.filter { it != newColor }.take(n = 3)
+        return colors.filter { it != newColor }.take(n = 4) + listOf(newColor)
     }
 }
 

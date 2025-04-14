@@ -28,8 +28,8 @@ fun MarkerColorBar(
     modifier: Modifier = Modifier,
     penWidth: Dp,
     penHeight: Dp,
-    selectedColor: Color,
     markerColors: List<Color>,
+    selectedMarker: Int,
     onClick: (Color) -> Unit
 ) {
     Row(
@@ -37,16 +37,17 @@ fun MarkerColorBar(
         verticalAlignment = Alignment.Bottom
     ) {
         for (i in 0 until 4) {
-            Marker(markerColors[i], selectedColor, penWidth, penHeight, onClick)
+            val open = i == selectedMarker
+            Marker(markerColors[i], open, penWidth, penHeight, onClick)
             Spacer(Modifier.width(10.dp))
         }
     }
 }
 
 @Composable
-private fun Marker(color: Color, selectedColor: Color, width: Dp, height: Dp, onClick: (Color) -> Unit) {
+private fun Marker(color: Color, open: Boolean, width: Dp, height: Dp, onClick: (Color) -> Unit) {
     Box(modifier = Modifier.clickable { onClick.invoke(color) }) {
-        if (color == selectedColor)
+        if (open)
             OpenMarker(color, width, height)
         else
             ClosedMarker(color, width, height)

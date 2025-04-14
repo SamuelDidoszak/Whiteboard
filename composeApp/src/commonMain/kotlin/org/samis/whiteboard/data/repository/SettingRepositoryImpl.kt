@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.map
 import org.samis.whiteboard.data.util.Constant.CANVAS_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.COLOR_SCHEME_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.FILL_COLORS_PREF_KEY
+import org.samis.whiteboard.data.util.Constant.MARKER_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.STROKE_COLORS_PREF_KEY
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.ColorScheme
@@ -25,6 +26,7 @@ class SettingRepositoryImpl(
     companion object {
         private val COLOR_SCHEME_KEY = stringPreferencesKey(COLOR_SCHEME_PREF_KEY)
         private val PREFERRED_STROKE_COLORS_KEY = stringPreferencesKey(STROKE_COLORS_PREF_KEY)
+        private val PREFERRED_MARKER_COLORS_KEY = stringPreferencesKey(MARKER_COLORS_PREF_KEY)
         private val PREFERRED_FILL_COLORS_KEY = stringPreferencesKey(FILL_COLORS_PREF_KEY)
         private val PREFERRED_CANVAS_COLORS_KEY = stringPreferencesKey(CANVAS_COLORS_PREF_KEY)
     }
@@ -45,6 +47,13 @@ class SettingRepositoryImpl(
     override fun getPreferredStrokeColors(): Flow<List<Color>> {
         return prefs.data.map { preferences ->
             val colorsString = preferences[PREFERRED_STROKE_COLORS_KEY]
+            colorsString?.parseColors() ?: defaultDrawingColors
+        }
+    }
+
+    override fun getPreferredMarkerColors(): Flow<List<Color>> {
+        return prefs.data.map { preferences ->
+            val colorsString = preferences[PREFERRED_MARKER_COLORS_KEY]
             colorsString?.parseColors() ?: defaultDrawingColors
         }
     }
@@ -71,7 +80,7 @@ class SettingRepositoryImpl(
         val key = when(colorPaletteType) {
             ColorPaletteType.CANVAS -> PREFERRED_CANVAS_COLORS_KEY
             ColorPaletteType.STROKE -> PREFERRED_STROKE_COLORS_KEY
-            ColorPaletteType.MARKER -> PREFERRED_STROKE_COLORS_KEY
+            ColorPaletteType.MARKER -> PREFERRED_MARKER_COLORS_KEY
             ColorPaletteType.FILL -> PREFERRED_FILL_COLORS_KEY
         }
         prefs.edit { preference ->

@@ -70,8 +70,6 @@ fun WhiteboardScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     var isCommandPaletteOpen by rememberSaveable { mutableStateOf(false) }
-    var selectedMarker by rememberSaveable { mutableStateOf(0) }
-    var isStrokeWidthSliderOpen by rememberSaveable { mutableStateOf(false) }
 
     ColorSelectionDialog(
         isOpen = state.isColorSelectionDialogOpen,
@@ -243,8 +241,8 @@ fun WhiteboardScreen(
                     MarkerColorBar(
                         penWidth = 30.dp,
                         penHeight = 60.dp,
-                        selectedColor = state.strokeColor,
                         markerColors = state.markerColors,
+                        selectedMarker = state.selectedMarker,
                         onClick = { newColor: Color -> onEvent(WhiteboardEvent.StrokeColorChange(newColor, false)) }
                     )
                 }

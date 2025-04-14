@@ -8,6 +8,7 @@ import org.samis.whiteboard.domain.model.ColorScheme
 interface SettingsRepository {
     fun getColorScheme(): Flow<ColorScheme>
     fun getPreferredStrokeColors(): Flow<List<Color>>
+    fun getPreferredMarkerColors(): Flow<List<Color>>
     fun getPreferredFillColors(): Flow<List<Color>>
     fun getPreferredCanvasColors(): Flow<List<Color>>
     suspend fun saveColorScheme(colorScheme: ColorScheme)
