@@ -23,6 +23,7 @@ data class WhiteboardState(
     val strokeWidth: Float = 5f,
     val opacity: Float = 100f,
     val selectedColorPaletteType: ColorPaletteType = ColorPaletteType.STROKE,
+    val colorDeletionMode: Boolean = false,
     val canvasColor: Color = Color.White,
     val strokeColor: Color = Color.Black,
     val fillColor: Color = Color.Transparent,

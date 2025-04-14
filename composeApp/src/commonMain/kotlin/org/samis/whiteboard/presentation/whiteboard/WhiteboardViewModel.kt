@@ -216,7 +216,7 @@ class WhiteboardViewModel(
                     colors = when (state.selectedColorPaletteType) {
                         ColorPaletteType.CANVAS -> state.preferredCanvasColors
                         ColorPaletteType.STROKE -> state.preferredStrokeColors
-                        ColorPaletteType.MARKER -> state.markerColors
+                        ColorPaletteType.MARKER -> state.preferredStrokeColors
                         ColorPaletteType.FILL -> state.preferredFillColors
                     }
                 )
@@ -241,6 +241,27 @@ class WhiteboardViewModel(
                     }
                 }
                 savePreferredColors(updatedColors, state.selectedColorPaletteType)
+            }
+
+            is WhiteboardEvent.OnColorDeleted -> {
+                val state = state.value
+                val colors = when (event.colorPaletteType) {
+                    ColorPaletteType.CANVAS -> state.preferredCanvasColors
+                    ColorPaletteType.STROKE -> state.preferredStrokeColors
+                    ColorPaletteType.MARKER -> state.preferredStrokeColors
+                    ColorPaletteType.FILL -> state.preferredFillColors
+                }
+                if (colors.size == 1) {
+                    onEvent(WhiteboardEvent.SetColorDeletionMode(false))
+                    return
+                }
+                savePreferredColors(colors.minus(event.color), event.colorPaletteType)
+            }
+
+            is WhiteboardEvent.SetColorDeletionMode -> {
+                _state.update { it.copy(
+                    colorDeletionMode = event.on
+                ) }
             }
 
             is WhiteboardEvent.OnCardClose -> {
@@ -439,7 +460,7 @@ class WhiteboardViewModel(
         newColor: Color,
         colors: List<Color>
     ): List<Color> {
-        return colors.filter { it != newColor }.take(n = 4) + listOf(newColor)
+        return colors.filter { it != newColor }.take(n = 23) + listOf(newColor)
     }
 }
 

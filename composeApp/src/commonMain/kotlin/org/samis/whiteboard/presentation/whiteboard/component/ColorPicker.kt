@@ -6,6 +6,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,13 +36,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
+import org.samis.whiteboard.presentation.whiteboard.WhiteboardEvent
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.ic_transparent_bg
 import whiteboard.composeapp.generated.resources.img_color_wheel
+import kotlin.math.ceil
 
 @Composable
 fun ColorPickerDrawer(
@@ -52,6 +58,9 @@ fun ColorPickerDrawer(
     selectedFillColor: Color,
     onFillColorChange: (Color) -> Unit,
     onColorPaletteIconClick: (ColorPaletteType) -> Unit,
+    colorDeletionMode: Boolean,
+    onSetColorDeletionMode: (Boolean) -> Unit,
+    onColorDeleted: (Color, ColorPaletteType) -> Unit,
     onCloseIconClick: () -> Unit
 ) {
     ElevatedCard(
@@ -68,6 +77,9 @@ fun ColorPickerDrawer(
             selectedFillColor = selectedFillColor,
             onFillColorChange = onFillColorChange,
             onColorPaletteIconClick = onColorPaletteIconClick,
+            colorDeletionMode = colorDeletionMode,
+            onSetColorDeletionMode = onSetColorDeletionMode,
+            onColorDeleted = onColorDeleted,
             onCloseIconClick = onCloseIconClick
         )
     }
@@ -85,6 +97,9 @@ fun ColorPickerCard(
     selectedFillColor: Color,
     onFillColorChange: (Color) -> Unit,
     onColorPaletteIconClick: (ColorPaletteType) -> Unit,
+    colorDeletionMode: Boolean,
+    onSetColorDeletionMode: (Boolean) -> Unit,
+    onColorDeleted: (Color, ColorPaletteType) -> Unit,
     onCloseIconClick: () -> Unit
 ) {
     AnimatedVisibility(
@@ -94,7 +109,7 @@ fun ColorPickerCard(
         exit = fadeOut()
     ) {
         ElevatedCard(
-            modifier = modifier.width(250.dp)
+            modifier = modifier.width(218.dp)
         ) {
             ColorPickerContent(
                 selectedDrawingTool = selectedDrawingTool,
@@ -105,6 +120,9 @@ fun ColorPickerCard(
                 selectedFillColor = selectedFillColor,
                 onFillColorChange = onFillColorChange,
                 onColorPaletteIconClick = onColorPaletteIconClick,
+                colorDeletionMode = colorDeletionMode,
+                onSetColorDeletionMode = onSetColorDeletionMode,
+                onColorDeleted = onColorDeleted,
                 onCloseIconClick = onCloseIconClick
             )
         }
@@ -122,6 +140,9 @@ private fun ColorPickerContent(
     onFillColorChange: (Color) -> Unit,
     onStrokeColorChange: (Color) -> Unit,
     onColorPaletteIconClick: (ColorPaletteType) -> Unit,
+    colorDeletionMode: Boolean,
+    onSetColorDeletionMode: (Boolean) -> Unit,
+    onColorDeleted: (Color, ColorPaletteType) -> Unit,
     onCloseIconClick: () -> Unit
 ) {
     Column(
@@ -134,6 +155,10 @@ private fun ColorPickerContent(
             selectedColor = selectedStrokeColor,
             onColorChange = onStrokeColorChange,
             onColorPaletteClick = { onColorPaletteIconClick(ColorPaletteType.MARKER) },
+            colorDeletionMode = colorDeletionMode,
+            onSetColorDeletionMode = onSetColorDeletionMode,
+            onColorDeleted = onColorDeleted,
+            colorPaletteType = ColorPaletteType.STROKE,
             onCloseIconClick = onCloseIconClick
         )
         if (selectedDrawingTool.isFillable()) {
@@ -146,6 +171,10 @@ private fun ColorPickerContent(
                 selectedColor = selectedFillColor,
                 onColorChange = onFillColorChange,
                 onColorPaletteClick = { onColorPaletteIconClick(ColorPaletteType.FILL) },
+                colorDeletionMode = colorDeletionMode,
+                onSetColorDeletionMode = onSetColorDeletionMode,
+                onColorDeleted = onColorDeleted,
+                colorPaletteType = ColorPaletteType.FILL,
                 onCloseIconClick = onCloseIconClick
             )
         } else Unit
@@ -161,6 +190,10 @@ private fun ColorSection(
     selectedColor: Color,
     onColorChange: (Color) -> Unit,
     onColorPaletteClick: () -> Unit,
+    colorDeletionMode: Boolean,
+    onSetColorDeletionMode: (Boolean) -> Unit,
+    onColorDeleted: (Color, ColorPaletteType) -> Unit,
+    colorPaletteType: ColorPaletteType,
     onCloseIconClick: () -> Unit
 ) {
     Column {
@@ -190,58 +223,96 @@ private fun ColorSection(
         }
         Spacer(modifier = Modifier.height(5.dp))
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            verticalAlignment = Alignment.CenterVertically
+        val numColumns = 6
+        val numItems = colors.size
+        val addItems = if (isFillColorsSection) 2 else 1
+        val numRows = ceil((numItems.toFloat() + addItems) / numColumns).toInt()
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            if (isFillColorsSection) {
-                item {
-                    Icon(
-                        modifier = Modifier
-                            .size(30.dp)
-                            .border(
-                                width = 1.dp,
-                                color = if (selectedColor == Color.Transparent) {
-                                    MaterialTheme.colorScheme.primary
-                                } else Color.Transparent,
-                                shape = CircleShape
-                            )
-                            .padding(2.dp)
-                            .clip(CircleShape)
-                            .clickable { onColorChange(Color.Transparent) },
-                        painter = painterResource(Res.drawable.ic_transparent_bg),
-                        contentDescription = "Set transparent background",
-                        tint = Color.Unspecified
-                    )
-                }
-            }
-            items(colors) { color ->
-                val index = colors.indexOf(color)
-                Box(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .border(
-                            width = 1.dp,
-                            color = if (selectedColor == color) {
-                                MaterialTheme.colorScheme.primary
-                            } else Color.Transparent,
-                            shape = CircleShape
-                        )
-                        .padding(2.dp)
-                        .background(color, CircleShape)
-                        .clickable { onColorChange(color) }
-                )
-            }
-            item {
-                IconButton(
-                    modifier = Modifier.size(25.dp),
-                    onClick = { onColorPaletteClick() }
+            for (row in numRows - 1 downTo 0) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.img_color_wheel),
-                        contentDescription = "Set custom color",
-                        tint = Color.Unspecified
-                    )
+                    for (col in 0 until numColumns) {
+                        val itemIndex = row * numColumns + col
+                        if (isFillColorsSection && itemIndex == 0) {
+                            Icon(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (selectedColor == Color.Transparent) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else Color.Transparent,
+                                        shape = CircleShape
+                                    )
+                                    .padding(2.dp)
+                                    .clip(CircleShape)
+                                    .clickable { onColorChange(Color.Transparent) },
+                                painter = painterResource(Res.drawable.ic_transparent_bg),
+                                contentDescription = "Set transparent background",
+                                tint = Color.Unspecified
+                            )
+                        } else if (itemIndex < numItems) {
+                            val color = if (isFillColorsSection) colors[itemIndex - 1] else colors[itemIndex]
+                            Box(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (selectedColor == color) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else Color.Transparent,
+                                        shape = CircleShape
+                                    )
+                                    .padding(2.dp)
+                                    .background(color, CircleShape)
+                                    .pointerInput(Unit) {
+                                        detectTapGestures(
+                                            onTap = {
+                                                if (!colorDeletionMode)
+                                                    onColorChange(color)
+                                                else onColorDeleted(color, colorPaletteType)
+                                            },
+                                            onLongPress = { onSetColorDeletionMode(!colorDeletionMode) }
+                                        )
+                                    }
+                            ) {
+                                if (colorDeletionMode) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(14.dp)
+                                            .background(Color.Red, CircleShape)
+                                            .align(Alignment.TopEnd)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Close,
+                                            contentDescription = "Delete color",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(10.dp).align(Alignment.Center)
+                                        )
+                                    }
+                                }
+                            }
+                        } else if (itemIndex == numItems) {
+                            IconButton(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .padding(2.dp),
+                                onClick = { onColorPaletteClick() }
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.img_color_wheel),
+                                    contentDescription = "Set custom color",
+                                    tint = Color.Unspecified
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

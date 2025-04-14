@@ -233,6 +233,10 @@ fun WhiteboardScreen(
                         onFillColorChange =  { newColor: Color ->
                             onEvent(WhiteboardEvent.FillColorChange(newColor))
                         },
+                        colorDeletionMode = state.colorDeletionMode,
+                        onSetColorDeletionMode = { mode: Boolean -> onEvent(WhiteboardEvent.SetColorDeletionMode(mode))},
+                        onColorDeleted = { color: Color, palette: ColorPaletteType ->
+                            onEvent(WhiteboardEvent.OnColorDeleted(color, palette)) },
                         onColorPaletteIconClick = { colorPaletteType: ColorPaletteType ->
                             onEvent(WhiteboardEvent.OnColorPaletteIconClick(colorPaletteType))
                         },
