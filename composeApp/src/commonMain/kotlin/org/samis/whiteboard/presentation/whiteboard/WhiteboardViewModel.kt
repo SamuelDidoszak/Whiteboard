@@ -91,7 +91,7 @@ class WhiteboardViewModel(
             WhiteboardEvent.FinishDrawing -> {
                 state.value.currentPath?.let { drawnPath ->
                     when (drawnPath.drawingTool) {
-                        DrawingTool.ERASER -> {
+                        DrawingTool.DELETER -> {
                             deletePaths(state.value.pathsToBeDeleted)
                         }
 
@@ -157,6 +157,9 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.StrokeColorChange -> {
+                if (state.value.selectedDrawingTool == DrawingTool.ERASER || state.value.selectedDrawingTool == DrawingTool.DELETER)
+                    _state.update { it.copy(selectedDrawingTool = DrawingTool.PEN) }
+
                 var markerNum = state.value.markerColors.indexOf(event.strokeColor)
                 if (markerNum == -1)
                     markerNum = state.value.markerColors.indexOf(state.value.strokeColor)
@@ -344,11 +347,11 @@ class WhiteboardViewModel(
         val startOffset = state.value.startingOffset
 
         val updatedPath: Path? = when (state.value.selectedDrawingTool) {
-            DrawingTool.PEN, DrawingTool.HIGHLIGHTER, DrawingTool.LASER_PEN -> {
+            DrawingTool.PEN, DrawingTool.HIGHLIGHTER, DrawingTool.LASER_PEN, DrawingTool.ERASER -> {
                 createFreehandPath(start = startOffset, continuingOffset = continuingOffset)
             }
 
-            DrawingTool.ERASER -> {
+            DrawingTool.DELETER -> {
                 updatePathsToBeDeleted(start = startOffset, continuingOffset = continuingOffset)
                 createEraserPath(continuingOffset = continuingOffset)
             }

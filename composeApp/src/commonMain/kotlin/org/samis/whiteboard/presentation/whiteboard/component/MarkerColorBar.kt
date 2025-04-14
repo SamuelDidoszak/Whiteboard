@@ -1,5 +1,7 @@
 package org.samis.whiteboard.presentation.whiteboard.component
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,13 +16,23 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.unit.Dp
+import org.samis.whiteboard.domain.model.DrawingTool
+import org.samis.whiteboard.presentation.theme.eraserHandle
+import org.samis.whiteboard.presentation.theme.eraserHard
+import org.samis.whiteboard.presentation.theme.eraserSoft
 
 
 @Composable
@@ -30,7 +42,9 @@ fun MarkerColorBar(
     penHeight: Dp,
     markerColors: List<Color>,
     selectedMarker: Int,
-    onClick: (Color) -> Unit
+    selectedDrawingTool: DrawingTool,
+    onClick: (Color) -> Unit,
+    onEraserClick: (DrawingTool) -> Unit
 ) {
     Row(
         modifier = modifier,
@@ -41,6 +55,7 @@ fun MarkerColorBar(
             Marker(markerColors[i], open, penWidth, penHeight, onClick)
             Spacer(Modifier.width(10.dp))
         }
+        Eraser(penWidth, penHeight, selectedDrawingTool, onEraserClick)
     }
 }
 
@@ -157,5 +172,50 @@ private fun curvedTip(
             startX + width, startY
         )
         close()
+    }
+}
+
+@Composable
+fun Eraser(width: Dp, height: Dp, selectedDrawingTool: DrawingTool, onEraserClick: (DrawingTool) -> Unit) {
+    val isOffsetDown = selectedDrawingTool == DrawingTool.ERASER || selectedDrawingTool == DrawingTool.DELETER
+    val offsetDownValue = height / 5
+
+    val yOffset: Dp by animateDpAsState(
+        targetValue = if (isOffsetDown) offsetDownValue else 0.dp,
+        animationSpec = tween(durationMillis = 300)
+    )
+    Column(
+        modifier = Modifier
+            .width(width)
+            .height(height)
+            .offset(y = yOffset)
+            .clickable {
+                val eraserType =
+                    if (selectedDrawingTool == DrawingTool.ERASER) DrawingTool.DELETER
+                    else DrawingTool.ERASER
+                onEraserClick(eraserType)
+            }
+    ) {
+        val eraserColor =
+            if (selectedDrawingTool == DrawingTool.DELETER) eraserHard else eraserSoft
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .height(height / 4)
+                .background(eraserColor, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                .align(Alignment.CenterHorizontally)
+        )
+        Box(
+            modifier = Modifier
+                .width(width)
+                .height(2.dp)
+                .background(Color.White)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(height * 3 / 4)
+                .background(eraserHandle)
+        )
     }
 }

@@ -247,7 +247,9 @@ fun WhiteboardScreen(
                         penHeight = 60.dp,
                         markerColors = state.markerColors,
                         selectedMarker = state.selectedMarker,
-                        onClick = { newColor: Color -> onEvent(WhiteboardEvent.StrokeColorChange(newColor, false)) }
+                        selectedDrawingTool = state.selectedDrawingTool,
+                        onClick = { newColor: Color -> onEvent(WhiteboardEvent.StrokeColorChange(newColor, false)) },
+                        onEraserClick = { eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType)) }
                     )
                 }
 
