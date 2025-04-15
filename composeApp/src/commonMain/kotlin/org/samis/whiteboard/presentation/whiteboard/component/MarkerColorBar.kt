@@ -14,25 +14,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.presentation.theme.eraserHandle
 import org.samis.whiteboard.presentation.theme.eraserHard
 import org.samis.whiteboard.presentation.theme.eraserSoft
+import org.samis.whiteboard.presentation.util.toPx
 
 
 @Composable
@@ -72,7 +72,9 @@ private fun Marker(color: Color, open: Boolean, width: Dp, height: Dp, onClick: 
 
 @Composable
 private fun ClosedMarker(color: Color, width: Dp, height: Dp) {
-    Column {
+    Column(
+        modifier = Modifier.shadow(10.dp, 10.dp)
+    ) {
         Box(
             modifier = Modifier
                 .width(width)
@@ -97,6 +99,39 @@ private fun ClosedMarker(color: Color, width: Dp, height: Dp) {
 
 @Composable
 private fun OpenMarker(color: Color, width: Dp, height: Dp) {
+    // Column for shadows
+    Column(
+        verticalArrangement = Arrangement.Bottom,
+        modifier = Modifier
+            .width(width)
+            .height(height)
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(width * 0.25f)
+                .width(width * 0.5f)
+                .height(height * 0.27f)
+                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                .background(Color.Transparent)
+                .shadow(20.dp, 20.dp)
+        )
+        Box(
+            modifier = Modifier
+                .offset(width * 0.1f)
+                .width(width * 0.8f)
+                .height(height * 0.3f)
+                .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
+                .background(Color.Transparent)
+                .shadow(10.dp, 10.dp)
+        )
+        Box(
+            modifier = Modifier
+                .width(width)
+                .height(height / 6 + 2.dp)
+                .background(Color.Transparent)
+                .shadow()
+        )
+    }
     Canvas(modifier = Modifier.width(width).height(height)) {
         val canvasWidth = size.width
         val canvasHeight = size.height
@@ -182,40 +217,73 @@ fun Eraser(width: Dp, height: Dp, selectedDrawingTool: DrawingTool, onEraserClic
 
     val yOffset: Dp by animateDpAsState(
         targetValue = if (isOffsetDown) offsetDownValue else 0.dp,
-        animationSpec = tween(durationMillis = 300)
+        animationSpec = tween(durationMillis = 100)
     )
-    Column(
-        modifier = Modifier
-            .width(width)
-            .height(height)
-            .offset(y = yOffset)
-            .clickable {
-                val eraserType =
-                    if (selectedDrawingTool == DrawingTool.ERASER) DrawingTool.DELETER
-                    else DrawingTool.ERASER
-                onEraserClick(eraserType)
-            }
-    ) {
-        val eraserColor =
-            if (selectedDrawingTool == DrawingTool.DELETER) eraserHard else eraserSoft
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .height(height / 4)
-                .background(eraserColor, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                .align(Alignment.CenterHorizontally)
-        )
-        Box(
+    Box {
+        // Column for irregular shadows
+        Column(
             modifier = Modifier
                 .width(width)
-                .height(2.dp)
-                .background(Color.White)
-        )
-        Box(
+                .height(height)
+                .offset(y = yOffset)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .height(height / 4)
+                    .background(Color.Transparent)
+                    .align(Alignment.CenterHorizontally)
+                    .shadow(8.dp, 8.dp)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(height * 3 / 4 + 2.dp)
+                    .background(Color.Transparent)
+                    .shadow()
+            )
+        }
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(height * 3 / 4)
-                .background(eraserHandle)
-        )
+                .width(width)
+                .height(height)
+                .offset(y = yOffset)
+                .clickable {
+                    val eraserType =
+                        if (selectedDrawingTool == DrawingTool.ERASER) DrawingTool.DELETER
+                        else DrawingTool.ERASER
+                    onEraserClick(eraserType)
+                }
+        ) {
+            val eraserColor =
+                if (selectedDrawingTool == DrawingTool.DELETER) eraserHard else eraserSoft
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .height(height / 4)
+                    .background(eraserColor, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                    .align(Alignment.CenterHorizontally)
+            )
+            Box(
+                modifier = Modifier
+                    .width(width)
+                    .height(2.dp)
+                    .background(Color.White)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(height * 3 / 4)
+                    .background(eraserHandle)
+            )
+        }
     }
 }
+
+@Composable
+private fun Modifier.shadow(topStart: Dp = 0.dp, topEnd: Dp = 0.dp): Modifier {
+    return this.graphicsLayer(
+            shadowElevation = 8.dp.toPx(),
+            shape = RoundedCornerShape(topStart = topStart, topEnd = topEnd),
+            clip = true
+) }
