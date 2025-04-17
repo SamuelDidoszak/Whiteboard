@@ -10,14 +10,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.samis.whiteboard.data.util.Constant.CANVAS_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.COLOR_SCHEME_PREF_KEY
+import org.samis.whiteboard.data.util.Constant.DRAWING_TOOLS_KEY
 import org.samis.whiteboard.data.util.Constant.FILL_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.MARKER_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.STROKE_COLORS_PREF_KEY
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.ColorScheme
+import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.repository.SettingsRepository
 import org.samis.whiteboard.presentation.theme.defaultCanvasColors
 import org.samis.whiteboard.presentation.theme.defaultDrawingColors
+import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 
 class SettingRepositoryImpl(
     private val prefs: DataStore<Preferences>
@@ -29,6 +32,7 @@ class SettingRepositoryImpl(
         private val PREFERRED_MARKER_COLORS_KEY = stringPreferencesKey(MARKER_COLORS_PREF_KEY)
         private val PREFERRED_FILL_COLORS_KEY = stringPreferencesKey(FILL_COLORS_PREF_KEY)
         private val PREFERRED_CANVAS_COLORS_KEY = stringPreferencesKey(CANVAS_COLORS_PREF_KEY)
+        private val PREFERRED_DRAWING_TOOLS_KEY = stringPreferencesKey(DRAWING_TOOLS_KEY)
     }
 
     override suspend fun saveColorScheme(colorScheme: ColorScheme) {
@@ -72,6 +76,17 @@ class SettingRepositoryImpl(
         }
     }
 
+    override fun getDrawingToolVisibility(): Flow<DrawingToolVisibility> {
+        return prefs.data.map { preferences ->
+            val toolsString = preferences[PREFERRED_DRAWING_TOOLS_KEY]
+            val parsed = toolsString?.parseDrawingToolVisibility()
+            if (parsed != null)
+                DrawingToolVisibility(parsed)
+            else
+                DrawingToolVisibility()
+        }
+    }
+
     override suspend fun savePreferredColors(
         colors: List<Color>,
         colorPaletteType: ColorPaletteType
@@ -88,5 +103,17 @@ class SettingRepositoryImpl(
         }
     }
 
+    override suspend fun saveDrawingToolVisibility(toolVisibility: DrawingToolVisibility) {
+        val toolVisibilityString = toolVisibility.getAllToolStates()
+            .map { it.key.name + ":" + it.value.toString() }.joinToString()
+        prefs.edit { preference ->
+            preference[PREFERRED_DRAWING_TOOLS_KEY] = toolVisibilityString
+        }
+    }
+
     private fun String.parseColors() = this.split(", ").map { it.toInt() }.map { Color(it) }
+    private fun String.parseDrawingToolVisibility() = this.split(", ").map {
+        val split = it.split(":")
+        Pair(DrawingTool.valueOf(split[0]), split[1].toBoolean())
+    }.toMap()
 }

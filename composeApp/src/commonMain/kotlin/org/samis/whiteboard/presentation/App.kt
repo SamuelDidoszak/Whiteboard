@@ -21,6 +21,7 @@ fun App() {
 
     val settingsViewModel = koinViewModel<SettingsViewModel>()
     val colorScheme by settingsViewModel.currentColorScheme.collectAsStateWithLifecycle()
+    val drawingToolVisibility by settingsViewModel.drawingToolVisibility.collectAsStateWithLifecycle()
     val isDarkTheme = when(colorScheme) {
         ColorScheme.SYSTEM_DEFAULT -> isSystemInDarkTheme()
         ColorScheme.LIGHT -> false
@@ -39,7 +40,9 @@ fun App() {
                 navController = navController,
                 innerPadding = innerPadding,
                 currentScheme = colorScheme,
-                onThemeSelected = { settingsViewModel.saveColorScheme(it) }
+                onThemeSelected = { settingsViewModel.saveColorScheme(it) },
+                drawingToolVisibility = drawingToolVisibility,
+                onDrawingToolVisibilityChanged = { settingsViewModel.saveDrawingToolVisibility(it) }
             )
         }
     }

@@ -353,6 +353,7 @@ class WhiteboardViewModel(
 
             DrawingTool.DELETER -> {
                 updatePathsToBeDeleted(start = startOffset, continuingOffset = continuingOffset)
+                deletePaths(state.value.pathsToBeDeleted)
                 createEraserPath(continuingOffset = continuingOffset)
             }
 

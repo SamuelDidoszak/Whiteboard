@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.flow.Flow
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.ColorScheme
+import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 
 interface SettingsRepository {
     fun getColorScheme(): Flow<ColorScheme>
@@ -11,6 +12,8 @@ interface SettingsRepository {
     fun getPreferredMarkerColors(): Flow<List<Color>>
     fun getPreferredFillColors(): Flow<List<Color>>
     fun getPreferredCanvasColors(): Flow<List<Color>>
+    fun getDrawingToolVisibility(): Flow<DrawingToolVisibility>
     suspend fun saveColorScheme(colorScheme: ColorScheme)
     suspend fun savePreferredColors(colors: List<Color>, colorPaletteType: ColorPaletteType)
+    suspend fun saveDrawingToolVisibility(toolVisibility: DrawingToolVisibility)
 }

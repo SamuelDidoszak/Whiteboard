@@ -13,4 +13,5 @@ object Constant {
     const val MARKER_COLORS_PREF_KEY = "marker_colors"
     const val FILL_COLORS_PREF_KEY = "fill_colors"
     const val CANVAS_COLORS_PREF_KEY = "canvas_colors"
+    const val DRAWING_TOOLS_KEY = "drawing_tools"
 }
