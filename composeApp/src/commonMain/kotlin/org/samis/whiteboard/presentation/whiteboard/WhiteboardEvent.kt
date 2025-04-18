@@ -11,8 +11,6 @@ sealed class WhiteboardEvent {
     data object FinishDrawing : WhiteboardEvent()
 
     data class OnDrawingToolSelected(val drawingTool: DrawingTool) : WhiteboardEvent()
-    data object OnDrawingToolsCardClose : WhiteboardEvent()
-    data object OnFABClick: WhiteboardEvent()
 
     data class StrokeSliderValueChange(val strokeWidth: Float) : WhiteboardEvent()
     data class OpacitySliderValueChange(val opacity: Float) : WhiteboardEvent()

@@ -17,8 +17,8 @@ enum class DrawingTool(
     val isColored: Boolean = false
 ) {
     PEN(res = Res.drawable.img_pen, isColored = true),
-    HIGHLIGHTER(res = Res.drawable.img_highlighter, isColored = true),
     LASER_PEN(res = Res.drawable.img_laser_pen, isColored = true),
+    HIGHLIGHTER(res = Res.drawable.img_highlighter, isColored = true),
     DELETER(res = Res.drawable.img_eraser, isColored = true),
     ERASER(res = Res.drawable.img_eraser, isColored = true),
     LINE(res = Res.drawable.ic_line),

@@ -7,6 +7,7 @@ import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
 import org.samis.whiteboard.presentation.theme.defaultCanvasColors
 import org.samis.whiteboard.presentation.theme.defaultDrawingColors
+import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 
 data class WhiteboardState(
     val paths: List<DrawnPath> = emptyList(),
@@ -15,7 +16,7 @@ data class WhiteboardState(
     val laserPenPath: DrawnPath? = null,
     val startingOffset: Offset = Offset.Zero,
     val selectedDrawingTool: DrawingTool = DrawingTool.PEN,
-    val isDrawingToolsCardVisible: Boolean = false,
+    val drawingToolVisibility: DrawingToolVisibility = DrawingToolVisibility(),
     val isColorSelectionDialogOpen: Boolean = false,
     val isColorPickerOpen: Boolean = false,
     val isStrokeWidthSliderOpen: Boolean = false,

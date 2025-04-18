@@ -48,9 +48,6 @@ import org.samis.whiteboard.presentation.whiteboard.component.ColorSelectionDial
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteCard
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteDrawerContent
 import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolBar
-import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolFAB
-import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolsCardHorizontal
-import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolsCardVertical
 import org.samis.whiteboard.presentation.whiteboard.component.MarkerColorBar
 import org.samis.whiteboard.presentation.whiteboard.component.TopBarHorizontal
 import org.samis.whiteboard.presentation.whiteboard.component.TopBarVertical
@@ -134,23 +131,6 @@ fun WhiteboardScreen(
                         onUndoIconClick = {},
                         onRedoIconClick = {}
                     )
-                    DrawingToolFAB(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(20.dp),
-                        isVisible = !state.isDrawingToolsCardVisible,
-                        selectedTool = state.selectedDrawingTool,
-                        onClick = { onEvent(WhiteboardEvent.OnFABClick) }
-                    )
-                    DrawingToolsCardHorizontal(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(20.dp),
-                        isVisible = state.isDrawingToolsCardVisible,
-                        selectedTool = state.selectedDrawingTool,
-                        onToolClick = { onEvent(WhiteboardEvent.OnDrawingToolSelected(it)) },
-                        onCloseIconClick = { onEvent(WhiteboardEvent.OnDrawingToolsCardClose) }
-                    )
                 }
             }
 
@@ -212,6 +192,7 @@ fun WhiteboardScreen(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(20.dp),
+                    drawingToolVisibility = state.drawingToolVisibility,
                     onDrawingToolClick = { drawingTool: DrawingTool ->
                         onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
                     }
@@ -248,28 +229,11 @@ fun WhiteboardScreen(
                         markerColors = state.markerColors,
                         selectedMarker = state.selectedMarker,
                         selectedDrawingTool = state.selectedDrawingTool,
+                        drawingToolVisibility = state.drawingToolVisibility,
                         onClick = { newColor: Color -> onEvent(WhiteboardEvent.StrokeColorChange(newColor, false)) },
                         onEraserClick = { eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType)) }
                     )
                 }
-
-                DrawingToolFAB(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(20.dp),
-                    isVisible = !state.isDrawingToolsCardVisible,
-                    selectedTool = state.selectedDrawingTool,
-                    onClick = { onEvent(WhiteboardEvent.OnFABClick) }
-                )
-                DrawingToolsCardVertical(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(20.dp),
-                    isVisible = state.isDrawingToolsCardVisible,
-                    selectedTool = state.selectedDrawingTool,
-                    onToolClick = { onEvent(WhiteboardEvent.OnDrawingToolSelected(it)) },
-                    onCloseIconClick = { onEvent(WhiteboardEvent.OnDrawingToolsCardClose) }
-                )
             }
         }
 

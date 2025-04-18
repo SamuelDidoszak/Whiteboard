@@ -2,36 +2,37 @@ package org.samis.whiteboard.presentation.whiteboard.component
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.presentation.theme.eraserHandle
 import org.samis.whiteboard.presentation.theme.eraserHard
 import org.samis.whiteboard.presentation.theme.eraserSoft
+import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.toPx
 
 
@@ -43,6 +44,7 @@ fun MarkerColorBar(
     markerColors: List<Color>,
     selectedMarker: Int,
     selectedDrawingTool: DrawingTool,
+    drawingToolVisibility: DrawingToolVisibility,
     onClick: (Color) -> Unit,
     onEraserClick: (DrawingTool) -> Unit
 ) {
@@ -55,7 +57,8 @@ fun MarkerColorBar(
             Marker(markerColors[i], open, penWidth, penHeight, onClick)
             Spacer(Modifier.width(10.dp))
         }
-        Eraser(penWidth, penHeight, selectedDrawingTool, onEraserClick)
+        if (drawingToolVisibility.isToolVisible(DrawingTool.ERASER) || drawingToolVisibility.isToolVisible(DrawingTool.DELETER))
+            Eraser(penWidth, penHeight, selectedDrawingTool, drawingToolVisibility, onEraserClick)
     }
 }
 
@@ -211,7 +214,7 @@ private fun curvedTip(
 }
 
 @Composable
-fun Eraser(width: Dp, height: Dp, selectedDrawingTool: DrawingTool, onEraserClick: (DrawingTool) -> Unit) {
+fun Eraser(width: Dp, height: Dp, selectedDrawingTool: DrawingTool, drawingToolVisibility: DrawingToolVisibility, onEraserClick: (DrawingTool) -> Unit) {
     val isOffsetDown = selectedDrawingTool == DrawingTool.ERASER || selectedDrawingTool == DrawingTool.DELETER
     val offsetDownValue = height / 5
 
@@ -249,14 +252,18 @@ fun Eraser(width: Dp, height: Dp, selectedDrawingTool: DrawingTool, onEraserClic
                 .height(height)
                 .offset(y = yOffset)
                 .clickable {
-                    val eraserType =
-                        if (selectedDrawingTool == DrawingTool.ERASER) DrawingTool.DELETER
-                        else DrawingTool.ERASER
-                    onEraserClick(eraserType)
+                    if (drawingToolVisibility.isToolVisible(DrawingTool.ERASER)) {
+                        val eraserType =
+                            if (selectedDrawingTool == DrawingTool.ERASER && drawingToolVisibility.isToolVisible(DrawingTool.DELETER)) DrawingTool.DELETER
+                            else DrawingTool.ERASER
+                        onEraserClick(eraserType)
+                    } else if (drawingToolVisibility.isToolVisible(DrawingTool.DELETER)) {
+                        onEraserClick(DrawingTool.DELETER)
+                    }
                 }
         ) {
             val eraserColor =
-                if (selectedDrawingTool == DrawingTool.DELETER) eraserHard else eraserSoft
+                if (selectedDrawingTool == DrawingTool.DELETER || !drawingToolVisibility.isToolVisible(DrawingTool.ERASER)) eraserHard else eraserSoft
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.85f)

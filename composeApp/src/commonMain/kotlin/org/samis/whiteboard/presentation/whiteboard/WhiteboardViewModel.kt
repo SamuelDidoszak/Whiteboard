@@ -28,6 +28,7 @@ import org.samis.whiteboard.domain.repository.PathRepository
 import org.samis.whiteboard.domain.repository.SettingsRepository
 import org.samis.whiteboard.domain.repository.WhiteboardRepository
 import org.samis.whiteboard.presentation.navigation.Routes
+import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import kotlin.math.abs
 
 class WhiteboardViewModel(
@@ -50,16 +51,19 @@ class WhiteboardViewModel(
         settingsRepository.getPreferredMarkerColors(),
         settingsRepository.getPreferredFillColors(),
         settingsRepository.getPreferredCanvasColors(),
-    ){ state, prefStrokeColors, prefMarkerColors, prefFillColors, prefCanvasColors ->
+        settingsRepository.getDrawingToolVisibility()
+    ){ flows ->
+        val state = flows[0] as WhiteboardState
         if (firstInit) {
             firstInit = false
-            _state.update { it.copy(strokeColor = prefMarkerColors[0]) }
+            _state.update { it.copy(strokeColor = (flows[2] as List<Color>)[0]) }
         }
         state.copy(
-            preferredStrokeColors = prefStrokeColors,
-            markerColors = prefMarkerColors,
-            preferredFillColors = prefFillColors,
-            preferredCanvasColors = prefCanvasColors
+            preferredStrokeColors = flows[1] as List<Color>,
+            markerColors = flows[2] as List<Color>,
+            preferredFillColors = flows[3] as List<Color>,
+            preferredCanvasColors = flows[4] as List<Color>,
+            drawingToolVisibility = flows[5] as DrawingToolVisibility
         )
     }.stateIn(
         scope = viewModelScope,
@@ -116,10 +120,6 @@ class WhiteboardViewModel(
                 }
             }
 
-            WhiteboardEvent.OnDrawingToolsCardClose -> {
-                _state.update { it.copy(isDrawingToolsCardVisible = false) }
-            }
-
             is WhiteboardEvent.OnDrawingToolSelected -> {
                 when (event.drawingTool) {
                     DrawingTool.RECTANGLE, DrawingTool.CIRCLE, DrawingTool.TRIANGLE -> {
@@ -137,10 +137,6 @@ class WhiteboardViewModel(
                         }
                     }
                 }
-            }
-
-            WhiteboardEvent.OnFABClick -> {
-                _state.update { it.copy(isDrawingToolsCardVisible = true) }
             }
 
             is WhiteboardEvent.FillColorChange -> {
