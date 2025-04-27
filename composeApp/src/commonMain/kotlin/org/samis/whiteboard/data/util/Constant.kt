@@ -4,6 +4,7 @@ object Constant {
 
     const val APP_DATABASE_NAME = "whiteboard.db"
     const val PATH_TABLE_NAME = "path_table"
+    const val UPDATE_TABLE_NAME = "update_table"
     const val WHITEBOARD_TABLE_NAME = "whiteboard_table"
 
 

@@ -23,9 +23,11 @@ import kotlinx.datetime.todayIn
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
+import org.samis.whiteboard.domain.model.UpdateType
 import org.samis.whiteboard.domain.model.Whiteboard
 import org.samis.whiteboard.domain.repository.PathRepository
 import org.samis.whiteboard.domain.repository.SettingsRepository
+import org.samis.whiteboard.domain.repository.UpdateRepository
 import org.samis.whiteboard.domain.repository.WhiteboardRepository
 import org.samis.whiteboard.presentation.navigation.Routes
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
@@ -33,6 +35,7 @@ import kotlin.math.abs
 
 class WhiteboardViewModel(
     private val pathRepository: PathRepository,
+    private val updateRepository: UpdateRepository,
     private val whiteboardRepository: WhiteboardRepository,
     private val settingsRepository: SettingsRepository,
     savedStateHandle: SavedStateHandle
@@ -270,6 +273,28 @@ class WhiteboardViewModel(
                     isColorSelectionDialogOpen = false
                 ) }
             }
+        }
+    }
+
+    fun onUpdate(update: UpdateType) {
+
+    }
+
+    private fun insertUpdate(update: UpdateType) {
+        viewModelScope.launch {
+            updateRepository.upsertUpdate(update)
+        }
+    }
+
+    private fun deleteUpdate(update: UpdateType) {
+        viewModelScope.launch {
+            updateRepository.deleteUpdate(update)
+        }
+    }
+
+    private fun getAllUpdates(whiteboardId: Long) {
+        viewModelScope.launch {
+            updateRepository.getWhiteboardUpdates(whiteboardId)
         }
     }
 
