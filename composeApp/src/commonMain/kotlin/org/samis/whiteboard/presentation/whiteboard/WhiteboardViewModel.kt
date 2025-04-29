@@ -165,7 +165,15 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.CanvasColorChange -> {
-                _state.update { it.copy(canvasColor = event.canvasColor) }
+                _state.value.updates.forEach {
+                    if (it is Update.Erase) {
+                        it.path.strokeColor = event.canvasColor
+                    }
+                }
+                _state.update { it.copy(
+                    canvasColor = event.canvasColor,
+                    updates = it.updates
+                ) }
                 upsertWhiteboard()
             }
 
@@ -302,6 +310,7 @@ class WhiteboardViewModel(
             is Update.Erase -> {
                 add = true
                 path = update.path
+                path.strokeColor = state.value.canvasColor
             }
             is Update.RemovePath -> {
                 add = false
@@ -436,6 +445,8 @@ class WhiteboardViewModel(
             DrawingTool.DELETER -> {
                 updatePathsToBeDeleted(start = startOffset, continuingOffset = continuingOffset)
                 for (path in state.value.pathsToBeDeleted) {
+                    if (path.strokeColor == state.value.canvasColor)
+                        continue
                     val update = Update.RemovePath(path, whiteboardId = updatedWhiteboardId.value)
                     insertUpdate(update)
                     onUpdate(update)
@@ -470,7 +481,11 @@ class WhiteboardViewModel(
                         DrawnPath(
                             path = path,
                             drawingTool = state.value.selectedDrawingTool,
-                            strokeColor = state.value.strokeColor,
+                            strokeColor =
+                                if (state.value.selectedDrawingTool == DrawingTool.ERASER)
+                                    state.value.canvasColor
+                                else
+                                    state.value.strokeColor,
                             fillColor = state.value.fillColor,
                             opacity = state.value.opacity,
                             strokeWidth = state.value.strokeWidth,
