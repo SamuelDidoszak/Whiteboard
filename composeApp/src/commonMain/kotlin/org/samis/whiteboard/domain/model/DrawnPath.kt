@@ -4,11 +4,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 
 data class DrawnPath(
-    val id: Long? = null,
+    var id: Long? = null,
     val path: Path,
     val drawingTool: DrawingTool,
     val strokeWidth: Float,
-    val strokeColor: Color,
+    var strokeColor: Color,
     val fillColor: Color,
     val opacity: Float,
     val whiteboardId: Long

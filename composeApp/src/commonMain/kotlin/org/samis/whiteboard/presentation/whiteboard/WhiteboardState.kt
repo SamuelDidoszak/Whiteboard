@@ -5,11 +5,13 @@ import androidx.compose.ui.graphics.Color
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
+import org.samis.whiteboard.domain.model.Update
 import org.samis.whiteboard.presentation.theme.defaultCanvasColors
 import org.samis.whiteboard.presentation.theme.defaultDrawingColors
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 
 data class WhiteboardState(
+    val updates: List<Update> = emptyList(),
     val paths: List<DrawnPath> = emptyList(),
     val pathsToBeDeleted: List<DrawnPath> = emptyList(),
     var currentPath: DrawnPath? = null,

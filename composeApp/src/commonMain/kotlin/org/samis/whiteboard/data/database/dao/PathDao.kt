@@ -11,7 +11,7 @@ import org.samis.whiteboard.data.util.Constant.PATH_TABLE_NAME
 @Dao
 interface PathDao {
     @Upsert
-    suspend fun upsertPath(pathEntity: PathEntity)
+    suspend fun upsertPath(pathEntity: PathEntity): Long
 
     @Delete
     suspend fun deletePath(pathEntity: PathEntity)

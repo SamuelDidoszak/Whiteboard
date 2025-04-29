@@ -2,13 +2,13 @@ package org.samis.whiteboard.data.mapper
 
 import org.samis.whiteboard.data.database.entity.PathEntity
 import org.samis.whiteboard.data.database.entity.UpdateEntity
-import org.samis.whiteboard.domain.model.UpdateType
-import org.samis.whiteboard.domain.model.UpdateType.AddPath
-import org.samis.whiteboard.domain.model.UpdateType.Erase
-import org.samis.whiteboard.domain.model.UpdateType.RemoveErase
-import org.samis.whiteboard.domain.model.UpdateType.RemovePath
+import org.samis.whiteboard.domain.model.Update
+import org.samis.whiteboard.domain.model.Update.AddPath
+import org.samis.whiteboard.domain.model.Update.Erase
+import org.samis.whiteboard.domain.model.Update.RemoveErase
+import org.samis.whiteboard.domain.model.Update.RemovePath
 
-fun UpdateEntity.toUpdate(path: PathEntity): UpdateType {
+fun UpdateEntity.toUpdate(path: PathEntity): Update {
     val path = path.toDrawnPath()
     return when (updateType.uppercase()) {
         "AddPath".uppercase() -> AddPath(path, id, whiteboardId)
@@ -21,7 +21,7 @@ fun UpdateEntity.toUpdate(path: PathEntity): UpdateType {
     }
 }
 
-fun UpdateType.toUpdateEntity(): UpdateEntity {
+fun Update.toUpdateEntity(): UpdateEntity {
     return when (this) {
         is AddPath -> UpdateEntity(id, "AddPath", path.id, whiteboardId!!)
         is RemovePath -> UpdateEntity(id, "RemovePath", path.id, whiteboardId!!)

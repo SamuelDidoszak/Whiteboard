@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -23,7 +24,7 @@ import kotlinx.datetime.todayIn
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
-import org.samis.whiteboard.domain.model.UpdateType
+import org.samis.whiteboard.domain.model.Update
 import org.samis.whiteboard.domain.model.Whiteboard
 import org.samis.whiteboard.domain.repository.PathRepository
 import org.samis.whiteboard.domain.repository.SettingsRepository
@@ -78,7 +79,7 @@ class WhiteboardViewModel(
         whiteboardId?.let { id ->
             getWhiteboardById(id)
         }
-        observePaths()
+        initializeUpdates(updatedWhiteboardId.value ?: -1)
     }
 
     fun onEvent(event: WhiteboardEvent) {
@@ -99,7 +100,15 @@ class WhiteboardViewModel(
                 state.value.currentPath?.let { drawnPath ->
                     when (drawnPath.drawingTool) {
                         DrawingTool.DELETER -> {
-                            deletePaths(state.value.pathsToBeDeleted)
+                            // Deleter removes lines on the go. Code for DELETER logic is in the updateContinuingOffsets() method
+                        }
+
+                        DrawingTool.ERASER -> {
+                            drawnPath.strokeColor = _state.value.canvasColor
+                            insertPathAndUpdate(
+                                drawnPath,
+                                Update.Erase(drawnPath, whiteboardId = updatedWhiteboardId.value)
+                            )
                         }
 
                         DrawingTool.LASER_PEN -> {
@@ -107,14 +116,19 @@ class WhiteboardViewModel(
                         }
 
                         else -> {
-                            insertPath(drawnPath)
+                            insertPathAndUpdate(
+                                drawnPath,
+                                Update.AddPath(drawnPath, whiteboardId = updatedWhiteboardId.value)
+                            )
                         }
                     }
                 }
+
                 _state.update {
                     it.copy(
+                        // removes flickering
                         paths =
-                            if (it.selectedDrawingTool != DrawingTool.LASER_PEN && it.currentPath != null)
+                            if (it.selectedDrawingTool != DrawingTool.LASER_PEN && it.selectedDrawingTool != DrawingTool.DELETER && it.currentPath != null)
                                 it.paths.plus(it.currentPath!!)
                             else it.paths,
                         currentPath = null,
@@ -276,32 +290,79 @@ class WhiteboardViewModel(
         }
     }
 
-    fun onUpdate(update: UpdateType) {
+    private fun onUpdate(update: Update) {
+        println("Updating: $update")
+        val add: Boolean
+        val path: DrawnPath
+        when (update) {
+            is Update.AddPath -> {
+                add = true
+                path = update.path
+            }
+            is Update.Erase -> {
+                add = true
+                path = update.path
+            }
+            is Update.RemovePath -> {
+                add = false
+                path = update.path
+            }
+            is Update.RemoveErase -> {
+                add = false
+                path = update.path
+            }
+        }
 
+        _state.update {
+            it.copy(
+                updates = it.updates.plus(update),
+                paths =
+                    if (add) {
+                        if (it.paths.findLast { it.id == path.id } == null)
+                            it.paths.plus(path)
+                        else
+                            it.paths
+                    }
+                    else
+                        it.paths.filterNot { it.id == path.id }
+            )
+        }
     }
 
-    private fun insertUpdate(update: UpdateType) {
+    private fun insertUpdate(update: Update) {
         viewModelScope.launch {
             updateRepository.upsertUpdate(update)
         }
     }
 
-    private fun deleteUpdate(update: UpdateType) {
+    private fun deleteUpdate(update: Update) {
         viewModelScope.launch {
             updateRepository.deleteUpdate(update)
         }
     }
 
-    private fun getAllUpdates(whiteboardId: Long) {
-        viewModelScope.launch {
-            updateRepository.getWhiteboardUpdates(whiteboardId)
-        }
+    private fun initializeUpdates(whiteboardId: Long) {
+            viewModelScope.launch {
+                updateRepository.getWhiteboardUpdates(whiteboardId)
+                    .take(1)
+                    .collectLatest { updates ->
+                        println("Initial updates:")
+                        updates.forEach {
+                            onUpdate(it)
+                        }
+                        println()
+                    }
+            }
     }
 
-    // Add to database
-    private fun insertPath(path: DrawnPath) {
+    // Creates a new path and update with correct ids
+    private fun insertPathAndUpdate(path: DrawnPath, update: Update) {
         viewModelScope.launch {
-            pathRepository.upsertPath(path)
+            val pathId = pathRepository.upsertPath(path)
+            path.id = pathId
+            val update = update.copyWithPath(path)
+            insertUpdate(update)
+            onUpdate(update)
         }
     }
 
@@ -342,7 +403,7 @@ class WhiteboardViewModel(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun observePaths() {
+    private fun getAllPaths() {
         viewModelScope.launch {
             updatedWhiteboardId
                 .flatMapLatest { id ->
@@ -374,7 +435,12 @@ class WhiteboardViewModel(
 
             DrawingTool.DELETER -> {
                 updatePathsToBeDeleted(start = startOffset, continuingOffset = continuingOffset)
-                deletePaths(state.value.pathsToBeDeleted)
+                for (path in state.value.pathsToBeDeleted) {
+                    val update = Update.RemovePath(path, whiteboardId = updatedWhiteboardId.value)
+                    insertUpdate(update)
+                    onUpdate(update)
+                }
+                _state.update { it.copy(pathsToBeDeleted = emptyList()) }
                 createEraserPath(continuingOffset = continuingOffset)
             }
 

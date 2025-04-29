@@ -13,8 +13,8 @@ class PathRepositoryImpl(
     private val pathDao: PathDao
 ): PathRepository {
 
-    override suspend fun upsertPath(path: DrawnPath) {
-        pathDao.upsertPath(path.toPathEntity())
+    override suspend fun upsertPath(path: DrawnPath): Long {
+        return pathDao.upsertPath(path.toPathEntity())
     }
 
     override suspend fun deletePath(path: DrawnPath) {
