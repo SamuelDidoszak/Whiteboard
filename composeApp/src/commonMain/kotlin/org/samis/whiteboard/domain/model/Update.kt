@@ -34,10 +34,10 @@ sealed class Update(
 
     fun undo(): Update {
         return when (this) {
-            is AddPath -> RemovePath(path, id, whiteboardId)
-            is RemovePath -> AddPath(path, id, whiteboardId)
-            is Erase -> RemoveErase(path, id, whiteboardId)
-            is RemoveErase -> Erase(path, id, whiteboardId)
+            is AddPath -> RemovePath(path, null, whiteboardId)
+            is RemovePath -> AddPath(path, null, whiteboardId)
+            is Erase -> RemoveErase(path, null, whiteboardId)
+            is RemoveErase -> Erase(path, null, whiteboardId)
         }
     }
 

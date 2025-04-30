@@ -158,8 +158,8 @@ fun WhiteboardScreen(
                         onHomeIconClick = onHomeIconClick,
                         onMenuIconClick = { isCommandPaletteOpen = !isCommandPaletteOpen },
                         onSaveIconClick = {},
-                        onUndoIconClick = {},
-                        onRedoIconClick = {},
+                        onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
+                        onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     CommandPaletteCard(
