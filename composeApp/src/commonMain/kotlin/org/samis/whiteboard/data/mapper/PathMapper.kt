@@ -13,8 +13,7 @@ fun DrawnPath.toPathEntity(): PathEntity {
         strokeWidth = strokeWidth,
         opacity = opacity,
         strokeColor = strokeColor.toArgb(),
-        fillColor = fillColor.toArgb(),
-        whiteboardId = whiteboardId
+        fillColor = fillColor.toArgb()
     )
 }
 
@@ -26,8 +25,7 @@ fun PathEntity.toDrawnPath(): DrawnPath {
         strokeWidth = strokeWidth,
         opacity = opacity,
         strokeColor = Color(strokeColor),
-        fillColor = Color(fillColor),
-        whiteboardId = whiteboardId
+        fillColor = Color(fillColor)
     )
 }
 

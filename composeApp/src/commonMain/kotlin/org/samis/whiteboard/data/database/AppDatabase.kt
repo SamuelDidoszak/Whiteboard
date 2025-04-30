@@ -14,7 +14,7 @@ import org.samis.whiteboard.data.database.entity.UpdateEntity
 import org.samis.whiteboard.data.database.entity.WhiteboardEntity
 
 @Database(
-    version = 7,
+    version = 8,
     entities = [PathEntity::class, WhiteboardEntity::class, UpdateEntity::class],
     exportSchema = true
 )

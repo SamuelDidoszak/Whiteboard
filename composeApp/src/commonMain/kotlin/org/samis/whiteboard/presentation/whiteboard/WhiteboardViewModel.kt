@@ -9,11 +9,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
@@ -308,6 +306,7 @@ class WhiteboardViewModel(
                 if (pointer < 0)
                     pointer = null
                 _state.update { it.copy(updatePointer = pointer) }
+                upsertWhiteboard(pointer)
             }
 
             is WhiteboardEvent.Redo -> {
@@ -321,6 +320,7 @@ class WhiteboardViewModel(
                     updates = it.updates.subList(0, it.updates.size - 2),
                     updatePointer = pointer
                 ) }
+                upsertWhiteboard(pointer)
             }
         }
     }
@@ -384,16 +384,9 @@ class WhiteboardViewModel(
                 updateRepository.getWhiteboardUpdates(whiteboardId)
                     .take(1)
                     .collectLatest { updates ->
-                        println("Initial updates:")
                         updates.forEach {
                             onUpdate(it)
                         }
-                        println()
-
-                        if (updates.isNotEmpty())
-                            _state.update { it.copy(
-                                updatePointer = updates.size - 1
-                            ) }
                     }
             }
     }
@@ -424,37 +417,26 @@ class WhiteboardViewModel(
                 _state.update {
                     it.copy(
                         whiteboardName = whiteboard.name,
-                        canvasColor = whiteboard.canvasColor
+                        canvasColor = whiteboard.canvasColor,
+                        updatePointer = whiteboard.pointer
                     )
                 }
             }
         }
     }
 
-    private fun upsertWhiteboard() {
+    private fun upsertWhiteboard(pointer: Int? = state.value.updatePointer) {
         viewModelScope.launch {
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
             val whiteboard = Whiteboard(
                 name = state.value.whiteboardName,
                 lastEdited = today,
                 canvasColor = state.value.canvasColor,
-                id = updatedWhiteboardId.value
+                id = updatedWhiteboardId.value,
+                pointer = pointer
             )
             val newId = whiteboardRepository.upsertWhiteboard(whiteboard)
             updatedWhiteboardId.value = newId
-        }
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun getAllPaths() {
-        viewModelScope.launch {
-            updatedWhiteboardId
-                .flatMapLatest { id ->
-                    pathRepository.getPathsForWhiteboard(whiteboardId = id ?: -1)
-                }
-                .collectLatest { paths ->
-                    _state.update { it.copy(paths = paths) }
-                }
         }
     }
 
@@ -522,8 +504,7 @@ class WhiteboardViewModel(
                                     state.value.strokeColor,
                             fillColor = state.value.fillColor,
                             opacity = state.value.opacity,
-                            strokeWidth = state.value.strokeWidth,
-                            whiteboardId = id
+                            strokeWidth = state.value.strokeWidth
                         )
                     }
                 )

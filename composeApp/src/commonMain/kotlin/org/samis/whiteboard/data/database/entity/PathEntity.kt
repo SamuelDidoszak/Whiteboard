@@ -15,6 +15,5 @@ data class PathEntity(
     val strokeWidth: Float,
     val strokeColor: Int,
     val fillColor: Int,
-    val opacity: Float,
-    val whiteboardId: Long
+    val opacity: Float
 )
