@@ -41,7 +41,9 @@ import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
 import org.samis.whiteboard.presentation.util.UiType
+import org.samis.whiteboard.presentation.util.capturable
 import org.samis.whiteboard.presentation.util.getUiType
+import org.samis.whiteboard.presentation.util.rememberCaptureController
 import org.samis.whiteboard.presentation.util.rememberScreenSizeSize
 import org.samis.whiteboard.presentation.whiteboard.component.ColorPickerCard
 import org.samis.whiteboard.presentation.whiteboard.component.ColorSelectionDialog
@@ -60,6 +62,9 @@ fun WhiteboardScreen(
     onHomeIconClick: () -> Unit
 ) {
 
+    rememberCaptureController().also {
+        onEvent(WhiteboardEvent.SetCaptureController(it))
+    }
     val screenSize = rememberScreenSizeSize()
     val uiType = screenSize.getUiType()
 
@@ -127,9 +132,9 @@ fun WhiteboardScreen(
                             .padding(20.dp),
                         onHomeIconClick = onHomeIconClick,
                         onMenuIconClick = { scope.launch { drawerState.open() } },
-                        onSaveIconClick = {},
-                        onUndoIconClick = {},
-                        onRedoIconClick = {}
+                        onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
+                        onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
+                        onRedoIconClick = { onEvent(WhiteboardEvent.Redo) }
                     )
                 }
             }
@@ -157,7 +162,7 @@ fun WhiteboardScreen(
                     TopBarVertical(
                         onHomeIconClick = onHomeIconClick,
                         onMenuIconClick = { isCommandPaletteOpen = !isCommandPaletteOpen },
-                        onSaveIconClick = {},
+                        onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
                         onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
                     )
@@ -246,8 +251,10 @@ private fun DrawingCanvas(
     state: WhiteboardState,
     onEvent: (WhiteboardEvent) -> Unit
 ) {
+
     Canvas(
         modifier = modifier
+            .capturable(state.captureController)
             .background(state.canvasColor)
             .pointerInput(Unit) {
                 detectDragGestures(

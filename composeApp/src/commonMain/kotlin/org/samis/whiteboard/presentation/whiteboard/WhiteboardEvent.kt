@@ -2,6 +2,7 @@ package org.samis.whiteboard.presentation.whiteboard
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.CoroutineScope
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 
@@ -29,4 +30,7 @@ sealed class WhiteboardEvent {
 
     data object Undo: WhiteboardEvent()
     data object Redo: WhiteboardEvent()
+
+    data class SetCaptureController(val captureController: Any): WhiteboardEvent()
+    data class SavePicture(val scope: CoroutineScope): WhiteboardEvent()
 }

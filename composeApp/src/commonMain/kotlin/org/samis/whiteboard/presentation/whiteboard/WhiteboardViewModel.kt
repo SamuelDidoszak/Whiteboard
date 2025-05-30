@@ -30,6 +30,8 @@ import org.samis.whiteboard.domain.repository.UpdateRepository
 import org.samis.whiteboard.domain.repository.WhiteboardRepository
 import org.samis.whiteboard.presentation.navigation.Routes
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
+import org.samis.whiteboard.presentation.util.IContextProvider
+import org.samis.whiteboard.presentation.util.capture
 import kotlin.math.abs
 
 class WhiteboardViewModel(
@@ -37,7 +39,8 @@ class WhiteboardViewModel(
     private val updateRepository: UpdateRepository,
     private val whiteboardRepository: WhiteboardRepository,
     private val settingsRepository: SettingsRepository,
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
+    private val contextProvider: IContextProvider
 ) : ViewModel() {
 
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
@@ -321,6 +324,21 @@ class WhiteboardViewModel(
                     updatePointer = pointer
                 ) }
                 upsertWhiteboard(pointer)
+            }
+
+            is WhiteboardEvent.SetCaptureController -> {
+                _state.update { it.copy(captureController = event.captureController) }
+            }
+
+            is WhiteboardEvent.SavePicture -> {
+                val captureController = state.value.captureController ?: return
+                capture(
+                    event.scope,
+                    captureController,
+                    contextProvider,
+                    "Whiteboard",
+                    state.value.whiteboardName
+                )
             }
         }
     }
