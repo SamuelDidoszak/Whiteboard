@@ -53,6 +53,7 @@ fun NavGraph(
             WhiteboardScreen(
                 state = state,
                 onEvent = viewModel::onEvent,
+                navController = navController,
                 onHomeIconClick = { navController.navigateUp() }
             )
         }

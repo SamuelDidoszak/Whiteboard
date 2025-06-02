@@ -33,4 +33,5 @@ sealed class WhiteboardEvent {
 
     data class SetCaptureController(val captureController: Any): WhiteboardEvent()
     data class SavePicture(val scope: CoroutineScope): WhiteboardEvent()
+    data class SaveMiniature(val scope: CoroutineScope): WhiteboardEvent()
 }

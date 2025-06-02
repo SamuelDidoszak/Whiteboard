@@ -12,5 +12,6 @@ data class WhiteboardEntity(
     val name: String,
     val lastEdited: LocalDate,
     val canvasColor: Int,
-    val pointer: Int?
+    val pointer: Int?,
+    val miniatureSrc: String?
 )

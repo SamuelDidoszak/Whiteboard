@@ -9,6 +9,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -17,6 +20,7 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import org.samis.whiteboard.domain.model.ColorPaletteType
@@ -32,6 +36,8 @@ import org.samis.whiteboard.presentation.navigation.Routes
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.IContextProvider
 import org.samis.whiteboard.presentation.util.capture
+import org.samis.whiteboard.presentation.util.formatDate
+import java.io.File
 import kotlin.math.abs
 
 class WhiteboardViewModel(
@@ -88,6 +94,9 @@ class WhiteboardViewModel(
         when (event) {
             is WhiteboardEvent.StartDrawing -> {
                 if (isFirstPath) {
+                    if (state.value.whiteboardName == "Untitled")
+                        _state.update { it.copy(whiteboardName = initializeWhiteboardName(translatePolish = true)) }
+
                     upsertWhiteboard()
                     isFirstPath = false
                 }
@@ -336,9 +345,28 @@ class WhiteboardViewModel(
                     event.scope,
                     captureController,
                     contextProvider,
-                    "Whiteboard",
-                    state.value.whiteboardName
-                )
+                    state.value.whiteboardName,
+                    false,
+                    null
+                ) {}
+            }
+
+            is WhiteboardEvent.SaveMiniature -> {
+                val captureController = state.value.captureController ?: return
+                capture(
+                    event.scope,
+                    captureController,
+                    contextProvider,
+                    state.value.whiteboardName,
+                    true,
+                    state.value.miniatureSrc
+                ) {
+                    file: File ->
+                    println("Filename: ${file.path}")
+                    _state.update { it.copy(miniatureSrc = file.path) }
+                    println("Eyyy y state miniature: ${state.value.miniatureSrc}")
+                    upsertWhiteboard(miniatureSrc = file.path)
+                }
             }
         }
     }
@@ -436,22 +464,25 @@ class WhiteboardViewModel(
                     it.copy(
                         whiteboardName = whiteboard.name,
                         canvasColor = whiteboard.canvasColor,
-                        updatePointer = whiteboard.pointer
+                        updatePointer = whiteboard.pointer,
+                        miniatureSrc = whiteboard.miniatureSrc
                     )
                 }
             }
         }
     }
 
-    private fun upsertWhiteboard(pointer: Int? = state.value.updatePointer) {
-        viewModelScope.launch {
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun upsertWhiteboard(pointer: Int? = state.value.updatePointer, miniatureSrc: String? = state.value.miniatureSrc) {
+        GlobalScope.launch(Dispatchers.IO) {
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
             val whiteboard = Whiteboard(
                 name = state.value.whiteboardName,
                 lastEdited = today,
                 canvasColor = state.value.canvasColor,
                 id = updatedWhiteboardId.value,
-                pointer = pointer
+                pointer = pointer,
+                miniatureSrc = miniatureSrc
             )
             val newId = whiteboardRepository.upsertWhiteboard(whiteboard)
             updatedWhiteboardId.value = newId
@@ -600,6 +631,23 @@ class WhiteboardViewModel(
         colors: List<Color>
     ): List<Color> {
         return colors.filter { it != newColor }.take(n = 23) + listOf(newColor)
+    }
+
+    private fun initializeWhiteboardName(translatePolish: Boolean): String {
+        fun getDayOfWeekInPolish(weekDay: DayOfWeek): String {
+            return when(weekDay) {
+                java.time.DayOfWeek.MONDAY -> "Poniedziałek"
+                java.time.DayOfWeek.TUESDAY -> "Wtorek"
+                java.time.DayOfWeek.WEDNESDAY -> "Środa"
+                java.time.DayOfWeek.THURSDAY -> "Czwartek"
+                java.time.DayOfWeek.FRIDAY -> "Piątek"
+                java.time.DayOfWeek.SATURDAY -> "Sobota"
+                java.time.DayOfWeek.SUNDAY -> "Niedziela"
+            }
+        }
+
+        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+        return getDayOfWeekInPolish(today.dayOfWeek) + " " + today.formatDate()
     }
 }
 

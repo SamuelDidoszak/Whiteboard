@@ -67,6 +67,9 @@ kotlin {
 
             //Images Extender
             implementation(libs.compose.iconsExteded)
+
+            //Coil
+            implementation(libs.coil)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)

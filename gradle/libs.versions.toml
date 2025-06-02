@@ -55,6 +55,7 @@ kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.
 compose-colorpicker = { module = "com.github.skydoves:colorpicker-compose", version.ref = "colorpicker" }
 compose-iconsExteded = { module = "androidx.compose.material:material-icons-extended", version.ref = "compose-plugin" }
 capturable = { module = "dev.shreyaspatil:capturable", version = "3.0.1" }
+coil = { module = "io.coil-kt.coil3:coil-compose", version = "3.2.0" }
 
 
 [plugins]

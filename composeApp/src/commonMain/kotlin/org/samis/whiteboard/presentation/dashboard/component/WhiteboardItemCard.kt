@@ -1,8 +1,10 @@
 package org.samis.whiteboard.presentation.dashboard.component
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement.SpaceBetween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -18,7 +20,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import org.jetbrains.compose.resources.painterResource
 import org.samis.whiteboard.domain.model.Whiteboard
 import org.samis.whiteboard.presentation.util.formatDate
@@ -36,22 +43,30 @@ fun WhiteboardItemCard(
     Card(
         modifier = modifier
     ) {
-        Image(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(top = 8.dp),
-            painter = painterResource(Res.drawable.img_canvas),
-            contentDescription = "Whiteboard"
+        AsyncImage(
+            model = ImageRequest.Builder(LocalPlatformContext.current)
+                .data(whiteboard.miniatureSrc)
+                .crossfade(false)
+                .build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            placeholder = painterResource(Res.drawable.img_canvas),
+            error = painterResource(Res.drawable.img_canvas),
+            fallback = painterResource(Res.drawable.img_canvas),
+            modifier = Modifier.fillMaxWidth().height(156.dp)
         )
         Row(
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = SpaceBetween
         ) {
             Text(
                 modifier = Modifier.weight(1f).padding(start = 8.dp),
                 text = whiteboard.name,
                 maxLines = 2
             )
-            Box {
+            Box(
+                modifier = Modifier.weight(0.25f)
+            ) {
                 IconButton(
                     onClick = { isExpanded = true }
                 ) {

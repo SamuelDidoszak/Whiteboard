@@ -38,6 +38,7 @@ data class WhiteboardState(
     val fillColor: Color = Color.Transparent,
 
     val whiteboardName: String = "Untitled",
+    val miniatureSrc: String? = null,
     val markerColors: List<Color> = defaultDrawingColors,
 
     val preferredStrokeColors: List<Color> = defaultDrawingColors,

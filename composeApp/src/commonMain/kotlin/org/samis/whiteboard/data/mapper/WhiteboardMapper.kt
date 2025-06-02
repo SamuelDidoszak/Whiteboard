@@ -11,7 +11,8 @@ fun Whiteboard.toWhiteboardEntity(): WhiteboardEntity {
         name = name,
         lastEdited = lastEdited,
         canvasColor = canvasColor.toArgb(),
-        pointer = pointer
+        pointer = pointer,
+        miniatureSrc = miniatureSrc
     )
 }
 
@@ -21,7 +22,8 @@ fun WhiteboardEntity.toWhiteboard(): Whiteboard {
         name = name,
         lastEdited = lastEdited,
         canvasColor = Color(canvasColor),
-        pointer = pointer
+        pointer = pointer,
+        miniatureSrc = miniatureSrc
     )
 }
 

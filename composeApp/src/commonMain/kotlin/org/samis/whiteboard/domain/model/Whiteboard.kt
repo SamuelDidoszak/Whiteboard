@@ -8,5 +8,6 @@ data class Whiteboard(
     val name: String,
     val lastEdited: LocalDate,
     val canvasColor: Color,
-    val pointer: Int? = null
+    val pointer: Int? = null,
+    val miniatureSrc: String? = null
 )

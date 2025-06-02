@@ -18,6 +18,7 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +37,11 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavController
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
@@ -43,6 +49,7 @@ import org.samis.whiteboard.domain.model.DrawnPath
 import org.samis.whiteboard.presentation.util.UiType
 import org.samis.whiteboard.presentation.util.capturable
 import org.samis.whiteboard.presentation.util.getUiType
+import org.samis.whiteboard.presentation.util.registerBackHandler
 import org.samis.whiteboard.presentation.util.rememberCaptureController
 import org.samis.whiteboard.presentation.util.rememberScreenSizeSize
 import org.samis.whiteboard.presentation.whiteboard.component.ColorPickerCard
@@ -58,6 +65,7 @@ import org.samis.whiteboard.presentation.whiteboard.component.TopBarVertical
 fun WhiteboardScreen(
     modifier: Modifier = Modifier,
     state: WhiteboardState,
+    navController: NavController,
     onEvent: (WhiteboardEvent) -> Unit,
     onHomeIconClick: () -> Unit
 ) {
@@ -72,6 +80,8 @@ fun WhiteboardScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     var isCommandPaletteOpen by rememberSaveable { mutableStateOf(false) }
+
+    miniatureSaveHandle(scope, onEvent, navController)
 
     ColorSelectionDialog(
         isOpen = state.isColorSelectionDialogOpen,
@@ -130,7 +140,10 @@ fun WhiteboardScreen(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .padding(20.dp),
-                        onHomeIconClick = onHomeIconClick,
+                        onHomeIconClick = {
+                            onEvent(WhiteboardEvent.SaveMiniature(scope))
+                            onHomeIconClick.invoke()
+                        },
                         onMenuIconClick = { scope.launch { drawerState.open() } },
                         onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
@@ -160,7 +173,10 @@ fun WhiteboardScreen(
                         .padding(20.dp)
                 ) {
                     TopBarVertical(
-                        onHomeIconClick = onHomeIconClick,
+                        onHomeIconClick = {
+                            onEvent(WhiteboardEvent.SaveMiniature(scope))
+                            onHomeIconClick.invoke()
+                        },
                         onMenuIconClick = { isCommandPaletteOpen = !isCommandPaletteOpen },
                         onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
@@ -343,7 +359,27 @@ fun AnimateLaserPath(
     }
 }
 
+@Composable
+private fun miniatureSaveHandle(scope: CoroutineScope, onEvent: (WhiteboardEvent) -> Unit, navController: NavController) {
+    registerBackHandler {
+        onEvent(WhiteboardEvent.SaveMiniature(scope))
+        navController.navigateUp()
+    }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(Unit) {
+        val observer = object : DefaultLifecycleObserver {
+            override fun onPause(owner: LifecycleOwner) {
+                onEvent(WhiteboardEvent.SaveMiniature(scope))
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+}
 
 
 

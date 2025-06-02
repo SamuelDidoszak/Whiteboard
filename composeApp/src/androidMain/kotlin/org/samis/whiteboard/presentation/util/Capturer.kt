@@ -22,8 +22,10 @@ actual fun capture(
     scope: CoroutineScope,
     controller: Any,
     contextProvider: IContextProvider,
-    folderName: String,
-    fileName: String
+    fileName: String,
+    miniature: Boolean,
+    miniaturePath: String?,
+    onFileSave: (file: File) -> Unit
 ) {
     val captureController = controller as? CaptureController ?: return
     scope.launch {
@@ -33,16 +35,26 @@ actual fun capture(
                 val bitmap = bitmapAsync.await()
                 val byteArray = bitmap.asAndroidBitmap().toByteArray()
 
-                val directory = File(contextProvider.getExternalFilesDir("DIRECTORY_PICTURES"), folderName)
+                val directory = File(contextProvider.getExternalFilesDir("DIRECTORY_PICTURES"), "Whiteboard")
                 if (!directory.exists()) {
                     directory.mkdirs()
                 }
 
+                val fileName = fileName.replace('/', '-')
                 var file = File(directory, "$fileName.png")
-                var num = 1
-                while (file.exists()) {
-                    num++
-                    file = File(directory, "$fileName$num.png")
+                var num = 0
+
+                if (file.exists()) {
+                    val currentMiniatureFilename = miniaturePath?.substringAfterLast('/')?.substringBefore('.')
+
+                    if (currentMiniatureFilename != null && miniature)
+                        file = File(directory, currentMiniatureFilename)
+                    else {
+                        do {
+                            num++
+                            file = File(directory, "${fileName}_$num.png")
+                        } while (file.exists())
+                    }
                 }
 
                 try {
@@ -50,6 +62,7 @@ actual fun capture(
                     outputStream.write(byteArray)
                     outputStream.flush()
                     outputStream.close()
+                    onFileSave(file)
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
