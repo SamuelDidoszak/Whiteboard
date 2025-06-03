@@ -48,7 +48,7 @@ actual fun capture(
                     val currentMiniatureFilename = miniaturePath?.substringAfterLast('/')?.substringBefore('.')
 
                     if (currentMiniatureFilename != null && miniature)
-                        file = File(directory, currentMiniatureFilename)
+                        file = File(directory, currentMiniatureFilename + ".png")
                     else {
                         do {
                             num++

@@ -38,7 +38,8 @@ import org.samis.whiteboard.presentation.util.IContextProvider
 import org.samis.whiteboard.presentation.util.capture
 import org.samis.whiteboard.presentation.util.formatDate
 import java.io.File
-import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 class WhiteboardViewModel(
     private val pathRepository: PathRepository,
@@ -195,8 +196,9 @@ class WhiteboardViewModel(
                     _state.update { it.copy(selectedDrawingTool = DrawingTool.PEN) }
 
                 var markerNum = state.value.markerColors.indexOf(event.strokeColor)
-                if (markerNum == -1)
+                if (markerNum == -1 || markerNum > 3)
                     markerNum = state.value.markerColors.indexOf(state.value.strokeColor)
+
                 if (event.strokeColor == state.value.strokeColor) {
                     val open = !state.value.isColorPickerOpen
                     _state.update {
@@ -362,9 +364,7 @@ class WhiteboardViewModel(
                     state.value.miniatureSrc
                 ) {
                     file: File ->
-                    println("Filename: ${file.path}")
                     _state.update { it.copy(miniatureSrc = file.path) }
-                    println("Eyyy y state miniature: ${state.value.miniatureSrc}")
                     upsertWhiteboard(miniatureSrc = file.path)
                 }
             }
@@ -553,7 +553,11 @@ class WhiteboardViewModel(
                                     state.value.strokeColor,
                             fillColor = state.value.fillColor,
                             opacity = state.value.opacity,
-                            strokeWidth = state.value.strokeWidth
+                            strokeWidth =
+                                if (state.value.selectedDrawingTool == DrawingTool.ERASER)
+                                    state.value.strokeWidth + 8
+                                else
+                                    state.value.strokeWidth
                         )
                     }
                 )
@@ -585,10 +589,10 @@ class WhiteboardViewModel(
     }
 
     private fun createRectanglePath(start: Offset, continuingOffset: Offset): Path {
-        val width = abs(continuingOffset.x - start.x)
-        val height = abs(continuingOffset.y - start.y)
+        val topLeft = Offset(min(start.x, continuingOffset.x), min(start.y, continuingOffset.y))
+        val bottomRight = Offset(max(start.x, continuingOffset.x), max(start.y, continuingOffset.y))
         return Path().apply {
-            addRect(Rect(offset = start, size = Size(width = width, height = height)))
+            addRect(Rect(topLeft, bottomRight))
         }
     }
 

@@ -31,6 +31,7 @@ import org.samis.whiteboard.domain.model.Whiteboard
 import org.samis.whiteboard.presentation.util.formatDate
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.img_canvas
+import java.io.File
 
 @Composable
 fun WhiteboardItemCard(
@@ -39,18 +40,24 @@ fun WhiteboardItemCard(
     onRenameClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
+    val miniatureFile = remember(whiteboard.miniatureSrc) {
+        File(whiteboard.miniatureSrc)
+    }
+    val cacheKey = "${miniatureFile.path}-${miniatureFile.lastModified()}"
+
     var isExpanded by remember { mutableStateOf(false) }
     Card(
         modifier = modifier
     ) {
         AsyncImage(
             model = ImageRequest.Builder(LocalPlatformContext.current)
-                .data(whiteboard.miniatureSrc)
-                .crossfade(false)
+                .data(miniatureFile)
+                .memoryCacheKey(cacheKey)
+                .diskCacheKey(cacheKey)
+                .crossfade(true)
                 .build(),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            placeholder = painterResource(Res.drawable.img_canvas),
             error = painterResource(Res.drawable.img_canvas),
             fallback = painterResource(Res.drawable.img_canvas),
             modifier = Modifier.fillMaxWidth().height(156.dp)
