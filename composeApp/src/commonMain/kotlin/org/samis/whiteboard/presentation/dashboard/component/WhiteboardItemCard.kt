@@ -41,9 +41,11 @@ fun WhiteboardItemCard(
     onDeleteClick: () -> Unit,
 ) {
     val miniatureFile = remember(whiteboard.miniatureSrc) {
-        File(whiteboard.miniatureSrc)
+        if (whiteboard.miniatureSrc != null)
+            File(whiteboard.miniatureSrc)
+        else null
     }
-    val cacheKey = "${miniatureFile.path}-${miniatureFile.lastModified()}"
+    val cacheKey = "${miniatureFile?.path}-${miniatureFile?.lastModified()}"
 
     var isExpanded by remember { mutableStateOf(false) }
     Card(

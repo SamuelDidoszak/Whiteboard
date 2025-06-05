@@ -15,8 +15,8 @@ class UpdateRepositoryImpl(
     private val pathRepository: PathRepository
 ): UpdateRepository {
 
-    override suspend fun upsertUpdate(update: Update) {
-        updateDao.upsertUpdate(update.toUpdateEntity())
+    override suspend fun upsertUpdate(update: Update): Long {
+        return updateDao.upsertUpdate(update.toUpdateEntity())
     }
 
     override suspend fun deleteUpdate(update: Update) {

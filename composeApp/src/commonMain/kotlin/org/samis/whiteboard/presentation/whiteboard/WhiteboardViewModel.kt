@@ -53,7 +53,6 @@ class WhiteboardViewModel(
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
     private var isFirstPath = true
     private var firstInit = true
-    private var updatePointerValue = false
 
     private var updatedWhiteboardId = MutableStateFlow(whiteboardId)
 
@@ -116,7 +115,6 @@ class WhiteboardViewModel(
                         }
 
                         DrawingTool.ERASER -> {
-                            updatePointerValue = true
                             drawnPath.strokeColor = _state.value.canvasColor
                             insertPathAndUpdate(
                                 drawnPath,
@@ -129,7 +127,6 @@ class WhiteboardViewModel(
                         }
 
                         else -> {
-                            updatePointerValue = true
                             insertPathAndUpdate(
                                 drawnPath,
                                 Update.AddPath(drawnPath, whiteboardId = updatedWhiteboardId.value)
@@ -313,28 +310,25 @@ class WhiteboardViewModel(
 
             is WhiteboardEvent.Undo -> {
                 var pointer: Int? = state.value.updatePointer ?: return
-                val update = state.value.updates[pointer!!].undo()
-                insertUpdate(update)
-                onUpdate(update)
+                val update = state.value.updates[pointer!!]
+                onUpdate(update.undo(), true)
+                deleteUpdate(update)
                 pointer -= 1
                 if (pointer < 0)
                     pointer = null
-                _state.update { it.copy(updatePointer = pointer) }
+                _state.update { it.copy(updatePointer = pointer, undoArray = it.undoArray.plus(update)) }
                 upsertWhiteboard(pointer)
             }
 
             is WhiteboardEvent.Redo -> {
-                val pointer: Int = state.value.updatePointer?.plus(1) ?: 0
-                if (pointer >= state.value.updates.size - 1)
+                val pointer: Int = state.value.updatePointer ?: -1
+                if (pointer > state.value.updates.size)
                     return
-                val lastUpdate = state.value.updates.last()
-                onUpdate(lastUpdate.undo())
-                deleteUpdate(lastUpdate)
-                _state.update { it.copy(
-                    updates = it.updates.subList(0, it.updates.size - 2),
-                    updatePointer = pointer
-                ) }
-                upsertWhiteboard(pointer)
+                val lastUpdate = state.value.undoArray.lastOrNull() ?: return
+                onUpdate(lastUpdate, false)
+                insertUpdate(lastUpdate)
+                _state.update { it.copy(updatePointer = pointer + 1, undoArray = it.undoArray.dropLast(1)) }
+                upsertWhiteboard(pointer + 1)
             }
 
             is WhiteboardEvent.SetCaptureController -> {
@@ -371,7 +365,7 @@ class WhiteboardViewModel(
         }
     }
 
-    private fun onUpdate(update: Update) {
+    private fun onUpdate(update: Update, undo: Boolean? = null) {
         println("Updating: $update")
         val add: Boolean
         val path: DrawnPath
@@ -395,10 +389,22 @@ class WhiteboardViewModel(
             }
         }
 
+        if (undo == null)
+            _state.value.undoArray.forEach { deleteUpdate(it) }
+
         _state.update {
             it.copy(
-                updates = it.updates.plus(update),
-                updatePointer = if (updatePointerValue) it.updates.size else it.updatePointer,
+                updates =
+                    if (undo == true)
+                        it.updates.dropLast(1)
+                    else
+                        it.updates.plus(update),
+                undoArray =
+                    if (undo == null)
+                        emptyList()
+                    else
+                        it.undoArray,
+                updatePointer = if (undo == null) it.updates.size else it.updatePointer, // it.updates.size is size - 1
                 paths =
                     if (add) {
                         if (it.paths.findLast { it.id == path.id } == null)
@@ -407,15 +413,15 @@ class WhiteboardViewModel(
                             it.paths
                     }
                     else
-                        it.paths.filterNot { it.id == path.id }
+                        it.paths.filterNot { it.id == path.id || it.id == null }
             )
         }
-        updatePointerValue = false
     }
 
     private fun insertUpdate(update: Update) {
         viewModelScope.launch {
-            updateRepository.upsertUpdate(update)
+            val updateId = updateRepository.upsertUpdate(update)
+            update.id = updateId
         }
     }
 
@@ -430,9 +436,7 @@ class WhiteboardViewModel(
                 updateRepository.getWhiteboardUpdates(whiteboardId)
                     .take(1)
                     .collectLatest { updates ->
-                        updates.forEach {
-                            onUpdate(it)
-                        }
+                        updates.forEach {onUpdate(it)}
                     }
             }
     }

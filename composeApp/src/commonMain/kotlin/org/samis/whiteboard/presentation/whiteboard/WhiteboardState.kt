@@ -12,6 +12,7 @@ import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 
 data class WhiteboardState(
     val updates: List<Update> = emptyList(),
+    val undoArray: List<Update> = emptyList(),
     val updatePointer: Int? = null,
 
     val paths: List<DrawnPath> = emptyList(),

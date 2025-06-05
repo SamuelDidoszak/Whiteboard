@@ -12,7 +12,7 @@ import org.samis.whiteboard.data.util.Constant.UPDATE_TABLE_NAME
 interface UpdateDao {
 
     @Upsert
-    suspend fun upsertUpdate(updateEntity: UpdateEntity)
+    suspend fun upsertUpdate(updateEntity: UpdateEntity): Long
 
     @Delete
     suspend fun deleteUpdate(updateEntity: UpdateEntity)

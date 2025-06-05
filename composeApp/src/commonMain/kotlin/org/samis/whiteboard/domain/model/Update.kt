@@ -1,30 +1,30 @@
 package org.samis.whiteboard.domain.model
 
 sealed class Update(
-    open val id: Long? = null,
+    open var id: Long? = null,
     open val whiteboardId: Long? = null
 ) {
     data class AddPath(
         override val path: DrawnPath,
-        override val id: Long? = null,
+        override var id: Long? = null,
         override val whiteboardId: Long? = null
     ) : Update(id, whiteboardId), HasPath
 
     data class RemovePath(
         override val path: DrawnPath,
-        override val id: Long? = null,
+        override var id: Long? = null,
         override val whiteboardId: Long? = null
     ) : Update(id, whiteboardId), HasPath
 
     data class Erase(
         override val path: DrawnPath,
-        override val id: Long? = null,
+        override var id: Long? = null,
         override val whiteboardId: Long? = null
     ) : Update(id, whiteboardId), HasPath
 
     data class RemoveErase(
         override val path: DrawnPath,
-        override val id: Long? = null,
+        override var id: Long? = null,
         override val whiteboardId: Long? = null
     ) : Update(id, whiteboardId), HasPath
 

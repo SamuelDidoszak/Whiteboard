@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import org.samis.whiteboard.domain.model.Update
 
 interface UpdateRepository {
-    suspend fun upsertUpdate(update: Update)
+    suspend fun upsertUpdate(update: Update): Long
 
     suspend fun deleteUpdate(update: Update)
 
