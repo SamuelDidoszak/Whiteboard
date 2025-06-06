@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.DrawerValue
@@ -58,6 +59,8 @@ import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteCard
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteDrawerContent
 import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolBar
 import org.samis.whiteboard.presentation.whiteboard.component.MarkerColorBar
+import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthBar
+import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthSliderCard
 import org.samis.whiteboard.presentation.whiteboard.component.TopBarHorizontal
 import org.samis.whiteboard.presentation.whiteboard.component.TopBarVertical
 
@@ -109,7 +112,7 @@ fun WhiteboardScreen(
                             onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
                             onStrokeColorChange = { onEvent(WhiteboardEvent.StrokeColorChange(it, true)) },
                             onFillColorChange = { onEvent(WhiteboardEvent.FillColorChange(it)) },
-                            strokeWidthSliderValue = state.strokeWidth,
+                            strokeWidthSliderValue = state.strokeWidthList[state.activeStrokeWidthButton],
                             opacitySliderValue = state.opacity,
                             onStrokeWidthSliderValueChange = {
                                 onEvent(WhiteboardEvent.StrokeSliderValueChange(it))
@@ -130,6 +133,7 @@ fun WhiteboardScreen(
                                     while (true) {
                                         val down = awaitFirstDown(requireUnconsumed = false)
                                         onEvent(WhiteboardEvent.OnCardClose)
+                                        onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                         down.consume()
                                     }
                                 }},
@@ -160,6 +164,7 @@ fun WhiteboardScreen(
                             while (true) {
                                 val down = awaitFirstDown(requireUnconsumed = false)
                                 onEvent(WhiteboardEvent.OnCardClose)
+                                onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                 down.consume()
                             }
                         }},
@@ -196,7 +201,7 @@ fun WhiteboardScreen(
                         onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
                         onStrokeColorChange = { onEvent(WhiteboardEvent.StrokeColorChange(it, true)) },
                         onFillColorChange = { onEvent(WhiteboardEvent.FillColorChange(it)) },
-                        strokeWidthSliderValue = state.strokeWidth,
+                        strokeWidthSliderValue = state.strokeWidthList[state.activeStrokeWidthButton],
                         opacitySliderValue = state.opacity,
                         onStrokeWidthSliderValueChange = {
                             onEvent(WhiteboardEvent.StrokeSliderValueChange(it))
@@ -218,43 +223,82 @@ fun WhiteboardScreen(
                         onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
                     }
                 )
-                Column(
+                ColorPickerCard(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 20.dp * state.selectedMarker, bottom = 36.dp),
+                    isVisible = state.isColorPickerOpen,
+                    selectedDrawingTool = state.selectedDrawingTool,
+                    strokeColors = state.preferredStrokeColors,
+                    selectedStrokeColor = state.strokeColor,
+                    onStrokeColorChange = { newColor: Color ->
+                        onEvent(WhiteboardEvent.StrokeColorChange(newColor, true))
+                    },
+                    fillColors = state.preferredFillColors,
+                    selectedFillColor = state.fillColor,
+                    onFillColorChange =  { newColor: Color ->
+                        onEvent(WhiteboardEvent.FillColorChange(newColor))
+                    },
+                    colorDeletionMode = state.colorDeletionMode,
+                    onSetColorDeletionMode = { mode: Boolean -> onEvent(WhiteboardEvent.SetColorDeletionMode(mode))},
+                    onColorDeleted = { color: Color, palette: ColorPaletteType ->
+                        onEvent(WhiteboardEvent.OnColorDeleted(color, palette)) },
+                    onColorPaletteIconClick = { colorPaletteType: ColorPaletteType ->
+                        onEvent(WhiteboardEvent.OnColorPaletteIconClick(colorPaletteType))
+                    },
+                    onCloseIconClick = { onEvent(WhiteboardEvent.OnCardClose) }
+                )
+                Row(
                     modifier = Modifier.align(Alignment.BottomStart)
                 ) {
-                    ColorPickerCard(
-                        modifier = Modifier.padding(start = 20.dp * state.selectedMarker, bottom = 6.dp),
-                        isVisible = state.isColorPickerOpen,
-                        selectedDrawingTool = state.selectedDrawingTool,
-                        strokeColors = state.preferredStrokeColors,
-                        selectedStrokeColor = state.strokeColor,
-                        onStrokeColorChange = { newColor: Color ->
-                            onEvent(WhiteboardEvent.StrokeColorChange(newColor, true))
-                        },
-                        fillColors = state.preferredFillColors,
-                        selectedFillColor = state.fillColor,
-                        onFillColorChange =  { newColor: Color ->
-                            onEvent(WhiteboardEvent.FillColorChange(newColor))
-                        },
-                        colorDeletionMode = state.colorDeletionMode,
-                        onSetColorDeletionMode = { mode: Boolean -> onEvent(WhiteboardEvent.SetColorDeletionMode(mode))},
-                        onColorDeleted = { color: Color, palette: ColorPaletteType ->
-                            onEvent(WhiteboardEvent.OnColorDeleted(color, palette)) },
-                        onColorPaletteIconClick = { colorPaletteType: ColorPaletteType ->
-                            onEvent(WhiteboardEvent.OnColorPaletteIconClick(colorPaletteType))
-                        },
-                        onCloseIconClick = { onEvent(WhiteboardEvent.OnCardClose) }
-                    )
-                    MarkerColorBar(
-                        penWidth = 30.dp,
-                        penHeight = 60.dp,
-                        markerColors = state.markerColors,
-                        selectedMarker = state.selectedMarker,
-                        selectedDrawingTool = state.selectedDrawingTool,
-                        drawingToolVisibility = state.drawingToolVisibility,
-                        onClick = { newColor: Color -> onEvent(WhiteboardEvent.StrokeColorChange(newColor, false)) },
-                        onEraserClick = { eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType)) }
-                    )
+                    Column(
+                        modifier = Modifier.align(Alignment.Bottom)
+                    ) {
+                        MarkerColorBar(
+                            penWidth = 30.dp,
+                            penHeight = 60.dp,
+                            markerColors = state.markerColors,
+                            selectedMarker = state.selectedMarker,
+                            selectedDrawingTool = state.selectedDrawingTool,
+                            drawingToolVisibility = state.drawingToolVisibility,
+                            onClick = { newColor: Color ->
+                                onEvent(WhiteboardEvent.StrokeColorChange(newColor, false))
+                                onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                            },
+                            onEraserClick = { eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType)) }
+                        )
+                    }
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Bottom)
+                            .padding(start = 5.dp)
+                    ) {
+                        StrokeWidthSliderCard(
+                            modifier = Modifier.padding(start = 20.dp * state.activeStrokeWidthButton, bottom = 6.dp),
+                            isVisible = state.isStrokeWidthSliderOpen,
+                            showOpacity = state.showOpacitySlider,
+                            strokeWidthSliderValue = state.strokeWidthList[state.activeStrokeWidthButton],
+                            onStrokeWidthSliderValueChange = { strokeWidth: Float -> onEvent(WhiteboardEvent.StrokeSliderValueChange(strokeWidth)) },
+                            opacitySliderValue = state.opacity,
+                            onOpacitySliderValueChange = { opacity: Float -> onEvent(WhiteboardEvent.OpacitySliderValueChange(opacity)) },
+                            onCloseIconClick = { onEvent(WhiteboardEvent.OnStrokeWidthSliderClose) }
+                        )
+                        StrokeWidthBar(
+                            modifier = Modifier.height(60.dp),
+                            minButtonSize = 12.dp,
+                            maxButtonSize = 40.dp,
+                            strokeWidthList = state.strokeWidthList,
+                            activeButton = state.activeStrokeWidthButton,
+                            color = state.markerColors[0],
+                            canvasColor = state.canvasColor,
+                            onClick = { strokeNum: Int ->
+                                onEvent(WhiteboardEvent.StrokeWidthButtonClicked(strokeNum))
+                                onEvent(WhiteboardEvent.OnCardClose)
+                            }
+                        )
+                    }
                 }
+
             }
         }
 

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -69,7 +70,7 @@ fun StrokeWidthSliderCard(
         exit = fadeOut()
     ) {
         ElevatedCard(
-            modifier = modifier.width(250.dp)
+            modifier = modifier.width(256.dp)
         ) {
             StrokeWidthSliderContent(
                 showOpacity = showOpacity,
@@ -87,7 +88,6 @@ fun StrokeWidthSliderCard(
 private fun StrokeWidthSliderContent(
     modifier: Modifier = Modifier,
     showOpacity: Boolean,
-    showCloseButton: Boolean = false,
     strokeWidthSliderValue: Float,
     onStrokeWidthSliderValueChange: (Float) -> Unit,
     opacitySliderValue: Float,
@@ -98,16 +98,18 @@ private fun StrokeWidthSliderContent(
         modifier = modifier.padding(10.dp)
     ) {
         SliderSection(
-            sectionTitle = if (showOpacity) "Stroke Width" else "",
-            showCloseButton = showCloseButton,
-            sliderValueRange = 1f..25f,
+            sectionTitle = "Stroke Width",
+            showCloseButton = true,
+            sliderValueRange = 1f..26f,
             sliderValue = strokeWidthSliderValue,
             onSliderValueChange = onStrokeWidthSliderValueChange,
             onCloseIconClick = onCloseIconClick
         )
+        if (!showOpacity)
+            return
         Spacer(modifier = Modifier.height(15.dp))
         SliderSection(
-            sectionTitle = if (showOpacity) "Opacity" else "",
+            sectionTitle = "Opacity",
             showCloseButton = false,
             sliderValueRange = 1f..100f,
             sliderValue = opacitySliderValue,
@@ -128,13 +130,23 @@ private fun SliderSection(
     onCloseIconClick: () -> Unit
 ) {
     Column(modifier = modifier) {
-        Row(horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(
                 text = sectionTitle,
                 style = MaterialTheme.typography.titleSmall
             )
             if (showCloseButton) {
-                IconButton(onClick = onCloseIconClick) {
+                IconButton(
+                    onClick = onCloseIconClick,
+                    modifier = Modifier
+                        .align(Alignment.Top)
+                        .size(20.dp)
+                        .padding(0.dp)
+                ) {
                     Icon(
                         Icons.Default.Close,
                         contentDescription = "Close ${sectionTitle.replaceFirstChar { it.uppercaseChar() }} Slider"
@@ -148,12 +160,12 @@ private fun SliderSection(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Slider(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).height(25.dp),
                 value = sliderValue,
                 onValueChange = onSliderValueChange,
                 valueRange = sliderValueRange
             )
-            Text(text = "${sliderValue.toInt()}")
+            Text(text = String.format("%.1f", sliderValue))
         }
     }
 }

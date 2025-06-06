@@ -37,6 +37,7 @@ import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.IContextProvider
 import org.samis.whiteboard.presentation.util.capture
 import org.samis.whiteboard.presentation.util.formatDate
+import org.samis.whiteboard.presentation.util.roundTo
 import java.io.File
 import kotlin.math.max
 import kotlin.math.min
@@ -223,10 +224,6 @@ class WhiteboardViewModel(
                 }
             }
 
-            is WhiteboardEvent.StrokeSliderValueChange -> {
-                _state.update { it.copy(strokeWidth = event.strokeWidth) }
-            }
-
             WhiteboardEvent.OnLaserPathAnimationComplete -> {
                 _state.update { it.copy(laserPenPath = null) }
             }
@@ -303,7 +300,6 @@ class WhiteboardViewModel(
             is WhiteboardEvent.OnCardClose -> {
                 _state.update { it.copy(
                     isColorPickerOpen = false,
-                    isStrokeWidthSliderOpen = false,
                     isColorSelectionDialogOpen = false
                 ) }
             }
@@ -361,6 +357,24 @@ class WhiteboardViewModel(
                     _state.update { it.copy(miniatureSrc = file.path) }
                     upsertWhiteboard(miniatureSrc = file.path)
                 }
+            }
+
+            is WhiteboardEvent.OnStrokeWidthSliderClose -> {
+                _state.update { it.copy(isStrokeWidthSliderOpen = false) }
+            }
+
+            is WhiteboardEvent.StrokeWidthButtonClicked -> {
+                val open = state.value.activeStrokeWidthButton == event.strokeNum && !state.value.isStrokeWidthSliderOpen
+                _state.update { it.copy(
+                    activeStrokeWidthButton = event.strokeNum,
+                    isStrokeWidthSliderOpen = open
+                ) }
+            }
+
+            is WhiteboardEvent.StrokeSliderValueChange -> {
+                _state.update { it.copy(
+                    strokeWidthList = it.strokeWidthList.toMutableList().apply { this[it.activeStrokeWidthButton] = event.strokeWidth.roundTo(0.1f) }
+                ) }
             }
         }
     }
@@ -544,6 +558,8 @@ class WhiteboardViewModel(
         }
 
         updatedWhiteboardId.value?.let { id ->
+            var eraserSize = state.value.strokeWidthList[state.value.activeStrokeWidthButton]
+            eraserSize = max(eraserSize * 1.5f, eraserSize + 8)
             _state.update {
                 it.copy(
                     currentPath = updatedPath?.let { path ->
@@ -559,9 +575,9 @@ class WhiteboardViewModel(
                             opacity = state.value.opacity,
                             strokeWidth =
                                 if (state.value.selectedDrawingTool == DrawingTool.ERASER)
-                                    state.value.strokeWidth + 8
+                                    eraserSize
                                 else
-                                    state.value.strokeWidth
+                                    state.value.strokeWidthList[state.value.activeStrokeWidthButton]
                         )
                     }
                 )
