@@ -33,6 +33,7 @@ import org.samis.whiteboard.domain.repository.SettingsRepository
 import org.samis.whiteboard.domain.repository.UpdateRepository
 import org.samis.whiteboard.domain.repository.WhiteboardRepository
 import org.samis.whiteboard.presentation.navigation.Routes
+import org.samis.whiteboard.presentation.util.DelayedTask
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.IContextProvider
 import org.samis.whiteboard.presentation.util.capture
@@ -56,6 +57,10 @@ class WhiteboardViewModel(
     private var firstInit = true
 
     private var updatedWhiteboardId = MutableStateFlow(whiteboardId)
+    private var updateMiniature = false
+    private val updateMiniatureTask = DelayedTask(viewModelScope) {
+        onEvent(WhiteboardEvent.SaveMiniature(viewModelScope))
+    }
 
     private val _state = MutableStateFlow(WhiteboardState())
     val state = combine(
@@ -102,6 +107,7 @@ class WhiteboardViewModel(
                     isFirstPath = false
                 }
                 _state.update { it.copy(startingOffset = event.offset) }
+                updateMiniature = false
             }
 
             is WhiteboardEvent.ContinueDrawing -> {
@@ -344,6 +350,7 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.SaveMiniature -> {
+                if (!updateMiniature) return
                 val captureController = state.value.captureController ?: return
                 capture(
                     event.scope,
@@ -356,6 +363,7 @@ class WhiteboardViewModel(
                     file: File ->
                     _state.update { it.copy(miniatureSrc = file.path) }
                     upsertWhiteboard(miniatureSrc = file.path)
+                    updateMiniature = true
                 }
             }
 
@@ -430,6 +438,8 @@ class WhiteboardViewModel(
                         it.paths.filterNot { it.id == path.id || it.id == null }
             )
         }
+        updateMiniature = true
+        updateMiniatureTask.start(4000)
     }
 
     private fun insertUpdate(update: Update) {
