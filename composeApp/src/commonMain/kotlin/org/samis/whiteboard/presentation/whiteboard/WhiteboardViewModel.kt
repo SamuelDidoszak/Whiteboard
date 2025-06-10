@@ -127,6 +127,7 @@ class WhiteboardViewModel(
                                 drawnPath,
                                 Update.Erase(drawnPath, whiteboardId = updatedWhiteboardId.value)
                             )
+                            _state.update { it.copy(selectedDrawingTool = DrawingTool.PEN) }
                         }
 
                         DrawingTool.LASER_PEN -> {
@@ -569,7 +570,7 @@ class WhiteboardViewModel(
 
         updatedWhiteboardId.value?.let { id ->
             var eraserSize = state.value.strokeWidthList[state.value.activeStrokeWidthButton]
-            eraserSize = max(eraserSize * 1.5f, eraserSize + 8)
+            eraserSize = max(eraserSize * 1.5f, eraserSize + 10)
             _state.update {
                 it.copy(
                     currentPath = updatedPath?.let { path ->
