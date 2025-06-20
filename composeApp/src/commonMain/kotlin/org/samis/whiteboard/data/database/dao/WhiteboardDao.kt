@@ -1,6 +1,7 @@
 package org.samis.whiteboard.data.database.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -17,6 +18,9 @@ interface WhiteboardDao {
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun updateWhiteboard(whiteboard: WhiteboardEntity)
+
+    @Delete
+    suspend fun deleteWhiteboard(whiteboard: WhiteboardEntity)
 
     @Query("SELECT * FROM $WHITEBOARD_TABLE_NAME ORDER BY lastEdited DESC")
     fun getAllWhiteboards(): Flow<List<WhiteboardEntity>>

@@ -38,6 +38,7 @@ fun NavGraph(
             val state by viewModel.state.collectAsStateWithLifecycle()
             DashboardScreen(
                 state = state,
+                viewModel::onEvent,
                 onSettingsIconClick = { navController.navigate(Routes.SettingsScreen) },
                 onCardClick = { whiteboardId ->
                     navController.navigate(Routes.WhiteboardScreen(whiteboardId = whiteboardId))

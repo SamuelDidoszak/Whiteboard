@@ -7,6 +7,8 @@ interface WhiteboardRepository {
 
     fun getAllWhiteboards(): Flow<List<Whiteboard>>
 
+    suspend fun deleteWhiteboard(whiteboard: Whiteboard)
+
     suspend fun upsertWhiteboard(whiteboard: Whiteboard): Long
 
     suspend fun getWhiteboardById(id: Long): Whiteboard?

@@ -23,15 +23,40 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.samis.whiteboard.presentation.dashboard.component.DeleteWhiteboardDialog
+import org.samis.whiteboard.presentation.dashboard.component.RenameWhiteboardDialog
 import org.samis.whiteboard.presentation.dashboard.component.WhiteboardItemCard
 
 @Composable
 fun DashboardScreen(
     state: DashboardState,
+    onEvent: (DashboardEvent) -> Unit,
     onSettingsIconClick: () -> Unit,
     onAddNewWhiteboardClick: () -> Unit,
     onCardClick: (Long) -> Unit
 ) {
+
+    RenameWhiteboardDialog(
+        state.whiteboardForUpdate?.name ?: "",
+        "Rename",
+        state.isRenamePromptOpen,
+        { onEvent(DashboardEvent.ShowRenamePrompt(state.whiteboardForUpdate, false)) },
+        { text ->
+            onEvent(DashboardEvent.RenameWhiteboard(state.whiteboardForUpdate, text))
+            onEvent(DashboardEvent.ShowRenamePrompt(state.whiteboardForUpdate, false))
+        }
+    )
+
+    DeleteWhiteboardDialog(
+        state.whiteboardForUpdate?.name ?: "",
+        state.isDeletePromptOpen,
+        { onEvent(DashboardEvent.ShowDeletePrompt(state.whiteboardForUpdate, false)) },
+        {
+            onEvent(DashboardEvent.DeleteWhiteboard(state.whiteboardForUpdate))
+            onEvent(DashboardEvent.ShowDeletePrompt(state.whiteboardForUpdate, false))
+        }
+    )
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -52,8 +77,8 @@ fun DashboardScreen(
                             whiteboard.id?.let { onCardClick(it) }
                         },
                         whiteboard = whiteboard,
-                        onRenameClick = {},
-                        onDeleteClick = {}
+                        onRenameClick = { onEvent(DashboardEvent.ShowRenamePrompt(whiteboard, true)) },
+                        onDeleteClick = { onEvent(DashboardEvent.ShowDeletePrompt(whiteboard, true)) }
                     )
                 }
             }

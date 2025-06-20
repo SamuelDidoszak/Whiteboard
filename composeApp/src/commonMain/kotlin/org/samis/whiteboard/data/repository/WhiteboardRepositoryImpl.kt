@@ -26,6 +26,10 @@ class WhiteboardRepositoryImpl(
         }
     }
 
+    override suspend fun deleteWhiteboard(whiteboard: Whiteboard) {
+        whiteboardDao.deleteWhiteboard(whiteboard.toWhiteboardEntity())
+    }
+
     override suspend fun getWhiteboardById(id: Long): Whiteboard? {
         return whiteboardDao.getWhiteboardById(id)?.toWhiteboard()
     }
