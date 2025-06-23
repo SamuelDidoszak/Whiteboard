@@ -364,7 +364,7 @@ class WhiteboardViewModel(
                     file: File ->
                     _state.update { it.copy(miniatureSrc = file.path) }
                     upsertWhiteboard(miniatureSrc = file.path)
-                    updateMiniature = true
+                    updateMiniature = false
                 }
             }
 
@@ -439,6 +439,8 @@ class WhiteboardViewModel(
                         it.paths.filterNot { it.id == path.id || it.id == null }
             )
         }
+        if (isFirstPath)
+            return
         updateMiniature = true
         updateMiniatureTask.start(4000)
     }

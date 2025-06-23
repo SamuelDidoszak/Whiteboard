@@ -14,6 +14,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,14 +39,24 @@ fun WhiteboardItemCard(
     modifier: Modifier = Modifier,
     whiteboard: Whiteboard,
     onRenameClick: () -> Unit,
+    onCopyClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
-    val miniatureFile = remember(whiteboard.miniatureSrc) {
+    var miniatureFile = remember(whiteboard.miniatureSrc) {
         if (whiteboard.miniatureSrc != null)
             File(whiteboard.miniatureSrc)
         else null
     }
     val cacheKey = "${miniatureFile?.path}-${miniatureFile?.lastModified()}"
+
+    if (miniatureFile == null) {
+        LaunchedEffect(Unit) {
+            miniatureFile =
+                if (whiteboard.miniatureSrc != null)
+                    File(whiteboard.miniatureSrc)
+                else null
+        }
+    }
 
     var isExpanded by remember { mutableStateOf(false) }
     Card(
@@ -88,6 +99,7 @@ fun WhiteboardItemCard(
                     isExpanded = isExpanded,
                     onMenuDismiss = { isExpanded = false },
                     onRenameClick = onRenameClick,
+                    onCopyClick = onCopyClick,
                     onDeleteClick = onDeleteClick
                 )
             }

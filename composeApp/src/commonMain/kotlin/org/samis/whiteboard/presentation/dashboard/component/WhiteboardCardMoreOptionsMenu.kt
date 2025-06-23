@@ -1,6 +1,7 @@
 package org.samis.whiteboard.presentation.dashboard.component
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.DropdownMenu
@@ -16,6 +17,7 @@ fun WhiteboardCardMoreOptionsMenu(
     isExpanded: Boolean,
     onMenuDismiss: () -> Unit,
     onRenameClick: () -> Unit,
+    onCopyClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
     DropdownMenu(
@@ -31,6 +33,16 @@ fun WhiteboardCardMoreOptionsMenu(
             },
             leadingIcon = {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = "Rename")
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(text = "Copy") },
+            onClick = {
+                onCopyClick()
+                onMenuDismiss()
+            },
+            leadingIcon = {
+                Icon(imageVector = Icons.Default.ContentCopy, contentDescription = "Rename")
             }
         )
         DropdownMenuItem(

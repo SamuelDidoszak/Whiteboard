@@ -4,6 +4,7 @@ import android.app.Application
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.samis.whiteboard.di.initKoin
+import org.samis.whiteboard.presentation.util.AppScope
 
 class MyApplication: Application() {
 
@@ -13,5 +14,10 @@ class MyApplication: Application() {
             androidLogger()
             androidContext(this@MyApplication)
         }
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        AppScope.cancel()
     }
 }

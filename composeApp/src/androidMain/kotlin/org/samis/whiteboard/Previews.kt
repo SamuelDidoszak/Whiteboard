@@ -18,6 +18,7 @@ fun PreviewWhiteboardItemCard() {
             canvasColor = Color.White
         ),
         onRenameClick = {},
+        onCopyClick = {},
         onDeleteClick = {}
     )
 }

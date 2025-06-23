@@ -78,6 +78,7 @@ fun DashboardScreen(
                         },
                         whiteboard = whiteboard,
                         onRenameClick = { onEvent(DashboardEvent.ShowRenamePrompt(whiteboard, true)) },
+                        onCopyClick = { onEvent(DashboardEvent.CopyWhiteboard(whiteboard)) },
                         onDeleteClick = { onEvent(DashboardEvent.ShowDeletePrompt(whiteboard, true)) }
                     )
                 }
