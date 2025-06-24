@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -40,8 +41,11 @@ import org.samis.whiteboard.presentation.util.capture
 import org.samis.whiteboard.presentation.util.formatDate
 import org.samis.whiteboard.presentation.util.roundTo
 import java.io.File
+import kotlin.math.atan2
+import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sin
 
 class WhiteboardViewModel(
     private val pathRepository: PathRepository,
@@ -463,7 +467,28 @@ class WhiteboardViewModel(
                 updateRepository.getWhiteboardUpdates(whiteboardId)
                     .take(1)
                     .collectLatest { updates ->
-                        updates.forEach {onUpdate(it)}
+                        updates.forEach {
+                            if (it is Update.AddPath && it.path.drawingTool == DrawingTool.ARROW) {
+                                val measure = PathMeasure()
+                                measure.setPath(it.path.path, false)
+                                val startPos = measure.getPosition(0f)
+                                val endPos = measure.getPosition(measure.length)
+
+                                val drawnPath = DrawnPath(
+                                    it.path.id,
+                                    createArrowPath(startPos, endPos, it.path.strokeWidth),
+                                    DrawingTool.ARROW,
+                                    it.path.strokeWidth,
+                                    it.path.strokeColor,
+                                    it.path.fillColor,
+                                    it.path.opacity
+                                )
+
+                                onUpdate(Update.AddPath(drawnPath, it.id, it.whiteboardId))
+                            }
+                            else
+                                onUpdate(it)
+                        }
                     }
             }
     }
@@ -555,7 +580,9 @@ class WhiteboardViewModel(
                 createLinePath(start = startOffset, continuingOffset = continuingOffset)
             }
 
-            DrawingTool.ARROW -> null
+            DrawingTool.ARROW -> {
+                createArrowPath(start = startOffset, continuingOffset = continuingOffset)
+            }
 
             DrawingTool.RECTANGLE -> {
                 createRectanglePath(start = startOffset, continuingOffset = continuingOffset)
@@ -570,8 +597,9 @@ class WhiteboardViewModel(
             }
         }
 
+        println("Selected tool: ${state.value.selectedDrawingTool}")
         updatedWhiteboardId.value?.let { id ->
-            var eraserSize = state.value.strokeWidthList[state.value.activeStrokeWidthButton]
+            var eraserSize = state.value.strokeWidth
             eraserSize = max(eraserSize * 1.5f, eraserSize + 10)
             _state.update {
                 it.copy(
@@ -590,7 +618,7 @@ class WhiteboardViewModel(
                                 if (state.value.selectedDrawingTool == DrawingTool.ERASER)
                                     eraserSize
                                 else
-                                    state.value.strokeWidthList[state.value.activeStrokeWidthButton]
+                                    state.value.strokeWidth
                         )
                     }
                 )
@@ -618,6 +646,48 @@ class WhiteboardViewModel(
         return Path().apply {
             moveTo(start.x, start.y)
             lineTo(continuingOffset.x, continuingOffset.y)
+        }
+    }
+
+    private fun createArrowPath(start: Offset, continuingOffset: Offset, strokeWidth: Float = state.value.strokeWidth): Path {
+        val arrowHeadAngle = 30.0
+        val arrowHeadLength = 70f * (max(5f, strokeWidth) / 8f)
+
+        return Path().apply {
+            // Main line
+            moveTo(start.x, start.y)
+            lineTo(continuingOffset.x, continuingOffset.y)
+
+            // Angle of the arrow in radians
+            val angle = atan2(
+                continuingOffset.y - start.y,
+                continuingOffset.x - start.x
+            )
+
+            // Offset tip backward by half line thickness
+            val tipOffsetX = strokeWidth * 0.5f * cos(angle)
+            val tipOffsetY = strokeWidth * 0.5f * sin(angle)
+            val adjustedTipX = continuingOffset.x - tipOffsetX
+            val adjustedTipY = continuingOffset.y - tipOffsetY
+
+            // Arrowhead side angles
+            val angle1 = angle - Math.toRadians(arrowHeadAngle).toFloat()
+            val angle2 = angle + Math.toRadians(arrowHeadAngle).toFloat()
+
+            // Left side point
+            val x1 = adjustedTipX - arrowHeadLength * cos(angle1)
+            val y1 = adjustedTipY - arrowHeadLength * sin(angle1)
+
+            // Right side point
+            val x2 = adjustedTipX - arrowHeadLength * cos(angle2)
+            val y2 = adjustedTipY - arrowHeadLength * sin(angle2)
+
+            // Draw arrowhead lines meeting at adjusted tip
+            moveTo(adjustedTipX, adjustedTipY)
+            lineTo(x1, y1)
+
+            moveTo(adjustedTipX, adjustedTipY)
+            lineTo(x2, y2)
         }
     }
 

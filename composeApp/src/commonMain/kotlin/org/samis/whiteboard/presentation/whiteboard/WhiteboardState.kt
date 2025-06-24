@@ -30,7 +30,6 @@ data class WhiteboardState(
     val showOpacitySlider: Boolean = false,
 
     val selectedMarker: Int = 0,
-    val strokeWidth: Float = 5f,
     val opacity: Float = 100f,
 
     val selectedColorPaletteType: ColorPaletteType = ColorPaletteType.STROKE,
@@ -50,4 +49,7 @@ data class WhiteboardState(
     val preferredCanvasColors: List<Color> = defaultCanvasColors,
 
     val captureController: Any? = null
-)
+) {
+    val strokeWidth
+        get() = strokeWidthList[activeStrokeWidthButton]
+}
