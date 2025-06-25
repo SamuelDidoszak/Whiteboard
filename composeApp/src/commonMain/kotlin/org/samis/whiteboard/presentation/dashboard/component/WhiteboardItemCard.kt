@@ -27,6 +27,8 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.painterResource
 import org.samis.whiteboard.domain.model.Whiteboard
 import org.samis.whiteboard.presentation.util.formatDate
@@ -47,7 +49,9 @@ fun WhiteboardItemCard(
             File(whiteboard.miniatureSrc)
         else null
     }
-    val cacheKey = "${miniatureFile?.path}-${miniatureFile?.lastModified()}"
+//    val cacheKey = "${miniatureFile?.path}-${miniatureFile?.lastModified()}"
+    val cacheKey = "${miniatureFile?.path}-${miniatureFile?.lastModified()}- ${whiteboard.lastModified}"
+    val createTime = whiteboard.createTime.toLocalDateTime(TimeZone.currentSystemDefault()).date.formatDate()
 
     if (miniatureFile == null) {
         LaunchedEffect(Unit) {
@@ -106,7 +110,7 @@ fun WhiteboardItemCard(
         }
         Text(
             modifier = Modifier.padding(start = 8.dp, bottom = 8.dp),
-            text = "Last edited: ${whiteboard.lastEdited.formatDate()}",
+            text = "Last edited: $createTime",
             style = MaterialTheme.typography.labelSmall
         )
     }

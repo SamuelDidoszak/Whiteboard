@@ -9,7 +9,8 @@ fun Whiteboard.toWhiteboardEntity(): WhiteboardEntity {
     return WhiteboardEntity(
         id = id,
         name = name,
-        lastEdited = lastEdited,
+        createTime = createTime,
+        lastEdited = lastModified,
         canvasColor = canvasColor.toArgb(),
         pointer = pointer,
         miniatureSrc = miniatureSrc
@@ -20,7 +21,8 @@ fun WhiteboardEntity.toWhiteboard(): Whiteboard {
     return Whiteboard(
         id = id,
         name = name,
-        lastEdited = lastEdited,
+        createTime = createTime,
+        lastModified = lastEdited,
         canvasColor = Color(canvasColor),
         pointer = pointer,
         miniatureSrc = miniatureSrc

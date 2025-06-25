@@ -1,4 +1,4 @@
-package org.samis.whiteboard.data.database.convertor
+package org.samis.whiteboard.data.database.converter
 
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure

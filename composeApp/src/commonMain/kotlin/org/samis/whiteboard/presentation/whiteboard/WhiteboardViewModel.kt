@@ -34,6 +34,7 @@ import org.samis.whiteboard.domain.repository.SettingsRepository
 import org.samis.whiteboard.domain.repository.UpdateRepository
 import org.samis.whiteboard.domain.repository.WhiteboardRepository
 import org.samis.whiteboard.presentation.navigation.Routes
+import org.samis.whiteboard.presentation.util.AppScope
 import org.samis.whiteboard.presentation.util.DelayedTask
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.IContextProvider
@@ -57,12 +58,13 @@ class WhiteboardViewModel(
 ) : ViewModel() {
 
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
+    private var canUndo = true
     private var isFirstPath = true
     private var firstInit = true
 
     private var updatedWhiteboardId = MutableStateFlow(whiteboardId)
     private var updateMiniature = false
-    private val updateMiniatureTask = DelayedTask(viewModelScope) {
+    private val updateMiniatureTask = DelayedTask(AppScope.scope) {
         onEvent(WhiteboardEvent.SaveMiniature(viewModelScope))
     }
 
@@ -76,6 +78,7 @@ class WhiteboardViewModel(
         settingsRepository.getDrawingToolVisibility()
     ){ flows ->
         val state = flows[0] as WhiteboardState
+        canUndo = true
         if (firstInit) {
             firstInit = false
             _state.update { it.copy(strokeColor = (flows[2] as List<Color>)[0]) }
@@ -317,6 +320,7 @@ class WhiteboardViewModel(
 
             is WhiteboardEvent.Undo -> {
                 var pointer: Int? = state.value.updatePointer ?: return
+                if (!canUndo) return
                 val update = state.value.updates[pointer!!]
                 onUpdate(update.undo(), true)
                 deleteUpdate(update)
@@ -331,6 +335,7 @@ class WhiteboardViewModel(
                 val pointer: Int = state.value.updatePointer ?: -1
                 if (pointer > state.value.updates.size)
                     return
+                if (!canUndo) return
                 val lastUpdate = state.value.undoArray.lastOrNull() ?: return
                 onUpdate(lastUpdate, false)
                 insertUpdate(lastUpdate)
@@ -392,7 +397,7 @@ class WhiteboardViewModel(
         }
     }
 
-    private fun onUpdate(update: Update, undo: Boolean? = null) {
+    private fun onUpdate(update: Update, undo: Boolean? = null, skipMiniature: Boolean = false) {
         println("Updating: $update")
         val add: Boolean
         val path: DrawnPath
@@ -443,7 +448,7 @@ class WhiteboardViewModel(
                         it.paths.filterNot { it.id == path.id || it.id == null }
             )
         }
-        if (isFirstPath)
+        if (skipMiniature)
             return
         updateMiniature = true
         updateMiniatureTask.start(4000)
@@ -484,10 +489,10 @@ class WhiteboardViewModel(
                                     it.path.opacity
                                 )
 
-                                onUpdate(Update.AddPath(drawnPath, it.id, it.whiteboardId))
+                                onUpdate(Update.AddPath(drawnPath, it.id, it.whiteboardId), skipMiniature = true)
                             }
                             else
-                                onUpdate(it)
+                                onUpdate(it, skipMiniature = true)
                         }
                     }
             }
@@ -531,10 +536,12 @@ class WhiteboardViewModel(
     @OptIn(DelicateCoroutinesApi::class)
     private fun upsertWhiteboard(pointer: Int? = state.value.updatePointer, miniatureSrc: String? = state.value.miniatureSrc) {
         GlobalScope.launch(Dispatchers.IO) {
-            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+            val now = Clock.System.now()
+            val oldWhiteboardDate = if (updatedWhiteboardId.value == null) now else whiteboardRepository.getWhiteboardById(updatedWhiteboardId.value!!)?.createTime ?: now
             val whiteboard = Whiteboard(
                 name = state.value.whiteboardName,
-                lastEdited = today,
+                createTime = oldWhiteboardDate,
+                lastModified = now,
                 canvasColor = state.value.canvasColor,
                 id = updatedWhiteboardId.value,
                 pointer = pointer,

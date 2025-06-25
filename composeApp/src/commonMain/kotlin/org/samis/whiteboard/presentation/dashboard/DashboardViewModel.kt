@@ -10,8 +10,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
 import org.samis.whiteboard.domain.model.Update
 import org.samis.whiteboard.domain.model.Whiteboard
 import org.samis.whiteboard.domain.repository.PathRepository
@@ -33,7 +31,7 @@ class DashboardViewModel(
         _state,
         whiteboardRepository.getAllWhiteboards()
     ) { state, whiteboards ->
-        state.copy(whiteboards = whiteboards.sortedByDescending { it.lastEdited })
+        state.copy(whiteboards = whiteboards.sortedByDescending { it.createTime })
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
@@ -114,7 +112,8 @@ class DashboardViewModel(
         val miniaturePath = whiteboardName.replace('/', '-')
         val newWhiteboard = Whiteboard(
             name = whiteboardName,
-            lastEdited = Clock.System.todayIn(TimeZone.currentSystemDefault()),
+            createTime = Clock.System.now(),
+            lastModified = Clock.System.now(),
             canvasColor = whiteboard.canvasColor,
             id = null,
             pointer = whiteboard.pointer,
