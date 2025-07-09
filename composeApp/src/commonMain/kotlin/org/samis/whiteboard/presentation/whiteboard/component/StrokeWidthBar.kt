@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.max
@@ -30,7 +31,6 @@ fun StrokeWidthBar(
     maxButtonSize: Dp,
     strokeWidthList: List<Float>,
     activeButton: Int,
-    color: Color,
     canvasColor: Color,
     onClick: (Int) -> Unit
 ) {
@@ -49,7 +49,7 @@ fun StrokeWidthBar(
                 StrokeWidthButton(
                     size = ((maxButtonSize - minButtonSize) * min(percentage, 1f) + minButtonSize),
                     percentage = percentage,
-                    color = color,
+                    color = getButtonContentColor(canvasColor),
                     canvasColor = canvasColor,
                     filled = i == activeButton,
                     i,
@@ -90,4 +90,9 @@ private fun StrokeWidthButton(
             )
         }
     }
+}
+
+private fun getButtonContentColor(backgroundColor: Color): Color {
+    val isBackgroundLight = backgroundColor.luminance() > 0.5
+    return if (isBackgroundLight) Color.Black else Color.White
 }

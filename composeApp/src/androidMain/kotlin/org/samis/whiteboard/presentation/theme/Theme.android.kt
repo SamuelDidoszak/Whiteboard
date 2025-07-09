@@ -12,8 +12,9 @@ actual fun WhiteboardTheme(
     darkTheme: Boolean,
     content: @Composable () -> Unit
 ) {
+    val materialYou = false
     val colorScheme = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        materialYou && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }

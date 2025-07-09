@@ -55,14 +55,14 @@ import org.samis.whiteboard.presentation.util.rememberCaptureController
 import org.samis.whiteboard.presentation.util.rememberScreenSizeSize
 import org.samis.whiteboard.presentation.whiteboard.component.ColorPickerCard
 import org.samis.whiteboard.presentation.whiteboard.component.ColorSelectionDialog
+import org.samis.whiteboard.presentation.whiteboard.component.CommandBarHorizontal
+import org.samis.whiteboard.presentation.whiteboard.component.CommandBarVertical
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteCard
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteDrawerContent
 import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolBar
 import org.samis.whiteboard.presentation.whiteboard.component.MarkerColorBar
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthBar
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthSliderCard
-import org.samis.whiteboard.presentation.whiteboard.component.TopBarHorizontal
-import org.samis.whiteboard.presentation.whiteboard.component.TopBarVertical
 
 @Composable
 fun WhiteboardScreen(
@@ -140,10 +140,11 @@ fun WhiteboardScreen(
                         state = state,
                         onEvent = onEvent
                     )
-                    TopBarHorizontal(
+                    CommandBarHorizontal(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .padding(20.dp),
+                        backgroundColor = state.canvasColor,
                         onHomeIconClick = {
                             onEvent(WhiteboardEvent.SaveMiniature(scope))
                             onHomeIconClick.invoke()
@@ -175,13 +176,14 @@ fun WhiteboardScreen(
                     modifier = Modifier
                         .fillMaxHeight()
                         .align(Alignment.TopStart)
-                        .padding(20.dp)
+                        .padding(10.dp)
                 ) {
-                    TopBarVertical(
+                    CommandBarVertical(
                         onHomeIconClick = {
                             onEvent(WhiteboardEvent.SaveMiniature(scope))
                             onHomeIconClick.invoke()
                         },
+                        backgroundColor = state.canvasColor,
                         onMenuIconClick = { isCommandPaletteOpen = !isCommandPaletteOpen },
                         onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
@@ -217,8 +219,10 @@ fun WhiteboardScreen(
                 DrawingToolBar(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(20.dp),
+                        .padding(10.dp),
+                    backgroundColor = state.canvasColor,
                     drawingToolVisibility = state.drawingToolVisibility,
+                    currentDrawingTool = state.selectedDrawingTool,
                     onDrawingToolClick = { drawingTool: DrawingTool ->
                         onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
                     }
@@ -289,7 +293,6 @@ fun WhiteboardScreen(
                             maxButtonSize = 40.dp,
                             strokeWidthList = state.strokeWidthList,
                             activeButton = state.activeStrokeWidthButton,
-                            color = state.markerColors[0],
                             canvasColor = state.canvasColor,
                             onClick = { strokeNum: Int ->
                                 onEvent(WhiteboardEvent.StrokeWidthButtonClicked(strokeNum))

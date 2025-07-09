@@ -3,6 +3,7 @@ package org.samis.whiteboard.presentation.theme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
 val lightScheme = lightColorScheme(
     primary = primaryLight,
@@ -25,7 +26,7 @@ val lightScheme = lightColorScheme(
     onBackground = onBackgroundLight,
     surface = surfaceLight,
     onSurface = onSurfaceLight,
-    surfaceVariant = surfaceVariantLight,
+    surfaceVariant = Color.White,
     onSurfaceVariant = onSurfaceVariantLight,
     outline = outlineLight,
     outlineVariant = outlineVariantLight,
@@ -63,7 +64,7 @@ val darkScheme = darkColorScheme(
     onBackground = onBackgroundDark,
     surface = surfaceDark,
     onSurface = onSurfaceDark,
-    surfaceVariant = surfaceVariantDark,
+    surfaceVariant = Color.Black,
     onSurfaceVariant = onSurfaceVariantDark,
     outline = outlineDark,
     outlineVariant = outlineVariantDark,
