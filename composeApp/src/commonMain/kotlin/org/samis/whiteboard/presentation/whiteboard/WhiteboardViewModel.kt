@@ -201,6 +201,9 @@ class WhiteboardViewModel(
                     updates = it.updates
                 ) }
                 upsertWhiteboard()
+
+                updateMiniature = true
+                updateMiniatureTask.start(4000)
             }
 
             is WhiteboardEvent.StrokeColorChange -> {

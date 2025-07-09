@@ -1,8 +1,11 @@
 package org.samis.whiteboard.presentation.whiteboard.component
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -112,11 +116,12 @@ fun CommandPaletteCard(
     AnimatedVisibility(
         modifier = modifier,
         visible = isVisible,
-        enter = fadeIn(),
-        exit = fadeOut()
+        enter = slideInHorizontally() + fadeIn(tween(100)),
+        exit = slideOutHorizontally(animationSpec = tween(500)) + fadeOut(tween(350))
     ) {
         ElevatedCard(
-            modifier = modifier.width(250.dp)
+            modifier = modifier.width(250.dp),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)
         ) {
             CommandPaletteContent(
                 selectedDrawingTool = selectedDrawingTool,

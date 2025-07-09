@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -103,7 +104,8 @@ fun ColorPickerCard(
         exit = fadeOut()
     ) {
         ElevatedCard(
-            modifier = modifier.width(218.dp)
+            modifier = modifier.width(218.dp),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)
         ) {
             ColorPickerContent(
                 selectedDrawingTool = selectedDrawingTool,

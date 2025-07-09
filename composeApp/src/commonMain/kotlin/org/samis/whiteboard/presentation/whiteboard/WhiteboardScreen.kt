@@ -166,6 +166,7 @@ fun WhiteboardScreen(
                                 val down = awaitFirstDown(requireUnconsumed = false)
                                 onEvent(WhiteboardEvent.OnCardClose)
                                 onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                isCommandPaletteOpen = false
                                 down.consume()
                             }
                         }},
@@ -225,6 +226,9 @@ fun WhiteboardScreen(
                     currentDrawingTool = state.selectedDrawingTool,
                     onDrawingToolClick = { drawingTool: DrawingTool ->
                         onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
+                        onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                        onEvent(WhiteboardEvent.OnCardClose)
+                        isCommandPaletteOpen = false
                     }
                 )
                 ColorPickerCard(
@@ -268,6 +272,7 @@ fun WhiteboardScreen(
                             onClick = { newColor: Color ->
                                 onEvent(WhiteboardEvent.StrokeColorChange(newColor, false))
                                 onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                isCommandPaletteOpen = false
                             },
                             onEraserClick = { eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType)) }
                         )
@@ -297,6 +302,7 @@ fun WhiteboardScreen(
                             onClick = { strokeNum: Int ->
                                 onEvent(WhiteboardEvent.StrokeWidthButtonClicked(strokeNum))
                                 onEvent(WhiteboardEvent.OnCardClose)
+                                isCommandPaletteOpen = false
                             }
                         )
                     }

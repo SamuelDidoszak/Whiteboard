@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -70,7 +71,8 @@ fun StrokeWidthSliderCard(
         exit = fadeOut()
     ) {
         ElevatedCard(
-            modifier = modifier.width(256.dp)
+            modifier = modifier.width(256.dp),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)
         ) {
             StrokeWidthSliderContent(
                 showOpacity = showOpacity,
