@@ -114,8 +114,12 @@ class DashboardViewModel(
             name = whiteboardName,
             createTime = Clock.System.now(),
             lastModified = Clock.System.now(),
-            canvasColor = whiteboard.canvasColor,
             id = null,
+            palette = whiteboard.palette,
+            strokeWidths = whiteboard.strokeWidths,
+            activeStrokeWidthButton = whiteboard.activeStrokeWidthButton,
+            opacity = whiteboard.opacity,
+            fillColor = whiteboard.fillColor,
             pointer = whiteboard.pointer,
             miniatureSrc = "$miniaturePath.png"
         )

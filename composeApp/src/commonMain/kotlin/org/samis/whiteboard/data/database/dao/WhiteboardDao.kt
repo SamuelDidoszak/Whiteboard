@@ -22,7 +22,7 @@ interface WhiteboardDao {
     @Delete
     suspend fun deleteWhiteboard(whiteboard: WhiteboardEntity)
 
-    @Query("SELECT * FROM $WHITEBOARD_TABLE_NAME ORDER BY lastEdited DESC")
+    @Query("SELECT * FROM $WHITEBOARD_TABLE_NAME ORDER BY lastModified DESC")
     fun getAllWhiteboards(): Flow<List<WhiteboardEntity>>
 
     @Query("SELECT * FROM $WHITEBOARD_TABLE_NAME WHERE id = :id")

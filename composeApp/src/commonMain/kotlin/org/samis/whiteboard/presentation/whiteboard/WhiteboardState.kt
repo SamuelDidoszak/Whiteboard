@@ -9,6 +9,7 @@ import org.samis.whiteboard.domain.model.Update
 import org.samis.whiteboard.presentation.theme.defaultCanvasColors
 import org.samis.whiteboard.presentation.theme.defaultDrawingColors
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
+import org.samis.whiteboard.presentation.util.Palette
 
 data class WhiteboardState(
     val updates: List<Update> = emptyList(),
@@ -52,4 +53,12 @@ data class WhiteboardState(
 ) {
     val strokeWidth
         get() = strokeWidthList[activeStrokeWidthButton]
+    
+    val palette: Palette
+        get() {
+            var otherColors = listOf<Color>()
+            if (preferredStrokeColors.size > 4)
+                otherColors = preferredStrokeColors.subList(4, preferredStrokeColors.size)
+            return Palette(canvasColor, preferredStrokeColors[0], preferredStrokeColors[1], preferredStrokeColors[2], preferredStrokeColors[3], otherColors)
+        }
 }

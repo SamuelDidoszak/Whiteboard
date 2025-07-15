@@ -11,8 +11,13 @@ data class WhiteboardEntity(
     val id: Long? = null,
     val name: String,
     val createTime: Instant,
-    val lastEdited: Instant,
-    val canvasColor: Int,
+    val lastModified: Instant,
+    val palette: List<Int>,
+    val markerColors: List<Int>,
+    val strokeWidths: List<Float>,
+    val activeStrokeWidthButton: Int,
+    val opacity: Float,
+    val fillColor: Int,
     val pointer: Int?,
     val miniatureSrc: String?
 )

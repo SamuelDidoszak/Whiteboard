@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
+import org.samis.whiteboard.presentation.theme.Palettes
 import org.samis.whiteboard.presentation.util.UiType
 import org.samis.whiteboard.presentation.util.capturable
 import org.samis.whiteboard.presentation.util.getUiType
@@ -101,28 +102,19 @@ fun WhiteboardScreen(
                     drawerState = drawerState,
                     drawerContent = {
                         CommandPaletteDrawerContent(
-                            onCloseIconClick = { scope.launch { drawerState.close() } },
-                            selectedDrawingTool = state.selectedDrawingTool,
-                            selectedCanvasColor = state.canvasColor,
-                            selectedStrokeColor = state.strokeColor,
-                            selectedFillColor = state.fillColor,
+                            title = state.whiteboardName,
                             canvasColors = state.preferredCanvasColors,
-                            strokeColors = state.preferredStrokeColors,
-                            fillColors = state.preferredFillColors,
+                            selectedCanvasColor = state.canvasColor,
+                            palettes = Palettes.palettes,
+                            currentPalette = Palettes.palettes.first(),
+                            onTitleChange = {  },
                             onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
-                            onStrokeColorChange = { onEvent(WhiteboardEvent.StrokeColorChange(it, true)) },
-                            onFillColorChange = { onEvent(WhiteboardEvent.FillColorChange(it)) },
-                            strokeWidthSliderValue = state.strokeWidthList[state.activeStrokeWidthButton],
-                            opacitySliderValue = state.opacity,
-                            onStrokeWidthSliderValueChange = {
-                                onEvent(WhiteboardEvent.StrokeSliderValueChange(it))
-                            },
-                            onOpacitySliderValueChange = {
-                                onEvent(WhiteboardEvent.OpacitySliderValueChange(it))
-                            },
                             onColorPaletteIconClick = {
                                 onEvent(WhiteboardEvent.OnColorPaletteIconClick(it))
-                            }
+                            },
+                            onPalettePicked = {  },
+                            onPaletteAdded = {  },
+                            onCloseIconClick = { isCommandPaletteOpen = false }
                         )
                     },
                 ) {
@@ -193,28 +185,19 @@ fun WhiteboardScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     CommandPaletteCard(
                         isVisible = isCommandPaletteOpen,
-                        onCloseIconClick = { isCommandPaletteOpen = false },
-                        selectedDrawingTool = state.selectedDrawingTool,
-                        selectedCanvasColor = state.canvasColor,
-                        selectedStrokeColor = state.strokeColor,
-                        selectedFillColor = state.fillColor,
+                        title = state.whiteboardName,
                         canvasColors = state.preferredCanvasColors,
-                        strokeColors = state.preferredStrokeColors,
-                        fillColors = state.preferredFillColors,
+                        selectedCanvasColor = state.canvasColor,
+                        palettes = Palettes.palettes,
+                        currentPalette = Palettes.palettes.first(),
+                        onTitleChange = {  },
                         onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
-                        onStrokeColorChange = { onEvent(WhiteboardEvent.StrokeColorChange(it, true)) },
-                        onFillColorChange = { onEvent(WhiteboardEvent.FillColorChange(it)) },
-                        strokeWidthSliderValue = state.strokeWidthList[state.activeStrokeWidthButton],
-                        opacitySliderValue = state.opacity,
-                        onStrokeWidthSliderValueChange = {
-                            onEvent(WhiteboardEvent.StrokeSliderValueChange(it))
-                        },
-                        onOpacitySliderValueChange = {
-                            onEvent(WhiteboardEvent.OpacitySliderValueChange(it))
-                        },
                         onColorPaletteIconClick = {
                             onEvent(WhiteboardEvent.OnColorPaletteIconClick(it))
-                        }
+                        },
+                        onPalettePicked = {  },
+                        onPaletteAdded = {  },
+                        onCloseIconClick = { isCommandPaletteOpen = false }
                     )
                 }
                 DrawingToolBar(
