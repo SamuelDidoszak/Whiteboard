@@ -103,7 +103,7 @@ val defaultDrawingColors = listOf(
     Red40,
     Blue40,
     Green40,
-    Orange40
+//    Orange40
 )
 
 

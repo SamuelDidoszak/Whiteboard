@@ -106,13 +106,13 @@ fun WhiteboardScreen(
                             canvasColors = state.preferredCanvasColors,
                             selectedCanvasColor = state.canvasColor,
                             palettes = Palettes.palettes,
-                            currentPalette = Palettes.palettes.first(),
+                            currentPalette = state.palette,
                             onTitleChange = {  },
                             onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
                             onColorPaletteIconClick = {
                                 onEvent(WhiteboardEvent.OnColorPaletteIconClick(it))
                             },
-                            onPalettePicked = {  },
+                            onPalettePicked = { onEvent(WhiteboardEvent.OnPalettePicked(it)) },
                             onPaletteAdded = {  },
                             onCloseIconClick = { isCommandPaletteOpen = false }
                         )
@@ -189,13 +189,13 @@ fun WhiteboardScreen(
                         canvasColors = state.preferredCanvasColors,
                         selectedCanvasColor = state.canvasColor,
                         palettes = Palettes.palettes,
-                        currentPalette = Palettes.palettes.first(),
+                        currentPalette = state.palette,
                         onTitleChange = {  },
                         onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
                         onColorPaletteIconClick = {
                             onEvent(WhiteboardEvent.OnColorPaletteIconClick(it))
                         },
-                        onPalettePicked = {  },
+                        onPalettePicked = { onEvent(WhiteboardEvent.OnPalettePicked(it)) },
                         onPaletteAdded = {  },
                         onCloseIconClick = { isCommandPaletteOpen = false }
                     )

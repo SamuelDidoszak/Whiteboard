@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.CoroutineScope
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
+import org.samis.whiteboard.presentation.util.Palette
 
 sealed class WhiteboardEvent {
     data class StartDrawing(val offset: Offset) : WhiteboardEvent()
@@ -37,4 +38,6 @@ sealed class WhiteboardEvent {
 
     data class StrokeWidthButtonClicked(val strokeNum: Int): WhiteboardEvent()
     data object OnStrokeWidthSliderClose: WhiteboardEvent()
+
+    data class OnPalettePicked(val palette: Palette): WhiteboardEvent()
 }

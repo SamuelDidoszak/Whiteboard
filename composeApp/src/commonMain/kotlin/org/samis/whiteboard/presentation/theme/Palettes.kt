@@ -13,6 +13,13 @@ object Palettes {
             blue = Color.Blue,
             green = Color.Green
         ),
+        Palette(
+            background = Color.White,
+            foreground = Color.Black,
+            red = Red40,
+            blue = Blue40,
+            green = Green40
+        ),
 //        Palette(
 //            background = Color(0xFF1c1c1c),
 //            foreground = Color(0xFF),

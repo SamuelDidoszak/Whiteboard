@@ -213,14 +213,20 @@ private fun PaletteSection(
                             } else Color.Transparent,
                             shape = RoundedCornerShape(8.dp)
                         )
+                        .clickable { onPalettePicked(palette) }
                 ) {
+                    val customBrush = Brush.linearGradient(
+                        colorStops = arrayOf(
+                            0.0f to palette.background,
+                            0.25f to palette.background,
+                            0.25001f to palette.background,
+                            1.0f to Color.Transparent
+                        )
+                    )
+
                     Box(
                         modifier = Modifier
-                            .background(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(palette.background, Color.Transparent)
-                                )
-                            )
+                            .background(brush = customBrush)
                     ) {
                         PalettePreview(palette)
                     }

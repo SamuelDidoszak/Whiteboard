@@ -396,6 +396,24 @@ class WhiteboardViewModel(
                     upsertWhiteboard()
                 }
             }
+
+            is WhiteboardEvent.OnPalettePicked -> {
+                val newColorList = event.palette.colorList.minus(event.palette.background)
+                _state.update { it.copy(
+                    canvasColor = event.palette.background,
+                    strokeColor = newColorList[it.selectedMarker],
+                    markerColors = newColorList,
+                    preferredStrokeColors = newColorList,
+                    preferredFillColors = newColorList
+                ) }
+                if (_state.value.updates.isNotEmpty()) {
+                    updateMiniature = true
+                    updateMiniatureTask.start(10)
+                }
+                else {
+                    upsertWhiteboard()
+                }
+            }
         }
     }
 
