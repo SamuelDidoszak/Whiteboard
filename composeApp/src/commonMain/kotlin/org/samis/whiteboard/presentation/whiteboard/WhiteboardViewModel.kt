@@ -648,7 +648,6 @@ class WhiteboardViewModel(
             }
         }
 
-        println("Selected tool: ${state.value.selectedDrawingTool}")
         updatedWhiteboardId.value?.let { id ->
             var eraserSize = state.value.strokeWidth
             eraserSize = max(eraserSize * 1.5f, eraserSize + 10)
@@ -664,9 +663,13 @@ class WhiteboardViewModel(
                                 else
                                     state.value.strokeColor,
                             fillColor = state.value.fillColor,
-                            opacity = state.value.opacity,
+                            opacity =
+                                if (state.value.selectedDrawingTool == DrawingTool.HIGHLIGHTER)
+                                    40f
+                                else
+                                    state.value.opacity,
                             strokeWidth =
-                                if (state.value.selectedDrawingTool == DrawingTool.ERASER)
+                                if (state.value.selectedDrawingTool == DrawingTool.ERASER || state.value.selectedDrawingTool == DrawingTool.HIGHLIGHTER)
                                     eraserSize
                                 else
                                     state.value.strokeWidth

@@ -4,12 +4,12 @@ import org.jetbrains.compose.resources.DrawableResource
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.ic_arrow
 import whiteboard.composeapp.generated.resources.ic_circle
+import whiteboard.composeapp.generated.resources.ic_laser_pointer
 import whiteboard.composeapp.generated.resources.ic_line
 import whiteboard.composeapp.generated.resources.ic_rectangle
 import whiteboard.composeapp.generated.resources.ic_triangle
 import whiteboard.composeapp.generated.resources.img_eraser
 import whiteboard.composeapp.generated.resources.img_highlighter
-import whiteboard.composeapp.generated.resources.img_laser_pen
 import whiteboard.composeapp.generated.resources.img_pen
 
 enum class DrawingTool(
@@ -17,7 +17,7 @@ enum class DrawingTool(
     val isColored: Boolean = false
 ) {
     PEN(res = Res.drawable.img_pen, isColored = true),
-    LASER_PEN(res = Res.drawable.img_laser_pen, isColored = true),
+    LASER_PEN(res = Res.drawable.ic_laser_pointer, isColored = true),
     HIGHLIGHTER(res = Res.drawable.img_highlighter, isColored = true),
     DELETER(res = Res.drawable.img_eraser, isColored = true),
     ERASER(res = Res.drawable.img_eraser, isColored = true),

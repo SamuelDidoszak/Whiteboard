@@ -10,6 +10,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import org.samis.whiteboard.domain.model.DrawingTool
@@ -32,13 +33,13 @@ fun DrawingToolBar(
                 Icon(
                     imageVector = Icons.Rounded.Edit,
                     contentDescription = "Pen",
-                    modifier = Modifier.size(25.dp)
+                    modifier = Modifier.size(28.dp)
                 )
             }
             Spacer(modifier = Modifier.height(6.dp))
         }
         if (isVisible(DrawingTool.LASER_PEN))
-            AddButton(DrawingTool.LASER_PEN, backgroundColor, isTool(DrawingTool.LASER_PEN), onDrawingToolClick)
+            AddButton(DrawingTool.LASER_PEN, backgroundColor, isTool(DrawingTool.LASER_PEN), onDrawingToolClick, 28.dp)
         if (isVisible(DrawingTool.HIGHLIGHTER))
             AddButton(DrawingTool.HIGHLIGHTER, backgroundColor, isTool(DrawingTool.HIGHLIGHTER), onDrawingToolClick)
         if (isVisible(DrawingTool.PEN) || isVisible(DrawingTool.LASER_PEN))
@@ -61,12 +62,12 @@ fun DrawingToolBar(
 }
 
 @Composable
-private fun AddButton(drawingTool: DrawingTool, backgroundColor: Color, isSelected: Boolean, onClick: (drawingTool: DrawingTool) -> Unit, addSpacer: Boolean = true) {
+private fun AddButton(drawingTool: DrawingTool, backgroundColor: Color, isSelected: Boolean, onClick: (drawingTool: DrawingTool) -> Unit, size: Dp = 24.dp, addSpacer: Boolean = true) {
     ElevatedIconButton(backgroundColor = backgroundColor, isSelected = isSelected, onClick = { onClick(drawingTool) }) {
         Icon(
             painter = painterResource(drawingTool.res),
             contentDescription = drawingTool.name.lowercase().replaceFirstChar { it.uppercaseChar() },
-            modifier = Modifier.size(25.dp)
+            modifier = Modifier.size(size)
         )
     }
     if (addSpacer)
