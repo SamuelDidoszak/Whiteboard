@@ -3,6 +3,7 @@ package org.samis.whiteboard.presentation.whiteboard
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -31,11 +33,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -44,6 +48,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
@@ -64,6 +69,8 @@ import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolBar
 import org.samis.whiteboard.presentation.whiteboard.component.MarkerColorBar
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthBar
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthSliderCard
+import whiteboard.composeapp.generated.resources.Res
+import whiteboard.composeapp.generated.resources.logoWithName
 
 @Composable
 fun WhiteboardScreen(
@@ -74,6 +81,7 @@ fun WhiteboardScreen(
     onHomeIconClick: () -> Unit
 ) {
 
+    HideSystemBars()
     rememberCaptureController().also {
         onEvent(WhiteboardEvent.SetCaptureController(it))
     }
@@ -291,6 +299,18 @@ fun WhiteboardScreen(
                     }
                 }
 
+                Image(
+                    painter = painterResource(Res.drawable.logoWithName),
+                    contentDescription = "Best church is the church as a priority",
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .height(144.dp)
+                        .absoluteOffset(16.dp),
+                    colorFilter = ColorFilter.tint(
+                        if (state.canvasColor.luminance() > 0.5) Color.Black else Color.White
+                    )
+                )
+
             }
         }
 
@@ -417,6 +437,7 @@ private fun miniatureSaveHandle(scope: CoroutineScope, onEvent: (WhiteboardEvent
     }
 }
 
-
+@Composable
+expect fun HideSystemBars()
 
 
