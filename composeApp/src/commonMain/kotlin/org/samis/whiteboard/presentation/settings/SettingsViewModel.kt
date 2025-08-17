@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.samis.whiteboard.domain.model.ColorScheme
 import org.samis.whiteboard.domain.repository.SettingsRepository
+import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 
 class SettingsViewModel(
@@ -37,6 +38,19 @@ class SettingsViewModel(
     fun saveDrawingToolVisibility(toolVisibility: DrawingToolVisibility) {
         viewModelScope.launch {
             settingsRepository.saveDrawingToolVisibility(toolVisibility)
+        }
+    }
+
+    val dashboardSize: StateFlow<DashboardSizeOption> = settingsRepository.getDashboardSize()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+            initialValue = DashboardSizeOption.MEDIUM
+        )
+
+    fun saveDashboardSize(dashboardSize: DashboardSizeOption) {
+        viewModelScope.launch {
+            settingsRepository.saveDashboardSize(dashboardSize)
         }
     }
 }

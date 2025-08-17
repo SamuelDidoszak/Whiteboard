@@ -31,6 +31,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.painterResource
 import org.samis.whiteboard.domain.model.Whiteboard
+import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.util.formatDate
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.img_canvas
@@ -39,6 +40,7 @@ import java.io.File
 @Composable
 fun WhiteboardItemCard(
     modifier: Modifier = Modifier,
+    dashboardSize: DashboardSizeOption,
     whiteboard: Whiteboard,
     onRenameClick: () -> Unit,
     onCopyClick: () -> Unit,
@@ -77,7 +79,7 @@ fun WhiteboardItemCard(
             contentScale = ContentScale.Crop,
             error = painterResource(Res.drawable.img_canvas),
             fallback = painterResource(Res.drawable.img_canvas),
-            modifier = Modifier.fillMaxWidth().height(156.dp)
+            modifier = Modifier.fillMaxWidth().height(dashboardSize.value)
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,

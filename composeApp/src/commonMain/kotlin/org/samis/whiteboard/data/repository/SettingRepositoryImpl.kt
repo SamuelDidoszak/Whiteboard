@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.samis.whiteboard.data.util.Constant.CANVAS_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.COLOR_SCHEME_PREF_KEY
+import org.samis.whiteboard.data.util.Constant.DASHBOARD_SIZE_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.DRAWING_TOOLS_KEY
 import org.samis.whiteboard.data.util.Constant.FILL_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.MARKER_COLORS_PREF_KEY
@@ -18,6 +19,7 @@ import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.ColorScheme
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.repository.SettingsRepository
+import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.theme.defaultCanvasColors
 import org.samis.whiteboard.presentation.theme.defaultDrawingColors
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
@@ -33,6 +35,7 @@ class SettingRepositoryImpl(
         private val PREFERRED_FILL_COLORS_KEY = stringPreferencesKey(FILL_COLORS_PREF_KEY)
         private val PREFERRED_CANVAS_COLORS_KEY = stringPreferencesKey(CANVAS_COLORS_PREF_KEY)
         private val PREFERRED_DRAWING_TOOLS_KEY = stringPreferencesKey(DRAWING_TOOLS_KEY)
+        private val DASHBOARD_SIZE_KEY = stringPreferencesKey(DASHBOARD_SIZE_PREF_KEY)
     }
 
     override suspend fun saveColorScheme(colorScheme: ColorScheme) {
@@ -87,6 +90,13 @@ class SettingRepositoryImpl(
         }
     }
 
+    override fun getDashboardSize(): Flow<DashboardSizeOption> {
+        return prefs.data.map { preferences ->
+            val dashboardSizeName = preferences[DASHBOARD_SIZE_KEY] ?: DashboardSizeOption.MEDIUM.name
+            DashboardSizeOption.valueOf(dashboardSizeName)
+        }
+    }
+
     override suspend fun savePreferredColors(
         colors: List<Color>,
         colorPaletteType: ColorPaletteType
@@ -108,6 +118,12 @@ class SettingRepositoryImpl(
             .map { it.key.name + ":" + it.value.toString() }.joinToString()
         prefs.edit { preference ->
             preference[PREFERRED_DRAWING_TOOLS_KEY] = toolVisibilityString
+        }
+    }
+
+    override suspend fun saveDashboardSize(size: DashboardSizeOption) {
+        prefs.edit { preference ->
+            preference[DASHBOARD_SIZE_KEY] = size.name
         }
     }
 

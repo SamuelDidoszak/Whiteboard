@@ -5,6 +5,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.datetime.Instant
 import org.samis.whiteboard.domain.model.Whiteboard
 import org.samis.whiteboard.presentation.dashboard.component.WhiteboardItemCard
+import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.theme.Palettes
 import org.samis.whiteboard.presentation.whiteboard.component.ColorSelectionDialog
 
@@ -20,7 +21,8 @@ fun PreviewWhiteboardItemCard() {
         ),
         onRenameClick = {},
         onCopyClick = {},
-        onDeleteClick = {}
+        onDeleteClick = {},
+        dashboardSize = DashboardSizeOption.MEDIUM
     )
 }
 

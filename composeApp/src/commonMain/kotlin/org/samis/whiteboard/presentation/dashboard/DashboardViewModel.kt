@@ -13,6 +13,7 @@ import kotlinx.datetime.Clock
 import org.samis.whiteboard.domain.model.Update
 import org.samis.whiteboard.domain.model.Whiteboard
 import org.samis.whiteboard.domain.repository.PathRepository
+import org.samis.whiteboard.domain.repository.SettingsRepository
 import org.samis.whiteboard.domain.repository.UpdateRepository
 import org.samis.whiteboard.domain.repository.WhiteboardRepository
 import org.samis.whiteboard.presentation.util.AppScope
@@ -23,15 +24,20 @@ class DashboardViewModel(
     private val whiteboardRepository: WhiteboardRepository,
     private val updateRepository: UpdateRepository,
     private val pathRepository: PathRepository,
+    private val settingsRepository: SettingsRepository,
     private val contextProvider: IContextProvider
     ): ViewModel() {
 
     private val _state = MutableStateFlow(DashboardState())
     val state = combine(
         _state,
-        whiteboardRepository.getAllWhiteboards()
-    ) { state, whiteboards ->
-        state.copy(whiteboards = whiteboards.sortedByDescending { it.createTime })
+        whiteboardRepository.getAllWhiteboards(),
+        settingsRepository.getDashboardSize()
+    ) { state, whiteboards, dashboardSize ->
+        state.copy(
+            whiteboards = whiteboards.sortedByDescending { it.createTime },
+            dashboardSize = dashboardSize
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),

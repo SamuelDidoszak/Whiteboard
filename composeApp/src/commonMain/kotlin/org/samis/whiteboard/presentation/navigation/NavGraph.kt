@@ -14,6 +14,7 @@ import org.samis.whiteboard.domain.model.ColorScheme
 import org.samis.whiteboard.presentation.dashboard.DashboardScreen
 import org.samis.whiteboard.presentation.dashboard.DashboardViewModel
 import org.samis.whiteboard.presentation.settings.SettingsScreen
+import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.whiteboard.WhiteboardScreen
 import org.samis.whiteboard.presentation.whiteboard.WhiteboardViewModel
@@ -25,7 +26,9 @@ fun NavGraph(
     currentScheme: ColorScheme,
     onThemeSelected: (ColorScheme) -> Unit,
     drawingToolVisibility: DrawingToolVisibility,
-    onDrawingToolVisibilityChanged: (DrawingToolVisibility) -> Unit
+    onDrawingToolVisibilityChanged: (DrawingToolVisibility) -> Unit,
+    dashboardSize: DashboardSizeOption,
+    onDashboardSizeSelected: (DashboardSizeOption) -> Unit
 ) {
 
     NavHost(
@@ -64,6 +67,8 @@ fun NavGraph(
                 onThemeSelected = onThemeSelected,
                 drawingToolVisibility = drawingToolVisibility,
                 onDrawingToolVisibilityChanged = onDrawingToolVisibilityChanged,
+                dashboardSize = dashboardSize,
+                onDashboardSizeSelected = onDashboardSizeSelected,
                 onBackIconClick = { navController.navigateUp() }
             )
         }

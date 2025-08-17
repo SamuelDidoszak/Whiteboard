@@ -22,6 +22,7 @@ fun App() {
     val settingsViewModel = koinViewModel<SettingsViewModel>()
     val colorScheme by settingsViewModel.currentColorScheme.collectAsStateWithLifecycle()
     val drawingToolVisibility by settingsViewModel.drawingToolVisibility.collectAsStateWithLifecycle()
+    val dashboardSize by settingsViewModel.dashboardSize.collectAsStateWithLifecycle()
     val isDarkTheme = when(colorScheme) {
         ColorScheme.SYSTEM_DEFAULT -> isSystemInDarkTheme()
         ColorScheme.LIGHT -> false
@@ -42,7 +43,9 @@ fun App() {
                 currentScheme = colorScheme,
                 onThemeSelected = { settingsViewModel.saveColorScheme(it) },
                 drawingToolVisibility = drawingToolVisibility,
-                onDrawingToolVisibilityChanged = { settingsViewModel.saveDrawingToolVisibility(it) }
+                onDrawingToolVisibilityChanged = { settingsViewModel.saveDrawingToolVisibility(it) },
+                dashboardSize = dashboardSize,
+                onDashboardSizeSelected = { settingsViewModel.saveDashboardSize(it) }
             )
         }
     }

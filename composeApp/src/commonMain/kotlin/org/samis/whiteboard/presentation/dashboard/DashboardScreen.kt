@@ -66,7 +66,7 @@ fun DashboardScreen(
             DashboardTopBar(onSettingsIconClick = onSettingsIconClick)
             LazyVerticalGrid(
                 modifier = Modifier.fillMaxSize(),
-                columns = GridCells.Adaptive(minSize = 150.dp),
+                columns = GridCells.Adaptive(minSize = state.dashboardSize.value),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -76,6 +76,7 @@ fun DashboardScreen(
                         modifier = Modifier.clickable {
                             whiteboard.id?.let { onCardClick(it) }
                         },
+                        dashboardSize = state.dashboardSize,
                         whiteboard = whiteboard,
                         onRenameClick = { onEvent(DashboardEvent.ShowRenamePrompt(whiteboard, true)) },
                         onCopyClick = { onEvent(DashboardEvent.CopyWhiteboard(whiteboard)) },

@@ -230,7 +230,8 @@ class WhiteboardViewModel(
                         isColorPickerOpen = false,
                     )
                 }
-                upsertWhiteboard()
+                if (!isFirstPath)
+                    upsertWhiteboard()
             }
 
             WhiteboardEvent.OnLaserPathAnimationComplete -> {
@@ -650,7 +651,7 @@ class WhiteboardViewModel(
 
         updatedWhiteboardId.value?.let { id ->
             var eraserSize = state.value.strokeWidth
-            eraserSize = max(eraserSize * 1.5f, eraserSize + 10)
+            eraserSize = max(eraserSize * 2f, eraserSize + 20)
             _state.update {
                 it.copy(
                     currentPath = updatedPath?.let { path ->
