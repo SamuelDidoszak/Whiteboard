@@ -1,6 +1,9 @@
 package org.samis.whiteboard.presentation.util
 
+import android.content.Context
 import android.graphics.Bitmap
+import android.media.MediaScannerConnection
+import android.os.Environment
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -35,7 +38,7 @@ actual fun capture(
                 val bitmap = bitmapAsync.await()
                 val byteArray = bitmap.asAndroidBitmap().toByteArray()
 
-                val directory = File(contextProvider.getExternalFilesDir("DIRECTORY_PICTURES"), "Whiteboard")
+                val directory = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Whiteboard")
                 if (!directory.exists()) {
                     directory.mkdirs()
                 }
@@ -63,6 +66,12 @@ actual fun capture(
                     outputStream.flush()
                     outputStream.close()
                     onFileSave(file)
+                    MediaScannerConnection.scanFile(
+                        contextProvider.applicationContext as Context?,
+                        arrayOf(file.absolutePath),
+                        arrayOf("image/png"),
+                        null
+                    )
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }

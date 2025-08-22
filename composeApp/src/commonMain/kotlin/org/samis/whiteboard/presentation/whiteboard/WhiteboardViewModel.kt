@@ -345,6 +345,7 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.SavePicture -> {
+                println("Saving picture")
                 val captureController = state.value.captureController ?: return
                 capture(
                     event.scope,
@@ -358,6 +359,7 @@ class WhiteboardViewModel(
 
             is WhiteboardEvent.SaveMiniature -> {
                 if (!updateMiniature) return
+                updateMiniature = false
                 val captureController = state.value.captureController ?: return
                 capture(
                     event.scope,
@@ -365,12 +367,11 @@ class WhiteboardViewModel(
                     contextProvider,
                     state.value.whiteboardName,
                     true,
-                    state.value.miniatureSrc
+                    _state.value.miniatureSrc
                 ) {
                     file: File ->
                     _state.update { it.copy(miniatureSrc = file.path) }
                     upsertWhiteboard(miniatureSrc = file.path)
-                    updateMiniature = false
                 }
             }
 

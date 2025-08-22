@@ -95,7 +95,7 @@ fun CommandBarVertical(
                 modifier = Modifier.size(25.dp)
             )
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(18.dp))
         ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onUndoIconClick) {
             Icon(
                 painter = painterResource(Res.drawable.ic_undo),
@@ -111,7 +111,7 @@ fun CommandBarVertical(
                 modifier = Modifier.size(25.dp)
             )
         }
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(18.dp))
         ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onSaveIconClick) {
             Icon(
                 imageVector = Icons.Filled.Download,

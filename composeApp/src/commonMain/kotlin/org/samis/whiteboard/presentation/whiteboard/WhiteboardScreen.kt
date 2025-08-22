@@ -332,12 +332,10 @@ private fun DrawingCanvas(
                 detectDragGestures(
                     onDragStart = { offset ->
                         onEvent(WhiteboardEvent.StartDrawing(offset))
-                        println("Draggin start")
                     },
                     onDrag = { change, _ ->
                         val offset = Offset(x = change.position.x, y = change.position.y)
                         onEvent(WhiteboardEvent.ContinueDrawing(offset))
-                        println("Draggin big time")
                     },
                     onDragEnd = {
                         onEvent(WhiteboardEvent.FinishDrawing)
