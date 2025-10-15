@@ -46,22 +46,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
-import org.samis.whiteboard.domain.model.ColorScheme
 import org.samis.whiteboard.presentation.settings.component.ColorSchemeDialog
 import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.ic_theme
+import whiteboard.composeapp.generated.resources.img_pen
 
 @Composable
 fun SettingsScreen(
-    onBackIconClick: () -> Unit,
-    currentScheme: ColorScheme,
-    onThemeSelected: (ColorScheme) -> Unit,
-    drawingToolVisibility: DrawingToolVisibility,
-    onDrawingToolVisibilityChanged: (DrawingToolVisibility) -> Unit,
-    dashboardSize: DashboardSizeOption,
-    onDashboardSizeSelected: (DashboardSizeOption) -> Unit
+    state: SettingsState,
+    onEvent: (SettingsEvent) -> Unit,
+    onBackIconClick: () -> Unit
 ) {
 
     var isColorSchemeDialogOpen by rememberSaveable { mutableStateOf(false) }
@@ -69,8 +65,8 @@ fun SettingsScreen(
     ColorSchemeDialog(
         isOpen = isColorSchemeDialogOpen,
         onDismiss = { isColorSchemeDialogOpen = false },
-        currentScheme = currentScheme,
-        onThemeSelected = onThemeSelected
+        currentScheme = state.currentScheme,
+        onThemeSelected = { onEvent(SettingsEvent.OnColorSchemeSelected(it)) }
     )
 
     Column(
@@ -79,8 +75,8 @@ fun SettingsScreen(
         SettingsTopBar(onBackIconClick = onBackIconClick)
         DashboardSizeGroup(
             modifier = Modifier.fillMaxWidth(fraction = 0.25f),
-            dashboardSize = dashboardSize,
-            onOptionSelected = { onDashboardSizeSelected(it) }
+            dashboardSize = state.dashboardSize,
+            onOptionSelected = { onEvent(SettingsEvent.OnDashboardSizeChanged(it)) }
         )
         LazyColumn(
             modifier = Modifier.fillMaxWidth(fraction = 0.25f)
@@ -89,7 +85,7 @@ fun SettingsScreen(
                 ListItem(
                     modifier = Modifier.clickable { isColorSchemeDialogOpen = true },
                     headlineContent = { Text(text = "Color Scheme") },
-                    supportingContent = { Text(text = currentScheme.label) },
+                    supportingContent = { Text(text = state.currentScheme.label) },
                     leadingContent = {
                         Icon(
                             modifier = Modifier.size(25.dp),
@@ -100,7 +96,19 @@ fun SettingsScreen(
                 )
             }
             item {
-                SettingsGroup("Drawing tools", drawingToolVisibility.createSettingsList(drawingToolVisibility, onDrawingToolVisibilityChanged))
+                Box(modifier = Modifier.padding(start = 16.dp)) {
+                    SettingsItemRow(
+                        SettingsItem(Res.drawable.img_pen, "Stylus input", initialState = state.stylusInput, onToggle = { onEvent(
+                            SettingsEvent.OnStylusInputChanged(!state.stylusInput)) })
+                    )
+                }
+            }
+            item {
+                SettingsGroup(
+                    title = "Drawing tools",
+                    settingsItems = state.drawingToolVisibility.createSettingsList(state.drawingToolVisibility,
+                    onDrawingToolVisibilityChanged = { onEvent(SettingsEvent.OnDrawingToolVisibilityChanged(it)) })
+                )
             }
         }
 

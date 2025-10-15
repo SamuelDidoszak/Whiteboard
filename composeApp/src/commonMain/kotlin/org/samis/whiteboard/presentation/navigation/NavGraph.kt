@@ -10,25 +10,17 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import org.koin.compose.viewmodel.koinViewModel
-import org.samis.whiteboard.domain.model.ColorScheme
 import org.samis.whiteboard.presentation.dashboard.DashboardScreen
 import org.samis.whiteboard.presentation.dashboard.DashboardViewModel
 import org.samis.whiteboard.presentation.settings.SettingsScreen
-import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
-import org.samis.whiteboard.presentation.util.DrawingToolVisibility
+import org.samis.whiteboard.presentation.settings.SettingsViewModel
 import org.samis.whiteboard.presentation.whiteboard.WhiteboardScreen
 import org.samis.whiteboard.presentation.whiteboard.WhiteboardViewModel
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    innerPadding: PaddingValues,
-    currentScheme: ColorScheme,
-    onThemeSelected: (ColorScheme) -> Unit,
-    drawingToolVisibility: DrawingToolVisibility,
-    onDrawingToolVisibilityChanged: (DrawingToolVisibility) -> Unit,
-    dashboardSize: DashboardSizeOption,
-    onDashboardSizeSelected: (DashboardSizeOption) -> Unit
+    innerPadding: PaddingValues
 ) {
 
     NavHost(
@@ -62,13 +54,11 @@ fun NavGraph(
             )
         }
         composable<Routes.SettingsScreen> {
+            val viewModel = koinViewModel<SettingsViewModel>()
+            val state by viewModel.state.collectAsStateWithLifecycle()
             SettingsScreen(
-                currentScheme = currentScheme,
-                onThemeSelected = onThemeSelected,
-                drawingToolVisibility = drawingToolVisibility,
-                onDrawingToolVisibilityChanged = onDrawingToolVisibilityChanged,
-                dashboardSize = dashboardSize,
-                onDashboardSizeSelected = onDashboardSizeSelected,
+                state = state,
+                onEvent = viewModel::onEvent,
                 onBackIconClick = { navController.navigateUp() }
             )
         }

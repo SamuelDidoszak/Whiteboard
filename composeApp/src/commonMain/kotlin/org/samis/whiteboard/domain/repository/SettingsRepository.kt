@@ -15,8 +15,10 @@ interface SettingsRepository {
     fun getPreferredCanvasColors(): Flow<List<Color>>
     fun getDrawingToolVisibility(): Flow<DrawingToolVisibility>
     fun getDashboardSize(): Flow<DashboardSizeOption>
+    fun getStylusInput(): Flow<Boolean>
     suspend fun saveColorScheme(colorScheme: ColorScheme)
     suspend fun savePreferredColors(colors: List<Color>, colorPaletteType: ColorPaletteType)
     suspend fun saveDrawingToolVisibility(toolVisibility: DrawingToolVisibility)
     suspend fun saveDashboardSize(size: DashboardSizeOption)
+    suspend fun saveStylusInput(stylusInput: Boolean)
 }

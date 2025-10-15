@@ -6,7 +6,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -55,6 +54,7 @@ import org.samis.whiteboard.domain.model.DrawnPath
 import org.samis.whiteboard.presentation.theme.Palettes
 import org.samis.whiteboard.presentation.util.UiType
 import org.samis.whiteboard.presentation.util.capturable
+import org.samis.whiteboard.presentation.util.detectStylusDragGestures
 import org.samis.whiteboard.presentation.util.getUiType
 import org.samis.whiteboard.presentation.util.registerBackHandler
 import org.samis.whiteboard.presentation.util.rememberCaptureController
@@ -329,7 +329,8 @@ private fun DrawingCanvas(
             .capturable(state.captureController)
             .background(state.canvasColor)
             .pointerInput(Unit) {
-                detectDragGestures(
+                detectStylusDragGestures(
+                    stylusInput = state.stylusInput,
                     onDragStart = { offset ->
                         onEvent(WhiteboardEvent.StartDrawing(offset))
                     },

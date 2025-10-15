@@ -71,13 +71,15 @@ class WhiteboardViewModel(
     val state = combine(
         _state,
         settingsRepository.getPreferredCanvasColors(),
-        settingsRepository.getDrawingToolVisibility()
+        settingsRepository.getDrawingToolVisibility(),
+        settingsRepository.getStylusInput()
     ){ flows ->
         val state = flows[0] as WhiteboardState
         canUndo = true
         state.copy(
             preferredCanvasColors = flows[1] as List<Color>,
-            drawingToolVisibility = flows[2] as DrawingToolVisibility
+            drawingToolVisibility = flows[2] as DrawingToolVisibility,
+            stylusInput = flows[3] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,

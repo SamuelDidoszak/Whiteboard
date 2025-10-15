@@ -15,4 +15,5 @@ object Constant {
     const val CANVAS_COLORS_PREF_KEY = "canvas_colors"
     const val DRAWING_TOOLS_KEY = "drawing_tools"
     const val DASHBOARD_SIZE_PREF_KEY = "dashboard_size"
+    const val STYLUS_INPUT_PREF_KEY = "stylus_input"
 }

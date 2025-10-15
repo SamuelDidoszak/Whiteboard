@@ -15,6 +15,7 @@ import org.samis.whiteboard.data.util.Constant.DRAWING_TOOLS_KEY
 import org.samis.whiteboard.data.util.Constant.FILL_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.MARKER_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.STROKE_COLORS_PREF_KEY
+import org.samis.whiteboard.data.util.Constant.STYLUS_INPUT_PREF_KEY
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.ColorScheme
 import org.samis.whiteboard.domain.model.DrawingTool
@@ -36,6 +37,7 @@ class SettingRepositoryImpl(
         private val PREFERRED_CANVAS_COLORS_KEY = stringPreferencesKey(CANVAS_COLORS_PREF_KEY)
         private val PREFERRED_DRAWING_TOOLS_KEY = stringPreferencesKey(DRAWING_TOOLS_KEY)
         private val DASHBOARD_SIZE_KEY = stringPreferencesKey(DASHBOARD_SIZE_PREF_KEY)
+        private val STYLUS_INPUT_KEY = stringPreferencesKey(STYLUS_INPUT_PREF_KEY)
     }
 
     override suspend fun saveColorScheme(colorScheme: ColorScheme) {
@@ -97,6 +99,13 @@ class SettingRepositoryImpl(
         }
     }
 
+    override fun getStylusInput(): Flow<Boolean> {
+        return prefs.data.map { preferences ->
+            val stylusInput = preferences[STYLUS_INPUT_KEY] ?: "false"
+            stylusInput.toBoolean()
+        }
+    }
+
     override suspend fun savePreferredColors(
         colors: List<Color>,
         colorPaletteType: ColorPaletteType
@@ -124,6 +133,12 @@ class SettingRepositoryImpl(
     override suspend fun saveDashboardSize(size: DashboardSizeOption) {
         prefs.edit { preference ->
             preference[DASHBOARD_SIZE_KEY] = size.name
+        }
+    }
+
+    override suspend fun saveStylusInput(stylusInput: Boolean) {
+        prefs.edit { preference ->
+            preference[STYLUS_INPUT_KEY] = stylusInput.toString()
         }
     }
 
