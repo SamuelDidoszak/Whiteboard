@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import org.samis.whiteboard.domain.model.ColorPaletteType
@@ -62,7 +64,10 @@ fun CommandPaletteDrawerContent(
     onColorPaletteIconClick: (ColorPaletteType) -> Unit,
     onPalettePicked: (Palette) -> Unit,
     onPaletteAdded: () -> Unit,
-    onCloseIconClick: () -> Unit
+    onCloseIconClick: () -> Unit,
+    colorDeletionMode: Boolean,
+    onSetColorDeletionMode: (Boolean) -> Unit,
+    onColorDeleted: (Color, ColorPaletteType) -> Unit,
 ) {
     ElevatedCard(
         modifier = modifier
@@ -80,7 +85,10 @@ fun CommandPaletteDrawerContent(
             onColorPaletteIconClick = onColorPaletteIconClick,
             onPalettePicked = onPalettePicked,
             onPaletteAdded = onPaletteAdded,
-            onCloseIconClick = onCloseIconClick
+            onCloseIconClick = onCloseIconClick,
+            colorDeletionMode = colorDeletionMode,
+            onSetColorDeletionMode = onSetColorDeletionMode,
+            onColorDeleted = onColorDeleted
         )
     }
 }
@@ -99,7 +107,10 @@ fun CommandPaletteCard(
     onColorPaletteIconClick: (ColorPaletteType) -> Unit,
     onPalettePicked: (Palette) -> Unit,
     onPaletteAdded: () -> Unit,
-    onCloseIconClick: () -> Unit
+    onCloseIconClick: () -> Unit,
+    colorDeletionMode: Boolean,
+    onSetColorDeletionMode: (Boolean) -> Unit,
+    onColorDeleted: (Color, ColorPaletteType) -> Unit,
 ) {
     AnimatedVisibility(
         modifier = modifier,
@@ -122,7 +133,10 @@ fun CommandPaletteCard(
                 onColorPaletteIconClick = onColorPaletteIconClick,
                 onPalettePicked = onPalettePicked,
                 onPaletteAdded = onPaletteAdded,
-                onCloseIconClick = onCloseIconClick
+                onCloseIconClick = onCloseIconClick,
+                colorDeletionMode = colorDeletionMode,
+                onSetColorDeletionMode = onSetColorDeletionMode,
+                onColorDeleted = onColorDeleted
             )
         }
     }
@@ -141,7 +155,10 @@ private fun CommandPaletteContent(
     onColorPaletteIconClick: (ColorPaletteType) -> Unit,
     onPalettePicked: (Palette) -> Unit,
     onPaletteAdded: () -> Unit,
-    onCloseIconClick: () -> Unit
+    onCloseIconClick: () -> Unit,
+    colorDeletionMode: Boolean,
+    onSetColorDeletionMode: (Boolean) -> Unit,
+    onColorDeleted: (Color, ColorPaletteType) -> Unit,
 ) {
     val updatedCanvasColors = listOf(Color.White) + canvasColors
 
@@ -167,7 +184,10 @@ private fun CommandPaletteContent(
             colors = updatedCanvasColors,
             selectedColor = selectedCanvasColor,
             onColorChange = onCanvasColorChange,
-            onColorPaletteClick = { onColorPaletteIconClick(ColorPaletteType.CANVAS) }
+            onColorPaletteClick = { onColorPaletteIconClick(ColorPaletteType.CANVAS) },
+            colorDeletionMode = colorDeletionMode,
+            onSetColorDeletionMode = onSetColorDeletionMode,
+            onColorDeleted = onColorDeleted
         )
         Spacer(modifier = Modifier.height(20.dp))
         PaletteSection(
@@ -260,11 +280,14 @@ private fun PalettePreview(
 @Composable
 private fun ColorSection(
     sectionTitle: String,
-    isFillColorsSection: Boolean = false,
+    addTransparentColor: Boolean = false,
     colors: List<Color>,
     selectedColor: Color,
     onColorChange: (Color) -> Unit,
-    onColorPaletteClick: () -> Unit
+    onColorPaletteClick: () -> Unit,
+    colorDeletionMode: Boolean,
+    onSetColorDeletionMode: (Boolean) -> Unit,
+    onColorDeleted: (Color, ColorPaletteType) -> Unit,
 ) {
     Column {
         Text(
@@ -276,7 +299,7 @@ private fun ColorSection(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (isFillColorsSection) {
+            if (addTransparentColor) {
                 item {
                     Icon(
                         modifier = Modifier
@@ -310,8 +333,33 @@ private fun ColorSection(
                         )
                         .padding(2.dp)
                         .background(color, CircleShape)
-                        .clickable { onColorChange(color) }
-                )
+                        .pointerInput(colorDeletionMode) {
+                            detectTapGestures(
+                                onTap = {
+                                    if (!colorDeletionMode)
+                                        onColorChange(color)
+                                    else onColorDeleted(color, ColorPaletteType.CANVAS)
+                                },
+                                onLongPress = { onSetColorDeletionMode(!colorDeletionMode) }
+                            )
+                        }
+                ) {
+                    if (colorDeletionMode) {
+                        Box(
+                            modifier = Modifier
+                                .size(14.dp)
+                                .background(Color.Red, CircleShape)
+                                .align(Alignment.TopEnd)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "Delete color",
+                                tint = Color.White,
+                                modifier = Modifier.size(10.dp).align(Alignment.Center)
+                            )
+                        }
+                    }
+                }
             }
             item {
                 Spacer(modifier = Modifier.width(5.dp))

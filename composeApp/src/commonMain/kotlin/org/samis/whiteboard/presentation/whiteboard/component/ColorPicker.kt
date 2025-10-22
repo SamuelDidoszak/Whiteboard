@@ -267,7 +267,7 @@ private fun ColorSection(
                                     )
                                     .padding(2.dp)
                                     .background(color, CircleShape)
-                                    .pointerInput(Unit) {
+                                    .pointerInput(colorDeletionMode) {
                                         detectTapGestures(
                                             onTap = {
                                                 if (!colorDeletionMode)

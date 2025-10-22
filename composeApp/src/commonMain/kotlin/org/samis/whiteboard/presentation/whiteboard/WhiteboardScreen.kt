@@ -122,7 +122,12 @@ fun WhiteboardScreen(
                             },
                             onPalettePicked = { onEvent(WhiteboardEvent.OnPalettePicked(it)) },
                             onPaletteAdded = {  },
-                            onCloseIconClick = { isCommandPaletteOpen = false }
+                            onCloseIconClick = { isCommandPaletteOpen = false },
+                            colorDeletionMode = state.canvasColorDeletionMode,
+                            onSetColorDeletionMode = { onEvent(WhiteboardEvent.SetColorDeletionMode(it, ColorPaletteType.CANVAS)) },
+                            onColorDeleted = { color: Color, palette: ColorPaletteType ->
+                                onEvent(WhiteboardEvent.OnColorDeleted(color, palette))
+                            }
                         )
                     },
                 ) {
@@ -205,7 +210,12 @@ fun WhiteboardScreen(
                         },
                         onPalettePicked = { onEvent(WhiteboardEvent.OnPalettePicked(it)) },
                         onPaletteAdded = {  },
-                        onCloseIconClick = { isCommandPaletteOpen = false }
+                        onCloseIconClick = { isCommandPaletteOpen = false },
+                        colorDeletionMode = state.canvasColorDeletionMode,
+                        onSetColorDeletionMode = { onEvent(WhiteboardEvent.SetColorDeletionMode(it, ColorPaletteType.CANVAS)) },
+                        onColorDeleted = { color: Color, palette: ColorPaletteType ->
+                            onEvent(WhiteboardEvent.OnColorDeleted(color, palette))
+                        }
                     )
                 }
                 DrawingToolBar(
@@ -238,8 +248,8 @@ fun WhiteboardScreen(
                     onFillColorChange =  { newColor: Color ->
                         onEvent(WhiteboardEvent.FillColorChange(newColor))
                     },
-                    colorDeletionMode = state.colorDeletionMode,
-                    onSetColorDeletionMode = { mode: Boolean -> onEvent(WhiteboardEvent.SetColorDeletionMode(mode))},
+                    colorDeletionMode = state.markerColorDeletionMode,
+                    onSetColorDeletionMode = { mode: Boolean -> onEvent(WhiteboardEvent.SetColorDeletionMode(mode, ColorPaletteType.MARKER))},
                     onColorDeleted = { color: Color, palette: ColorPaletteType ->
                         onEvent(WhiteboardEvent.OnColorDeleted(color, palette)) },
                     onColorPaletteIconClick = { colorPaletteType: ColorPaletteType ->

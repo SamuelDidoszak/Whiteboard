@@ -297,7 +297,7 @@ class WhiteboardViewModel(
                     ColorPaletteType.FILL -> state.preferredFillColors
                 }
                 if (colors.size == 1) {
-                    onEvent(WhiteboardEvent.SetColorDeletionMode(false))
+                    onEvent(WhiteboardEvent.SetColorDeletionMode(false, event.colorPaletteType))
                     return
                 }
                 savePreferredColors(colors.minus(event.color), event.colorPaletteType)
@@ -305,9 +305,13 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.SetColorDeletionMode -> {
-                _state.update { it.copy(
-                    colorDeletionMode = event.on
-                ) }
+                _state.update {
+                    if (event.colorType == ColorPaletteType.CANVAS) {
+                        it.copy(canvasColorDeletionMode = event.on)
+                    } else {
+                        it.copy(markerColorDeletionMode = event.on)
+                    }
+                }
             }
 
             is WhiteboardEvent.OnCardClose -> {

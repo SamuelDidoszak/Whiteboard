@@ -23,7 +23,7 @@ sealed class WhiteboardEvent {
     data class OnColorPaletteIconClick(val colorPaletteType: ColorPaletteType): WhiteboardEvent()
     data class OnColorSelected(val color: Color): WhiteboardEvent()
     data class OnColorDeleted(val color: Color, val colorPaletteType: ColorPaletteType): WhiteboardEvent()
-    data class SetColorDeletionMode(val on: Boolean): WhiteboardEvent()
+    data class SetColorDeletionMode(val on: Boolean, val colorType: ColorPaletteType): WhiteboardEvent()
 
     data object ColorSelectionDialogDismiss : WhiteboardEvent()
     data object OnLaserPathAnimationComplete : WhiteboardEvent()
