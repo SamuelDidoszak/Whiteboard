@@ -6,6 +6,7 @@ object Constant {
     const val PATH_TABLE_NAME = "path_table"
     const val UPDATE_TABLE_NAME = "update_table"
     const val WHITEBOARD_TABLE_NAME = "whiteboard_table"
+    const val PALETTE_TABLE_NAME = "palette_table"
 
     const val DATA_STORE_FILE_NAME = "color_scheme.preferences_pb"
     const val COLOR_SCHEME_PREF_KEY = "color_scheme"
