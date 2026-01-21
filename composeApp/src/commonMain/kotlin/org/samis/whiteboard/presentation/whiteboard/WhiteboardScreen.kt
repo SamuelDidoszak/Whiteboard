@@ -22,12 +22,8 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -51,7 +47,6 @@ import org.jetbrains.compose.resources.painterResource
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
-import org.samis.whiteboard.presentation.theme.Palettes
 import org.samis.whiteboard.presentation.util.UiType
 import org.samis.whiteboard.presentation.util.capturable
 import org.samis.whiteboard.presentation.util.detectStylusDragGestures
@@ -67,6 +62,7 @@ import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteCard
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteDrawerContent
 import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolBar
 import org.samis.whiteboard.presentation.whiteboard.component.MarkerColorBar
+import org.samis.whiteboard.presentation.whiteboard.component.RemovePaletteDialog
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthBar
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthSliderCard
 import whiteboard.composeapp.generated.resources.Res
@@ -91,14 +87,19 @@ fun WhiteboardScreen(
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
-    var isCommandPaletteOpen by rememberSaveable { mutableStateOf(false) }
-
     miniatureSaveHandle(scope, onEvent, navController)
 
     ColorSelectionDialog(
         isOpen = state.isColorSelectionDialogOpen,
         onColorSelected = { onEvent(WhiteboardEvent.OnColorSelected(it)) },
         onDismiss = { onEvent(WhiteboardEvent.ColorSelectionDialogDismiss) }
+    )
+
+    RemovePaletteDialog(
+        palette = state.paletteToDelete,
+        showDialog = state.showRemovePaletteDialog,
+        onDismiss = { onEvent(WhiteboardEvent.HideRemovePaletteDialog) },
+        onDelete = { onEvent(WhiteboardEvent.OnPaletteRemoved(state.paletteToDelete!!)) }
     )
 
     Box(
@@ -113,7 +114,7 @@ fun WhiteboardScreen(
                             title = state.whiteboardName,
                             canvasColors = state.preferredCanvasColors,
                             selectedCanvasColor = state.canvasColor,
-                            palettes = Palettes.palettes,
+                            palettes = state.paletteList,
                             currentPalette = state.palette,
                             onTitleChange = {  },
                             onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
@@ -121,8 +122,11 @@ fun WhiteboardScreen(
                                 onEvent(WhiteboardEvent.OnColorPaletteIconClick(it))
                             },
                             onPalettePicked = { onEvent(WhiteboardEvent.OnPalettePicked(it)) },
-                            onPaletteAdded = {  },
-                            onCloseIconClick = { isCommandPaletteOpen = false },
+                            isPaletteEditMode = state.isPaletteEditMode,
+                            changeEditMode = { onEvent(WhiteboardEvent.OnPaletteEditMode) },
+                            onPaletteAdded = { onEvent(WhiteboardEvent.OnPaletteAdded(it)) },
+                            onPaletteRemoved = { onEvent(WhiteboardEvent.ShowRemovePaletteDialog(it)) },
+                            onCloseIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteClose) },
                             colorDeletionMode = state.canvasColorDeletionMode,
                             onSetColorDeletionMode = { onEvent(WhiteboardEvent.SetColorDeletionMode(it, ColorPaletteType.CANVAS)) },
                             onColorDeleted = { color: Color, palette: ColorPaletteType ->
@@ -171,7 +175,7 @@ fun WhiteboardScreen(
                                 val down = awaitFirstDown(requireUnconsumed = false)
                                 onEvent(WhiteboardEvent.OnCardClose)
                                 onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
-                                isCommandPaletteOpen = false
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
                                 down.consume()
                             }
                         }},
@@ -190,18 +194,18 @@ fun WhiteboardScreen(
                             onHomeIconClick.invoke()
                         },
                         backgroundColor = state.canvasColor,
-                        onMenuIconClick = { isCommandPaletteOpen = !isCommandPaletteOpen },
+                        onMenuIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteIconClick) },
                         onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
                         onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     CommandPaletteCard(
-                        isVisible = isCommandPaletteOpen,
+                        isVisible = state.isCommandPaletteOpen,
                         title = state.whiteboardName,
                         canvasColors = state.preferredCanvasColors,
                         selectedCanvasColor = state.canvasColor,
-                        palettes = Palettes.palettes,
+                        palettes = state.paletteList,
                         currentPalette = state.palette,
                         onTitleChange = {  },
                         onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
@@ -209,8 +213,11 @@ fun WhiteboardScreen(
                             onEvent(WhiteboardEvent.OnColorPaletteIconClick(it))
                         },
                         onPalettePicked = { onEvent(WhiteboardEvent.OnPalettePicked(it)) },
-                        onPaletteAdded = {  },
-                        onCloseIconClick = { isCommandPaletteOpen = false },
+                        isPaletteEditMode = state.isPaletteEditMode,
+                        changeEditMode = { onEvent(WhiteboardEvent.OnPaletteEditMode) },
+                        onPaletteAdded = { onEvent(WhiteboardEvent.OnPaletteAdded(it)) },
+                        onPaletteRemoved = { onEvent(WhiteboardEvent.ShowRemovePaletteDialog(it)) },
+                        onCloseIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteClose) },
                         colorDeletionMode = state.canvasColorDeletionMode,
                         onSetColorDeletionMode = { onEvent(WhiteboardEvent.SetColorDeletionMode(it, ColorPaletteType.CANVAS)) },
                         onColorDeleted = { color: Color, palette: ColorPaletteType ->
@@ -229,7 +236,7 @@ fun WhiteboardScreen(
                         onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
                         onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                         onEvent(WhiteboardEvent.OnCardClose)
-                        isCommandPaletteOpen = false
+                        onEvent(WhiteboardEvent.OnCommandPaletteClose)
                     }
                 )
                 ColorPickerCard(
@@ -273,7 +280,7 @@ fun WhiteboardScreen(
                             onClick = { newColor: Color ->
                                 onEvent(WhiteboardEvent.StrokeColorChange(newColor, false))
                                 onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
-                                isCommandPaletteOpen = false
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
                             },
                             onEraserClick = { eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType)) }
                         )
@@ -303,7 +310,7 @@ fun WhiteboardScreen(
                             onClick = { strokeNum: Int ->
                                 onEvent(WhiteboardEvent.StrokeWidthButtonClicked(strokeNum))
                                 onEvent(WhiteboardEvent.OnCardClose)
-                                isCommandPaletteOpen = false
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
                             }
                         )
                     }

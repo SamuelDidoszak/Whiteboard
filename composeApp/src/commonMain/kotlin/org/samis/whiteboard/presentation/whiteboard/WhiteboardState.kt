@@ -29,10 +29,13 @@ data class WhiteboardState(
     val isColorPickerOpen: Boolean = false,
     val isStrokeWidthSliderOpen: Boolean = false,
     val showOpacitySlider: Boolean = false,
+    val showRemovePaletteDialog: Boolean = false,
 
     val selectedMarker: Int = 0,
     val opacity: Float = 100f,
 
+    val isCommandPaletteOpen: Boolean = false,
+    val isPaletteEditMode: Boolean = false,
     val selectedColorPaletteType: ColorPaletteType = ColorPaletteType.STROKE,
     val markerColorDeletionMode: Boolean = false,
     val canvasColorDeletionMode: Boolean = false,
@@ -46,6 +49,8 @@ data class WhiteboardState(
     val strokeWidthList: List<Float> = listOf(1.8f, 5f, 10f),
     val activeStrokeWidthButton: Int = 1,
 
+    val paletteList: List<Palette> = listOf(),
+    val paletteToDelete: Palette? = null,
     val preferredStrokeColors: List<Color> = defaultDrawingColors,
     val preferredFillColors: List<Color> = defaultDrawingColors,
     val preferredCanvasColors: List<Color> = defaultCanvasColors,

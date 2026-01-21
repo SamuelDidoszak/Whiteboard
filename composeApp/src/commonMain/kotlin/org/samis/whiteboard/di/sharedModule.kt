@@ -6,10 +6,12 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.samis.whiteboard.data.database.AppDatabase
 import org.samis.whiteboard.data.database.getRoomDatabase
+import org.samis.whiteboard.data.repository.PaletteRepositoryImpl
 import org.samis.whiteboard.data.repository.PathRepositoryImpl
 import org.samis.whiteboard.data.repository.SettingRepositoryImpl
 import org.samis.whiteboard.data.repository.UpdateRepositoryImpl
 import org.samis.whiteboard.data.repository.WhiteboardRepositoryImpl
+import org.samis.whiteboard.domain.repository.PaletteRepository
 import org.samis.whiteboard.domain.repository.PathRepository
 import org.samis.whiteboard.domain.repository.SettingsRepository
 import org.samis.whiteboard.domain.repository.UpdateRepository
@@ -25,6 +27,7 @@ val sharedModule = module {
     single { get<AppDatabase>().pathDao() }
     single { get<AppDatabase>().updateDao() }
     single { get<AppDatabase>().whiteboardDao() }
+    single { get<AppDatabase>().paletteDao() }
 
     //ViewModels
     viewModelOf(::WhiteboardViewModel)
@@ -36,4 +39,5 @@ val sharedModule = module {
     singleOf(::UpdateRepositoryImpl).bind<UpdateRepository>()
     singleOf(::SettingRepositoryImpl).bind<SettingsRepository>()
     singleOf(::WhiteboardRepositoryImpl).bind<WhiteboardRepository>()
+    singleOf(::PaletteRepositoryImpl).bind<PaletteRepository>()
 }

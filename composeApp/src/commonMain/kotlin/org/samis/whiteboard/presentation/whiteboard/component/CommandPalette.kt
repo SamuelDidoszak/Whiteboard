@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,8 +14,10 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,12 +31,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,10 +47,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import org.samis.whiteboard.domain.model.ColorPaletteType
+import org.samis.whiteboard.presentation.theme.DarkGreen
+import org.samis.whiteboard.presentation.theme.LightGreen
 import org.samis.whiteboard.presentation.util.Palette
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.ic_transparent_bg
@@ -63,7 +71,10 @@ fun CommandPaletteDrawerContent(
     onCanvasColorChange: (Color) -> Unit,
     onColorPaletteIconClick: (ColorPaletteType) -> Unit,
     onPalettePicked: (Palette) -> Unit,
-    onPaletteAdded: () -> Unit,
+    onPaletteAdded: (Palette) -> Unit,
+    onPaletteRemoved: (Palette) -> Unit,
+    changeEditMode: () -> Unit,
+    isPaletteEditMode: Boolean,
     onCloseIconClick: () -> Unit,
     colorDeletionMode: Boolean,
     onSetColorDeletionMode: (Boolean) -> Unit,
@@ -84,7 +95,10 @@ fun CommandPaletteDrawerContent(
             onCanvasColorChange = onCanvasColorChange,
             onColorPaletteIconClick = onColorPaletteIconClick,
             onPalettePicked = onPalettePicked,
+            changeEditMode = changeEditMode,
+            isPaletteEditMode = isPaletteEditMode,
             onPaletteAdded = onPaletteAdded,
+            onPaletteRemoved = onPaletteRemoved,
             onCloseIconClick = onCloseIconClick,
             colorDeletionMode = colorDeletionMode,
             onSetColorDeletionMode = onSetColorDeletionMode,
@@ -106,7 +120,10 @@ fun CommandPaletteCard(
     onCanvasColorChange: (Color) -> Unit,
     onColorPaletteIconClick: (ColorPaletteType) -> Unit,
     onPalettePicked: (Palette) -> Unit,
-    onPaletteAdded: () -> Unit,
+    onPaletteAdded: (Palette) -> Unit,
+    onPaletteRemoved: (Palette) -> Unit,
+    changeEditMode: () -> Unit,
+    isPaletteEditMode: Boolean,
     onCloseIconClick: () -> Unit,
     colorDeletionMode: Boolean,
     onSetColorDeletionMode: (Boolean) -> Unit,
@@ -132,7 +149,10 @@ fun CommandPaletteCard(
                 onCanvasColorChange = onCanvasColorChange,
                 onColorPaletteIconClick = onColorPaletteIconClick,
                 onPalettePicked = onPalettePicked,
+                changeEditMode = changeEditMode,
+                isPaletteEditMode = isPaletteEditMode,
                 onPaletteAdded = onPaletteAdded,
+                onPaletteRemoved = onPaletteRemoved,
                 onCloseIconClick = onCloseIconClick,
                 colorDeletionMode = colorDeletionMode,
                 onSetColorDeletionMode = onSetColorDeletionMode,
@@ -154,7 +174,10 @@ private fun CommandPaletteContent(
     onCanvasColorChange: (Color) -> Unit,
     onColorPaletteIconClick: (ColorPaletteType) -> Unit,
     onPalettePicked: (Palette) -> Unit,
-    onPaletteAdded: () -> Unit,
+    onPaletteAdded: (Palette) -> Unit,
+    onPaletteRemoved: (Palette) -> Unit,
+    changeEditMode: () -> Unit,
+    isPaletteEditMode: Boolean,
     onCloseIconClick: () -> Unit,
     colorDeletionMode: Boolean,
     onSetColorDeletionMode: (Boolean) -> Unit,
@@ -193,8 +216,11 @@ private fun CommandPaletteContent(
         PaletteSection(
             palettes = palettes,
             currentPalette = currentPalette,
+            editMode = isPaletteEditMode,
+            changeEditMode = changeEditMode,
             onPalettePicked = onPalettePicked,
-            onPaletteAdded = onPaletteAdded
+            onPaletteAdded = onPaletteAdded,
+            onPaletteRemoved = onPaletteRemoved
         )
 //        Spacer(modifier = Modifier.height(20.dp))
     }
@@ -204,16 +230,72 @@ private fun CommandPaletteContent(
 private fun PaletteSection(
     palettes: List<Palette>,
     currentPalette: Palette,
+    editMode: Boolean,
+    changeEditMode: () -> Unit,
     onPalettePicked: (Palette) -> Unit,
-    onPaletteAdded: () -> Unit
+    onPaletteAdded: (Palette) -> Unit,
+    onPaletteRemoved: (Palette) -> Unit
 ) {
+    val canAdd = palettes.find { it == currentPalette } == null
+    val editButtonColor =
+        if (!editMode) MaterialTheme.colorScheme.primary else {
+            if (MaterialTheme.colorScheme.background.luminance() > 0.5)
+                DarkGreen
+            else
+                LightGreen
+    }
+    val removePaletteColor =
+        if (MaterialTheme.colorScheme.background.luminance() > 0.5)
+            Color(0xFFD32F2F)
+        else
+            Color(0xFFf44336)
+
     Column {
-        Text(
-            text = "Palettes",
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Palettes",
+                style = MaterialTheme.typography.titleSmall
+            )
+            OutlinedButton(
+                onClick = { changeEditMode() },
+                modifier = Modifier
+                    .defaultMinSize(1.dp, 1.dp)
+                    .height(26.dp),
+                contentPadding = PaddingValues(10.dp, 1.dp),
+                border = BorderStroke(1.dp,
+                    color = editButtonColor),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = editButtonColor
+                )
+            ) {
+                Text(
+                    text = "Edit",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            OutlinedButton(
+                onClick = { onPaletteAdded(currentPalette) },
+                modifier = Modifier
+                    .defaultMinSize(1.dp, 1.dp)
+                    .height(26.dp),
+                contentPadding = PaddingValues(10.dp, 1.dp),
+                border = BorderStroke(1.dp,
+                    color = if (canAdd) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                enabled = canAdd
+            ) {
+                Text(
+                    text = "Add",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(10.dp))
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -233,14 +315,19 @@ private fun PaletteSection(
                             } else Color.Transparent,
                             shape = RoundedCornerShape(8.dp)
                         )
-                        .clickable { onPalettePicked(palette) }
+                        .clickable {
+                            if (editMode)
+                                onPaletteRemoved(palette)
+                            else
+                                onPalettePicked(palette)
+                        }
                 ) {
                     val customBrush = Brush.linearGradient(
                         colorStops = arrayOf(
                             0.0f to palette.background,
                             0.25f to palette.background,
                             0.25001f to palette.background,
-                            1.0f to Color.Transparent
+                            1.0f to if (!editMode) Color.Transparent else removePaletteColor
                         )
                     )
 
@@ -249,6 +336,22 @@ private fun PaletteSection(
                             .background(brush = customBrush)
                     ) {
                         PalettePreview(palette)
+                        if (editMode) {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .padding(4.dp)
+                                    .background(Color.Red, CircleShape)
+                                    .align(Alignment.TopEnd)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "Delete palette",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(12.dp).align(Alignment.Center)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -355,7 +458,7 @@ private fun ColorSection(
                                 imageVector = Icons.Filled.Close,
                                 contentDescription = "Delete color",
                                 tint = Color.White,
-                                modifier = Modifier.size(10.dp).align(Alignment.Center)
+                                modifier = Modifier.size(12.dp).align(Alignment.Center)
                             )
                         }
                     }

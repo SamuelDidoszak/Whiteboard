@@ -5,7 +5,7 @@ import org.samis.whiteboard.presentation.util.Palette
 
 object Palettes {
 
-    val palettes = listOf(
+    val defaultPalettes = listOf(
         Palette(
             background = Color.White,
             foreground = Color.Black,

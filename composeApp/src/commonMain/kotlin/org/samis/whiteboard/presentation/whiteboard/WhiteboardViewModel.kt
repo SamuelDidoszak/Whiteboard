@@ -24,20 +24,24 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import org.samis.whiteboard.data.mapper.toPaletteEntity
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
 import org.samis.whiteboard.domain.model.Update
 import org.samis.whiteboard.domain.model.Whiteboard
+import org.samis.whiteboard.domain.repository.PaletteRepository
 import org.samis.whiteboard.domain.repository.PathRepository
 import org.samis.whiteboard.domain.repository.SettingsRepository
 import org.samis.whiteboard.domain.repository.UpdateRepository
 import org.samis.whiteboard.domain.repository.WhiteboardRepository
 import org.samis.whiteboard.presentation.navigation.Routes
+import org.samis.whiteboard.presentation.theme.Palettes
 import org.samis.whiteboard.presentation.util.AppScope
 import org.samis.whiteboard.presentation.util.DelayedTask
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.IContextProvider
+import org.samis.whiteboard.presentation.util.Palette
 import org.samis.whiteboard.presentation.util.capture
 import org.samis.whiteboard.presentation.util.formatDate
 import org.samis.whiteboard.presentation.util.roundTo
@@ -53,6 +57,7 @@ class WhiteboardViewModel(
     private val updateRepository: UpdateRepository,
     private val whiteboardRepository: WhiteboardRepository,
     private val settingsRepository: SettingsRepository,
+    private val paletteRepository: PaletteRepository,
     savedStateHandle: SavedStateHandle,
     private val contextProvider: IContextProvider
 ) : ViewModel() {
@@ -72,14 +77,16 @@ class WhiteboardViewModel(
         _state,
         settingsRepository.getPreferredCanvasColors(),
         settingsRepository.getDrawingToolVisibility(),
-        settingsRepository.getStylusInput()
+        settingsRepository.getStylusInput(),
+        paletteRepository.getAllPalettes()
     ){ flows ->
         val state = flows[0] as WhiteboardState
         canUndo = true
         state.copy(
             preferredCanvasColors = flows[1] as List<Color>,
             drawingToolVisibility = flows[2] as DrawingToolVisibility,
-            stylusInput = flows[3] as Boolean
+            stylusInput = flows[3] as Boolean,
+            paletteList = flows[4] as List<Palette>
         )
     }.stateIn(
         scope = viewModelScope,
@@ -240,6 +247,28 @@ class WhiteboardViewModel(
                 _state.update { it.copy(laserPenPath = null) }
             }
 
+            is WhiteboardEvent.OnCommandPaletteIconClick -> {
+                _state.update {
+                    it.copy(isCommandPaletteOpen = !_state.value.isCommandPaletteOpen)
+                }
+                if (state.value.paletteList.isEmpty()) {
+                    _state.update {
+                        it.copy(paletteList = Palettes.defaultPalettes)
+                    }
+                    viewModelScope.launch {
+                        Palettes.defaultPalettes.forEach {
+                            paletteRepository.upsertPalette(it)
+                        }
+                    }
+                }
+            }
+
+            is WhiteboardEvent.OnCommandPaletteClose -> {
+                _state.update {
+                    it.copy(isCommandPaletteOpen = false)
+                }
+            }
+
             is WhiteboardEvent.OnColorPaletteIconClick -> {
                 _state.update {
                     it.copy(
@@ -247,6 +276,38 @@ class WhiteboardViewModel(
                         selectedColorPaletteType = event.colorPaletteType
                     )
                 }
+            }
+
+            is WhiteboardEvent.OnPaletteEditMode -> {
+                _state.update { it.copy(isPaletteEditMode = !it.isPaletteEditMode) }
+            }
+
+            is WhiteboardEvent.OnPaletteAdded -> {
+                viewModelScope.launch {
+                    paletteRepository.upsertPalette(event.palette)
+                }
+            }
+
+            is WhiteboardEvent.OnPaletteRemoved -> {
+                val palette = state.value.paletteList.find { it.toPaletteEntity() == event.palette.toPaletteEntity() }
+                viewModelScope.launch {
+                    paletteRepository.deletePalette(palette ?: state.value.paletteToDelete!!)
+                }
+                _state.update { it.copy(
+                    showRemovePaletteDialog = false,
+                    paletteToDelete = null
+                ) }
+            }
+
+            is WhiteboardEvent.ShowRemovePaletteDialog -> {
+                _state.update { it.copy(
+                    showRemovePaletteDialog = true,
+                    paletteToDelete = event.palette
+                ) }
+            }
+
+            is WhiteboardEvent.HideRemovePaletteDialog -> {
+                _state.update { it.copy(showRemovePaletteDialog = false) }
             }
 
             WhiteboardEvent.ColorSelectionDialogDismiss -> {
@@ -351,7 +412,6 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.SavePicture -> {
-                println("Saving picture")
                 val captureController = state.value.captureController ?: return
                 capture(
                     event.scope,
@@ -426,7 +486,6 @@ class WhiteboardViewModel(
     }
 
     private fun onUpdate(update: Update, undo: Boolean? = null, skipMiniature: Boolean = false) {
-        println("Updating: $update")
         val add: Boolean
         val path: DrawnPath
         when (update) {

@@ -17,7 +17,7 @@ fun PreviewWhiteboardItemCard() {
             name = "Drawing New",
             createTime = Instant.parse("2024-06-25T10:15:30Z"),
             lastModified = Instant.parse("2024-06-25T10:15:30Z"),
-            palette = Palettes.palettes.first()
+            palette = Palettes.defaultPalettes.first()
         ),
         onRenameClick = {},
         onCopyClick = {},

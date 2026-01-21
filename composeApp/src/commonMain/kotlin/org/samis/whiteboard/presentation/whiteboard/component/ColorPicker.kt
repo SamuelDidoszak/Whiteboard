@@ -289,7 +289,7 @@ private fun ColorSection(
                                             imageVector = Icons.Filled.Close,
                                             contentDescription = "Delete color",
                                             tint = Color.White,
-                                            modifier = Modifier.size(10.dp).align(Alignment.Center)
+                                            modifier = Modifier.size(12.dp).align(Alignment.Center)
                                         )
                                     }
                                 }

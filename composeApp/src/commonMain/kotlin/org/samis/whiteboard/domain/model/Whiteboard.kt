@@ -10,7 +10,7 @@ data class Whiteboard(
     val name: String,
     val createTime: Instant,
     val lastModified: Instant,
-    val palette: Palette = Palettes.palettes.first(),
+    val palette: Palette = Palettes.defaultPalettes.first(),
     val markerColors: List<Color> = listOf(palette.foreground, palette.red, palette.blue, palette.green),
     val strokeWidths: List<Float> = listOf(1.8f, 5f, 10f),
     val activeStrokeWidthButton: Int = 1,
