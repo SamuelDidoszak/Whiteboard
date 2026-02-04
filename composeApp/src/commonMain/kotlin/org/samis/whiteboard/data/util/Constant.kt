@@ -17,4 +17,6 @@ object Constant {
     const val DRAWING_TOOLS_KEY = "drawing_tools"
     const val DASHBOARD_SIZE_PREF_KEY = "dashboard_size"
     const val STYLUS_INPUT_PREF_KEY = "stylus_input"
+    const val SHOW_OPACITY_PREF_KEY = "show_opacity_slider"
+    const val LAST_PALETTE_PREF_KEY = "last_palette"
 }

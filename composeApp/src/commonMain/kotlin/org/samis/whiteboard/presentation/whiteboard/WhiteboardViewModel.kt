@@ -16,6 +16,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
@@ -46,6 +47,7 @@ import org.samis.whiteboard.presentation.util.capture
 import org.samis.whiteboard.presentation.util.formatDate
 import org.samis.whiteboard.presentation.util.roundTo
 import java.io.File
+import kotlin.collections.get
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.max
@@ -78,7 +80,8 @@ class WhiteboardViewModel(
         settingsRepository.getPreferredCanvasColors(),
         settingsRepository.getDrawingToolVisibility(),
         settingsRepository.getStylusInput(),
-        paletteRepository.getAllPalettes()
+        paletteRepository.getAllPalettes(),
+        settingsRepository.getShowOpacitySlider()
     ){ flows ->
         val state = flows[0] as WhiteboardState
         canUndo = true
@@ -86,7 +89,8 @@ class WhiteboardViewModel(
             preferredCanvasColors = flows[1] as List<Color>,
             drawingToolVisibility = flows[2] as DrawingToolVisibility,
             stylusInput = flows[3] as Boolean,
-            paletteList = flows[4] as List<Palette>
+            paletteList = flows[4] as List<Palette>,
+            showOpacitySlider = flows[5] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,
@@ -98,6 +102,8 @@ class WhiteboardViewModel(
         whiteboardId?.let { id ->
             initializeWhiteboardById(id)
         }
+        if (whiteboardId == null)
+            initializeDefaultPalette()
         initializeUpdates(updatedWhiteboardId.value ?: -1)
     }
 
@@ -108,7 +114,10 @@ class WhiteboardViewModel(
                     if (state.value.whiteboardName == "Untitled")
                         _state.update { it.copy(whiteboardName = initializeWhiteboardName(translatePolish = true)) }
 
-                    upsertWhiteboard()
+                    viewModelScope.launch {
+                        _state.first()
+                        upsertWhiteboard()
+                    }
                     isFirstPath = false
                 }
                 _state.update { it.copy(startingOffset = event.offset) }
@@ -285,6 +294,7 @@ class WhiteboardViewModel(
             is WhiteboardEvent.OnPaletteAdded -> {
                 viewModelScope.launch {
                     paletteRepository.upsertPalette(event.palette)
+                    settingsRepository.saveLastPalette(event.palette)
                 }
             }
 
@@ -330,6 +340,9 @@ class WhiteboardViewModel(
                     ColorPaletteType.CANVAS -> {
                         _state.update { it.copy(canvasColor = color) }
                         upsertWhiteboard()
+
+                        updateMiniature = true
+                        updateMiniatureTask.start(4000)
                     }
 
                     ColorPaletteType.STROKE -> {
@@ -436,8 +449,11 @@ class WhiteboardViewModel(
                     _state.value.miniatureSrc
                 ) {
                     file: File ->
-                    _state.update { it.copy(miniatureSrc = file.path) }
-                    upsertWhiteboard(miniatureSrc = file.path)
+                    var newMiniatureSrc = _state.value.miniatureSrc
+                    if (file.path.isNotEmpty())
+                        newMiniatureSrc = file.path
+                    _state.update { it.copy(miniatureSrc = newMiniatureSrc) }
+                    upsertWhiteboard(miniatureSrc = newMiniatureSrc)
                 }
             }
 
@@ -477,9 +493,10 @@ class WhiteboardViewModel(
                 if (_state.value.updates.isNotEmpty()) {
                     updateMiniature = true
                     updateMiniatureTask.start(10)
-                }
-                else {
                     upsertWhiteboard()
+                }
+                viewModelScope.launch {
+                    settingsRepository.saveLastPalette(event.palette)
                 }
             }
         }
@@ -604,6 +621,21 @@ class WhiteboardViewModel(
         }
     }
 
+    private fun initializeDefaultPalette() {
+        viewModelScope.launch {
+            val palette = settingsRepository.getLastPalette().first()
+
+            val newColorList = palette.colorList.minus(palette.background)
+            _state.update { it.copy(
+                canvasColor = palette.background,
+                strokeColor = newColorList[it.selectedMarker],
+                markerColors = newColorList,
+                preferredStrokeColors = newColorList,
+                preferredFillColors = newColorList
+            ) }
+        }
+    }
+
     private fun initializeWhiteboardById(whiteboardId: Long) {
         viewModelScope.launch {
             val whiteboard = whiteboardRepository.getWhiteboardById(whiteboardId)
@@ -630,20 +662,21 @@ class WhiteboardViewModel(
 
     @OptIn(DelicateCoroutinesApi::class)
     private fun upsertWhiteboard(pointer: Int? = state.value.updatePointer, miniatureSrc: String? = state.value.miniatureSrc) {
+        val snapshot = state.value.copy(updatePointer = pointer, miniatureSrc = miniatureSrc)
         GlobalScope.launch(Dispatchers.IO) {
             val now = Clock.System.now()
             val oldWhiteboardDate = if (updatedWhiteboardId.value == null) now else whiteboardRepository.getWhiteboardById(updatedWhiteboardId.value!!)?.createTime ?: now
 
             val whiteboard = Whiteboard(
-                name = _state.value.whiteboardName,
+                name = snapshot.whiteboardName,
                 createTime = oldWhiteboardDate,
                 lastModified = now,
-                palette = _state.value.palette,
-                markerColors = _state.value.markerColors,
-                strokeWidths = _state.value.strokeWidthList,
-                activeStrokeWidthButton = _state.value.activeStrokeWidthButton,
-                opacity = _state.value.opacity,
-                fillColor = _state.value.fillColor,
+                palette = snapshot.palette,
+                markerColors = snapshot.markerColors,
+                strokeWidths = snapshot.strokeWidthList,
+                activeStrokeWidthButton = snapshot.activeStrokeWidthButton,
+                opacity = snapshot.opacity,
+                fillColor = snapshot.fillColor,
                 id = updatedWhiteboardId.value,
                 pointer = pointer,
                 miniatureSrc = miniatureSrc

@@ -9,4 +9,6 @@ sealed class SettingsEvent {
     data class OnDrawingToolVisibilityChanged(val drawingToolVisibility: DrawingToolVisibility): SettingsEvent()
     data class OnDashboardSizeChanged(val dashboardSize: DashboardSizeOption): SettingsEvent()
     data class OnStylusInputChanged(val stylusInput: Boolean): SettingsEvent()
+    data class OnShowOpacityChanged(val showOpacity: Boolean): SettingsEvent()
+    data class OnLastPaletteChanged(val lastPalette: Boolean): SettingsEvent()
 }

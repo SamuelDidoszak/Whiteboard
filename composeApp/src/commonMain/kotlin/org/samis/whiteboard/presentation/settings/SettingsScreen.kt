@@ -52,6 +52,7 @@ import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.ic_theme
 import whiteboard.composeapp.generated.resources.img_pen
+import whiteboard.composeapp.generated.resources.opacity
 
 @Composable
 fun SettingsScreen(
@@ -100,6 +101,14 @@ fun SettingsScreen(
                     SettingsItemRow(
                         SettingsItem(Res.drawable.img_pen, "Stylus input", initialState = state.stylusInput, onToggle = { onEvent(
                             SettingsEvent.OnStylusInputChanged(!state.stylusInput)) })
+                    )
+                }
+            }
+            item {
+                Box(modifier = Modifier.padding(start = 16.dp)) {
+                    SettingsItemRow(
+                        SettingsItem(Res.drawable.opacity, "Show opacity slider", initialState = state.showOpacitySlider, onToggle = { onEvent(
+                            SettingsEvent.OnShowOpacityChanged(!state.showOpacitySlider)) })
                     )
                 }
             }

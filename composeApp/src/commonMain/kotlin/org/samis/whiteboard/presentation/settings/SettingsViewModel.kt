@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.samis.whiteboard.domain.model.ColorScheme
 import org.samis.whiteboard.domain.repository.SettingsRepository
+import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
+import org.samis.whiteboard.presentation.util.DrawingToolVisibility
+import org.samis.whiteboard.presentation.util.Palette
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository
@@ -17,17 +20,28 @@ class SettingsViewModel(
 
     private val _state = MutableStateFlow(SettingsState())
     val state = combine(
-        _state,
-        settingsRepository.getColorScheme(),
-        settingsRepository.getDrawingToolVisibility(),
-        settingsRepository.getDashboardSize(),
-        settingsRepository.getStylusInput()
-    ) { state, colorScheme, drawingToolVisibility, dashboardSize, stylusInput ->
-        state.copy(
+        listOf(
+            settingsRepository.getColorScheme(),
+            settingsRepository.getDrawingToolVisibility(),
+            settingsRepository.getDashboardSize(),
+            settingsRepository.getStylusInput(),
+            settingsRepository.getShowOpacitySlider(),
+            settingsRepository.getLastPalette()
+        )
+    ) { flows ->
+        val colorScheme = flows[0] as ColorScheme
+        val drawingToolVisibility = flows[1] as DrawingToolVisibility
+        val dashboardSize = flows[2] as DashboardSizeOption
+        val stylusInput = flows[3] as Boolean
+        val showOpacitySlider = flows[4] as Boolean
+        val lastPalette = flows[5] as Palette
+        SettingsState(
             currentScheme = colorScheme,
             drawingToolVisibility = drawingToolVisibility,
             dashboardSize = dashboardSize,
-            stylusInput = stylusInput
+            stylusInput = stylusInput,
+            showOpacitySlider = showOpacitySlider,
+            lastPalette = lastPalette
         )
     }.stateIn(
         scope = viewModelScope,
@@ -59,6 +73,16 @@ class SettingsViewModel(
                 viewModelScope.launch {
                     settingsRepository.saveStylusInput(event.stylusInput)
                 }
+            }
+
+            is SettingsEvent.OnShowOpacityChanged -> {
+                viewModelScope.launch {
+                    settingsRepository.saveShowOpacitySlider(event.showOpacity)
+                }
+            }
+
+            is SettingsEvent.OnLastPaletteChanged -> {
+                TODO()
             }
         }
     }

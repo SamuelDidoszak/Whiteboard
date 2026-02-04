@@ -6,6 +6,7 @@ import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.ColorScheme
 import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
+import org.samis.whiteboard.presentation.util.Palette
 
 interface SettingsRepository {
     fun getColorScheme(): Flow<ColorScheme>
@@ -16,9 +17,13 @@ interface SettingsRepository {
     fun getDrawingToolVisibility(): Flow<DrawingToolVisibility>
     fun getDashboardSize(): Flow<DashboardSizeOption>
     fun getStylusInput(): Flow<Boolean>
+    fun getShowOpacitySlider(): Flow<Boolean>
+    fun getLastPalette(): Flow<Palette>
     suspend fun saveColorScheme(colorScheme: ColorScheme)
     suspend fun savePreferredColors(colors: List<Color>, colorPaletteType: ColorPaletteType)
     suspend fun saveDrawingToolVisibility(toolVisibility: DrawingToolVisibility)
     suspend fun saveDashboardSize(size: DashboardSizeOption)
     suspend fun saveStylusInput(stylusInput: Boolean)
+    suspend fun saveShowOpacitySlider(showOpacitySlider: Boolean)
+    suspend fun saveLastPalette(palette: Palette)
 }
