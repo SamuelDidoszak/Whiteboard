@@ -40,9 +40,11 @@ fun DrawingToolBar(
         }
         if (isVisible(DrawingTool.LASER_PEN))
             AddButton(DrawingTool.LASER_PEN, backgroundColor, isTool(DrawingTool.LASER_PEN), onDrawingToolClick, 28.dp)
+        if (isVisible(DrawingTool.DASHER))
+            AddButton(DrawingTool.DASHER, backgroundColor, isTool(DrawingTool.DASHER), onDrawingToolClick, 28.dp)
         if (isVisible(DrawingTool.HIGHLIGHTER))
             AddButton(DrawingTool.HIGHLIGHTER, backgroundColor, isTool(DrawingTool.HIGHLIGHTER), onDrawingToolClick)
-        if (isVisible(DrawingTool.PEN) || isVisible(DrawingTool.LASER_PEN))
+        if (isVisible(DrawingTool.PEN) || isVisible(DrawingTool.LASER_PEN) || isVisible(DrawingTool.DASHER) || isVisible(DrawingTool.HIGHLIGHTER))
             Spacer(modifier = Modifier.height(12.dp))
 
         if (isVisible(DrawingTool.LINE))

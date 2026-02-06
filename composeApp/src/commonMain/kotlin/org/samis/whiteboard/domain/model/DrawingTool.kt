@@ -2,6 +2,7 @@ package org.samis.whiteboard.domain.model
 
 import org.jetbrains.compose.resources.DrawableResource
 import whiteboard.composeapp.generated.resources.Res
+import whiteboard.composeapp.generated.resources.dotted_line
 import whiteboard.composeapp.generated.resources.ic_arrow
 import whiteboard.composeapp.generated.resources.ic_circle
 import whiteboard.composeapp.generated.resources.ic_laser_pointer
@@ -18,6 +19,7 @@ enum class DrawingTool(
 ) {
     PEN(res = Res.drawable.img_pen, isColored = true),
     LASER_PEN(res = Res.drawable.ic_laser_pointer, isColored = true),
+    DASHER(res = Res.drawable.dotted_line, isColored = true),
     HIGHLIGHTER(res = Res.drawable.img_highlighter, isColored = true),
     DELETER(res = Res.drawable.img_eraser, isColored = true),
     ERASER(res = Res.drawable.img_eraser, isColored = true),

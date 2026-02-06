@@ -710,7 +710,7 @@ class WhiteboardViewModel(
         val startOffset = state.value.startingOffset
 
         val updatedPath: Path? = when (state.value.selectedDrawingTool) {
-            DrawingTool.PEN, DrawingTool.HIGHLIGHTER, DrawingTool.LASER_PEN, DrawingTool.ERASER -> {
+            DrawingTool.PEN, DrawingTool.HIGHLIGHTER, DrawingTool.DASHER, DrawingTool.LASER_PEN, DrawingTool.ERASER -> {
                 createFreehandPath(start = startOffset, continuingOffset = continuingOffset)
             }
 
@@ -764,10 +764,11 @@ class WhiteboardViewModel(
                                     state.value.strokeColor,
                             fillColor = state.value.fillColor,
                             opacity =
-                                if (state.value.selectedDrawingTool == DrawingTool.HIGHLIGHTER)
-                                    40f
-                                else
-                                    state.value.opacity,
+                                when (state.value.selectedDrawingTool) {
+                                    DrawingTool.HIGHLIGHTER -> 40f
+                                    DrawingTool.DASHER -> 50f
+                                    else -> state.value.opacity
+                                },
                             strokeWidth =
                                 if (state.value.selectedDrawingTool == DrawingTool.ERASER || state.value.selectedDrawingTool == DrawingTool.HIGHLIGHTER)
                                     eraserSize

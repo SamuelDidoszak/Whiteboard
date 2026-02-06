@@ -150,7 +150,6 @@ private fun DashboardSizeGroup(
     dashboardSize: DashboardSizeOption,
     onOptionSelected: (DashboardSizeOption) -> Unit,
 ) {
-    println("Current size: $dashboardSize")
     Row(
         modifier = modifier
             .fillMaxWidth()
