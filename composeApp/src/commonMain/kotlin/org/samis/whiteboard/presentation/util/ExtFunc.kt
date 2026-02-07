@@ -28,3 +28,11 @@ fun Int.toDp() = with(LocalDensity.current) { this@toDp.toDp() }
 fun Float.equalsDelta(other: Float, delta: Float = 0.0001f): Boolean = kotlin.math.abs(this - other) < delta
 
 fun Float.roundTo(step: Float): Float = (this / step).roundToInt() * step
+
+fun <T> List<T>.minusLast(element: T): List<T> {
+    for (i in this.indices.reversed()) {
+        if (this[i] == element)
+            return this.subList(0, i) + this.subList(i + 1, this.size)
+    }
+    return this
+}

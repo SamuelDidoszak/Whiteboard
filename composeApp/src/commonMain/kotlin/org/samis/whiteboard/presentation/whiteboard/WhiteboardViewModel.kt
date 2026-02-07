@@ -45,9 +45,9 @@ import org.samis.whiteboard.presentation.util.IContextProvider
 import org.samis.whiteboard.presentation.util.Palette
 import org.samis.whiteboard.presentation.util.capture
 import org.samis.whiteboard.presentation.util.formatDate
+import org.samis.whiteboard.presentation.util.minusLast
 import org.samis.whiteboard.presentation.util.roundTo
 import java.io.File
-import kotlin.collections.get
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.max
@@ -605,11 +605,14 @@ class WhiteboardViewModel(
     // Creates a new path and update with correct ids
     private fun insertPathAndUpdate(path: DrawnPath, update: Update) {
         viewModelScope.launch {
+            val currentPath: DrawnPath? = _state.value.currentPath
             val pathId = pathRepository.upsertPath(path)
             path.id = pathId
             val update = update.copyWithPath(path)
             insertUpdate(update)
             onUpdate(update)
+            if (currentPath != null && currentPath.id == null)
+                _state.update { it.copy(paths = _state.value.paths.minusLast(currentPath)) }
         }
     }
 

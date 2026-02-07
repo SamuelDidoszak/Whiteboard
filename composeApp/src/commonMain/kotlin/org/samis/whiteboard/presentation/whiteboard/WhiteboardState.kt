@@ -66,6 +66,12 @@ data class WhiteboardState(
             var otherColors = listOf<Color>()
             if (preferredStrokeColors.size > 4)
                 otherColors = preferredStrokeColors.subList(4, preferredStrokeColors.size)
-            return Palette(canvasColor, preferredStrokeColors[0], preferredStrokeColors[1], preferredStrokeColors[2], preferredStrokeColors[3], otherColors)
+            return Palette(
+                canvasColor,
+                preferredStrokeColors.getOrNull(0) ?: markerColors[0],
+                preferredStrokeColors.getOrNull(1) ?: markerColors[1],
+                preferredStrokeColors.getOrNull(2) ?: markerColors[2],
+                preferredStrokeColors.getOrNull(3) ?: markerColors[3],
+                otherColors)
         }
 }
