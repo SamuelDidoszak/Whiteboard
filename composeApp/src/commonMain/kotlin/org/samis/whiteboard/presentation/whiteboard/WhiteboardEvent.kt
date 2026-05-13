@@ -41,7 +41,7 @@ sealed class WhiteboardEvent {
 
     data class SetCaptureController(val captureController: Any): WhiteboardEvent()
     data class SavePicture(val scope: CoroutineScope): WhiteboardEvent()
-    data class SaveMiniature(val scope: CoroutineScope): WhiteboardEvent()
+    data class SaveMiniature(val scope: CoroutineScope, val stateSnapshot: WhiteboardState? = null): WhiteboardEvent()
 
     data class StrokeWidthButtonClicked(val strokeNum: Int): WhiteboardEvent()
     data object OnStrokeWidthSliderClose: WhiteboardEvent()

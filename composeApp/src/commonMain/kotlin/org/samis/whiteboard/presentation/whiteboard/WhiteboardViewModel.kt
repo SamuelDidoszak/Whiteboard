@@ -70,7 +70,7 @@ class WhiteboardViewModel(
 
     private var updatedWhiteboardId = MutableStateFlow(whiteboardId)
     private var updateMiniature = false
-    private val updateMiniatureTask = DelayedTask(AppScope.scope) {
+    private val updateMiniatureTask = DelayedTask<WhiteboardState>(AppScope.scope) {
         onEvent(WhiteboardEvent.SaveMiniature(viewModelScope))
     }
 
@@ -101,10 +101,10 @@ class WhiteboardViewModel(
     init {
         whiteboardId?.let { id ->
             initializeWhiteboardById(id)
+            initializeUpdates(id)
         }
         if (whiteboardId == null)
             initializeDefaultPalette()
-        initializeUpdates(updatedWhiteboardId.value ?: -1)
     }
 
     fun onEvent(event: WhiteboardEvent) {
@@ -212,7 +212,7 @@ class WhiteboardViewModel(
                 upsertWhiteboard()
 
                 updateMiniature = true
-                updateMiniatureTask.start(4000)
+                updateMiniatureTask.start(4000, state.value.copy())
             }
 
             is WhiteboardEvent.StrokeColorChange -> {
@@ -342,7 +342,7 @@ class WhiteboardViewModel(
                         upsertWhiteboard()
 
                         updateMiniature = true
-                        updateMiniatureTask.start(4000)
+                        updateMiniatureTask.start(4000, _state.value.copy())
                     }
 
                     ColorPaletteType.STROKE -> {
@@ -492,7 +492,7 @@ class WhiteboardViewModel(
                 ) }
                 if (_state.value.updates.isNotEmpty()) {
                     updateMiniature = true
-                    updateMiniatureTask.start(10)
+                    updateMiniatureTask.start(4000, state.value.copy())
                     upsertWhiteboard()
                 }
                 viewModelScope.launch {
@@ -555,7 +555,7 @@ class WhiteboardViewModel(
         if (skipMiniature)
             return
         updateMiniature = true
-        updateMiniatureTask.start(4000)
+        updateMiniatureTask.start(4000, state.value.copy())
     }
 
     private fun insertUpdate(update: Update) {
@@ -664,8 +664,8 @@ class WhiteboardViewModel(
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    private fun upsertWhiteboard(pointer: Int? = state.value.updatePointer, miniatureSrc: String? = state.value.miniatureSrc) {
-        val snapshot = state.value.copy(updatePointer = pointer, miniatureSrc = miniatureSrc)
+    private fun upsertWhiteboard(pointer: Int? = state.value.updatePointer, snapshot: WhiteboardState? = null, miniatureSrc: String? = state.value.miniatureSrc) {
+        val snapshot = snapshot ?: state.value.copy(updatePointer = pointer, miniatureSrc = miniatureSrc)
         GlobalScope.launch(Dispatchers.IO) {
             val now = Clock.System.now()
             val oldWhiteboardDate = if (updatedWhiteboardId.value == null) now else whiteboardRepository.getWhiteboardById(updatedWhiteboardId.value!!)?.createTime ?: now
