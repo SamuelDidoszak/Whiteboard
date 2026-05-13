@@ -37,6 +37,22 @@ fun CommandBarHorizontal(
                 modifier = Modifier.size(25.dp)
             )
         }
+        Spacer(modifier = Modifier.size(6.dp))
+        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onMenuIconClick) {
+            Icon(
+                imageVector = Icons.Filled.Menu,
+                contentDescription = "Command Palette",
+                modifier = Modifier.size(25.dp)
+            )
+        }
+        Spacer(modifier = Modifier.size(6.dp))
+        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onSaveIconClick) {
+            Icon(
+                imageVector = Icons.Filled.Download,
+                contentDescription = "Save As Picture",
+                modifier = Modifier.size(25.dp)
+            )
+        }
         Spacer(modifier = Modifier.weight(1f))
         ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onUndoIconClick) {
             Icon(
@@ -45,24 +61,11 @@ fun CommandBarHorizontal(
                 modifier = Modifier.size(25.dp)
             )
         }
+        Spacer(modifier = Modifier.size(6.dp))
         ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onRedoIconClick) {
             Icon(
                 painter = painterResource(Res.drawable.ic_redo),
                 contentDescription = "Redo",
-                modifier = Modifier.size(25.dp)
-            )
-        }
-        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onMenuIconClick) {
-            Icon(
-                imageVector = Icons.Filled.Menu,
-                contentDescription = "Command Palette",
-                modifier = Modifier.size(25.dp)
-            )
-        }
-        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onSaveIconClick) {
-            Icon(
-                imageVector = Icons.Filled.Download,
-                contentDescription = "Save As Picture",
                 modifier = Modifier.size(25.dp)
             )
         }

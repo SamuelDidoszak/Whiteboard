@@ -20,6 +20,8 @@ sealed class WhiteboardEvent {
     data class StrokeColorChange(val strokeColor: Color, val modifyColor: Boolean) : WhiteboardEvent()
     data class FillColorChange(val fillColor: Color) : WhiteboardEvent()
 
+    data object OnDrawingToolButtonClick: WhiteboardEvent()
+    data object OnDrawingToolDialogClose: WhiteboardEvent()
     data object OnCommandPaletteIconClick: WhiteboardEvent()
     data object OnCommandPaletteClose: WhiteboardEvent()
     data object OnPaletteEditMode: WhiteboardEvent()

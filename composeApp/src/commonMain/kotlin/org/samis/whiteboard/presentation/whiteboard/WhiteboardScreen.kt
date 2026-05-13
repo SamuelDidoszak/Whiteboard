@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,8 +16,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -61,6 +64,8 @@ import org.samis.whiteboard.presentation.whiteboard.component.CommandBarVertical
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteCard
 import org.samis.whiteboard.presentation.whiteboard.component.CommandPaletteDrawerContent
 import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolBar
+import org.samis.whiteboard.presentation.whiteboard.component.DrawingToolDialog
+import org.samis.whiteboard.presentation.whiteboard.component.ElevatedIconButton
 import org.samis.whiteboard.presentation.whiteboard.component.MarkerColorBar
 import org.samis.whiteboard.presentation.whiteboard.component.RemovePaletteDialog
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthBar
@@ -126,7 +131,7 @@ fun WhiteboardScreen(
                             changeEditMode = { onEvent(WhiteboardEvent.OnPaletteEditMode) },
                             onPaletteAdded = { onEvent(WhiteboardEvent.OnPaletteAdded(it)) },
                             onPaletteRemoved = { onEvent(WhiteboardEvent.ShowRemovePaletteDialog(it)) },
-                            onCloseIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteClose) },
+                            onCloseIconClick = { scope.launch { drawerState.close() } },
                             colorDeletionMode = state.canvasColorDeletionMode,
                             onSetColorDeletionMode = { onEvent(WhiteboardEvent.SetColorDeletionMode(it, ColorPaletteType.CANVAS)) },
                             onColorDeleted = { color: Color, palette: ColorPaletteType ->
@@ -143,16 +148,18 @@ fun WhiteboardScreen(
                                         val down = awaitFirstDown(requireUnconsumed = false)
                                         onEvent(WhiteboardEvent.OnCardClose)
                                         onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                        onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
                                         down.consume()
                                     }
                                 }},
                         state = state,
                         onEvent = onEvent
                     )
+
                     CommandBarHorizontal(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .padding(20.dp),
+                            .padding(10.dp),
                         backgroundColor = state.canvasColor,
                         onHomeIconClick = {
                             onEvent(WhiteboardEvent.SaveMiniature(scope))
@@ -162,6 +169,122 @@ fun WhiteboardScreen(
                         onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
                         onRedoIconClick = { onEvent(WhiteboardEvent.Redo) }
+                    )
+                    Row(
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    ) {
+                        MarkerColorBar(
+                            modifier = Modifier.padding(horizontal = 10.dp)
+                                .align(Alignment.Bottom),
+                            penWidth = 24.dp,
+                            penHeight = 48.dp,
+                            padding = 6.dp,
+                            markerColors = state.markerColors,
+                            selectedMarker = state.selectedMarker,
+                            selectedDrawingTool = state.selectedDrawingTool,
+                            drawingToolVisibility = state.drawingToolVisibility,
+                            onClick = { newColor: Color ->
+                                onEvent(WhiteboardEvent.StrokeColorChange(newColor, false))
+                                onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                            },
+                            onEraserClick = { eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType)) }
+                        )
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.Bottom)
+                        ) {
+                            StrokeWidthBar(
+                                modifier = Modifier.height(48.dp),
+                                minButtonSize = 12.dp,
+                                maxButtonSize = 30.dp,
+                                strokeWidthList = state.strokeWidthList,
+                                activeButton = state.activeStrokeWidthButton,
+                                canvasColor = state.canvasColor,
+                                onClick = { strokeNum: Int ->
+                                    onEvent(WhiteboardEvent.StrokeWidthButtonClicked(strokeNum))
+                                    onEvent(WhiteboardEvent.OnCardClose)
+                                    onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                    onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                }
+                            )
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(end = 10.dp, bottom = 6.dp),
+                            verticalArrangement = Arrangement.Bottom
+                        ) {
+                            DrawingToolDialog(
+                                modifier = Modifier.padding(bottom = 24.dp),
+                                isDrawingToolDialogVisible = state.isDrawingToolDialogOpen,
+                                backgroundColor = state.canvasColor,
+                                drawingToolVisibility = state.drawingToolVisibility,
+                                currentDrawingTool = state.selectedDrawingTool,
+                                onDrawingToolClick = { drawingTool: DrawingTool ->
+                                    onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
+                                    onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                    onEvent(WhiteboardEvent.OnCardClose)
+                                    onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                    onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                }
+                            )
+                            ElevatedIconButton(
+                                backgroundColor = state.canvasColor,
+                                isSelected = true,
+                                onClick = {
+                                    onEvent(WhiteboardEvent.OnDrawingToolButtonClick)
+                                    onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                    onEvent(WhiteboardEvent.OnCardClose)
+                                    onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                }) {
+                                Icon(
+                                    painter = painterResource(state.selectedDrawingTool.res),
+                                    contentDescription = state.selectedDrawingTool.name.lowercase().replaceFirstChar { it.uppercaseChar() },
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                        }
+                    }
+                    ColorPickerCard(
+                        modifier = Modifier
+                            .padding(start = 16.dp * state.selectedMarker, bottom = 30.dp)
+                            .align(Alignment.BottomStart),
+                        isVisible = state.isColorPickerOpen,
+                        selectedDrawingTool = state.selectedDrawingTool,
+                        strokeColors = state.preferredStrokeColors,
+                        selectedStrokeColor = state.strokeColor,
+                        onStrokeColorChange = { newColor: Color ->
+                            onEvent(WhiteboardEvent.StrokeColorChange(newColor, true))
+                        },
+                        fillColors = state.preferredFillColors,
+                        selectedFillColor = state.fillColor,
+                        onFillColorChange =  { newColor: Color ->
+                            onEvent(WhiteboardEvent.FillColorChange(newColor))
+                        },
+                        colorDeletionMode = state.markerColorDeletionMode,
+                        onSetColorDeletionMode = { mode: Boolean -> onEvent(WhiteboardEvent.SetColorDeletionMode(mode, ColorPaletteType.MARKER))},
+                        onColorDeleted = { color: Color, palette: ColorPaletteType ->
+                            onEvent(WhiteboardEvent.OnColorDeleted(color, palette)) },
+                        onColorPaletteIconClick = { colorPaletteType: ColorPaletteType ->
+                            onEvent(WhiteboardEvent.OnColorPaletteIconClick(colorPaletteType))
+                        },
+                        onCloseIconClick = { onEvent(WhiteboardEvent.OnCardClose) }
+                    )
+                    StrokeWidthSliderCard(
+                        modifier = Modifier
+                            .padding(bottom = 30.dp)
+                            .align(Alignment.BottomEnd),
+                        width = 218.dp,
+                        isVisible = state.isStrokeWidthSliderOpen,
+                        showOpacity = state.showOpacitySlider,
+                        strokeWidthSliderValue = state.strokeWidthList[state.activeStrokeWidthButton],
+                        onStrokeWidthSliderValueChange = { strokeWidth: Float -> onEvent(WhiteboardEvent.StrokeSliderValueChange(strokeWidth)) },
+                        opacitySliderValue = state.opacity,
+                        onOpacitySliderValueChange = { opacity: Float -> onEvent(WhiteboardEvent.OpacitySliderValueChange(opacity)) },
+                        onCloseIconClick = { onEvent(WhiteboardEvent.OnStrokeWidthSliderClose) }
                     )
                 }
             }
@@ -273,6 +396,7 @@ fun WhiteboardScreen(
                         MarkerColorBar(
                             penWidth = 30.dp,
                             penHeight = 60.dp,
+                            padding = 10.dp,
                             markerColors = state.markerColors,
                             selectedMarker = state.selectedMarker,
                             selectedDrawingTool = state.selectedDrawingTool,

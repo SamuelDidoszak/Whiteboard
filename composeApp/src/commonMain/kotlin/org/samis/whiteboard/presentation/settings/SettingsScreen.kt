@@ -74,14 +74,17 @@ fun SettingsScreen(
         modifier = Modifier.fillMaxSize()
     ) {
         SettingsTopBar(onBackIconClick = onBackIconClick)
-        DashboardSizeGroup(
-            modifier = Modifier.fillMaxWidth(fraction = 0.25f),
-            dashboardSize = state.dashboardSize,
-            onOptionSelected = { onEvent(SettingsEvent.OnDashboardSizeChanged(it)) }
-        )
+
         LazyColumn(
-            modifier = Modifier.fillMaxWidth(fraction = 0.25f)
+            modifier = Modifier.width(320.dp)
         ) {
+            item {
+                DashboardSizeGroup(
+                    modifier = Modifier.width(320.dp),
+                    dashboardSize = state.dashboardSize,
+                    onOptionSelected = { onEvent(SettingsEvent.OnDashboardSizeChanged(it)) }
+                )
+            }
             item {
                 ListItem(
                     modifier = Modifier.clickable { isColorSchemeDialogOpen = true },
@@ -99,28 +102,48 @@ fun SettingsScreen(
             item {
                 Box(modifier = Modifier.padding(start = 16.dp)) {
                     SettingsItemRow(
-                        SettingsItem(Res.drawable.img_pen, "Stylus input", initialState = state.stylusInput, onToggle = { onEvent(
-                            SettingsEvent.OnStylusInputChanged(!state.stylusInput)) })
+                        SettingsItem(
+                            Res.drawable.img_pen,
+                            "Stylus input",
+                            initialState = state.stylusInput,
+                            onToggle = {
+                                onEvent(
+                                    SettingsEvent.OnStylusInputChanged(!state.stylusInput)
+                                )
+                            })
                     )
                 }
             }
             item {
                 Box(modifier = Modifier.padding(start = 16.dp)) {
                     SettingsItemRow(
-                        SettingsItem(Res.drawable.opacity, "Show opacity slider", initialState = state.showOpacitySlider, onToggle = { onEvent(
-                            SettingsEvent.OnShowOpacityChanged(!state.showOpacitySlider)) })
+                        SettingsItem(
+                            Res.drawable.opacity,
+                            "Show opacity slider",
+                            initialState = state.showOpacitySlider,
+                            onToggle = {
+                                onEvent(
+                                    SettingsEvent.OnShowOpacityChanged(!state.showOpacitySlider)
+                                )
+                            })
                     )
                 }
             }
             item {
                 SettingsGroup(
                     title = "Drawing tools",
-                    settingsItems = state.drawingToolVisibility.createSettingsList(state.drawingToolVisibility,
-                    onDrawingToolVisibilityChanged = { onEvent(SettingsEvent.OnDrawingToolVisibilityChanged(it)) })
+                    settingsItems = state.drawingToolVisibility.createSettingsList(
+                        state.drawingToolVisibility,
+                        onDrawingToolVisibilityChanged = {
+                            onEvent(
+                                SettingsEvent.OnDrawingToolVisibilityChanged(
+                                    it
+                                )
+                            )
+                        })
                 )
             }
         }
-
     }
 }
 

@@ -20,6 +20,8 @@ fun ScreenSizeInfo.getUiType(): UiType {
     }
 }
 
+fun ScreenSizeInfo.getSize(): Pair<Dp, Dp> = Pair(widthDp, heightDp)
+
 enum class UiType {
     COMPACT,
     MEDIUM,

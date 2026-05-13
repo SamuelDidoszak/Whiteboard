@@ -41,6 +41,7 @@ fun MarkerColorBar(
     modifier: Modifier = Modifier,
     penWidth: Dp,
     penHeight: Dp,
+    padding: Dp,
     markerColors: List<Color>,
     selectedMarker: Int,
     selectedDrawingTool: DrawingTool,
@@ -55,7 +56,7 @@ fun MarkerColorBar(
         for (i in 0 until 4) {
             val open = i == selectedMarker
             Marker(markerColors[i], open, penWidth, penHeight, onClick)
-            Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.width(padding))
         }
         if (drawingToolVisibility.isToolVisible(DrawingTool.ERASER) || drawingToolVisibility.isToolVisible(DrawingTool.DELETER))
             Eraser(penWidth, penHeight, selectedDrawingTool, drawingToolVisibility, onEraserClick)

@@ -34,6 +34,7 @@ data class WhiteboardState(
     val selectedMarker: Int = 0,
     val opacity: Float = 100f,
 
+    val isDrawingToolDialogOpen: Boolean = true,
     val isCommandPaletteOpen: Boolean = false,
     val isPaletteEditMode: Boolean = false,
     val selectedColorPaletteType: ColorPaletteType = ColorPaletteType.STROKE,

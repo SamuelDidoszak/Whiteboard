@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -56,6 +57,7 @@ fun StrokeWidthSliderDrawer(
 @Composable
 fun StrokeWidthSliderCard(
     modifier: Modifier = Modifier,
+    width: Dp = 256.dp,
     isVisible: Boolean,
     showOpacity: Boolean,
     strokeWidthSliderValue: Float,
@@ -71,7 +73,7 @@ fun StrokeWidthSliderCard(
         exit = fadeOut()
     ) {
         ElevatedCard(
-            modifier = modifier.width(256.dp),
+            modifier = modifier.width(width),
             elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)
         ) {
             StrokeWidthSliderContent(

@@ -256,6 +256,14 @@ class WhiteboardViewModel(
                 _state.update { it.copy(laserPenPath = null) }
             }
 
+            is WhiteboardEvent.OnDrawingToolButtonClick -> {
+                _state.update { it.copy(isDrawingToolDialogOpen = !_state.value.isDrawingToolDialogOpen) }
+            }
+
+            is WhiteboardEvent.OnDrawingToolDialogClose -> {
+                _state.update { it.copy(isDrawingToolDialogOpen = false) }
+            }
+
             is WhiteboardEvent.OnCommandPaletteIconClick -> {
                 _state.update {
                     it.copy(isCommandPaletteOpen = !_state.value.isCommandPaletteOpen)
