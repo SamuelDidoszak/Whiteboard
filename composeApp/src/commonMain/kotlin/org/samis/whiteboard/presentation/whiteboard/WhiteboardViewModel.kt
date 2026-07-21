@@ -71,7 +71,7 @@ class WhiteboardViewModel(
     private var updatedWhiteboardId = MutableStateFlow(whiteboardId)
     private var updateMiniature = false
     private val updateMiniatureTask = DelayedTask<WhiteboardState>(AppScope.scope) {
-        onEvent(WhiteboardEvent.SaveMiniature(viewModelScope))
+        whiteboardState -> onEvent(WhiteboardEvent.SaveMiniature(viewModelScope, whiteboardState))
     }
 
     private val _state = MutableStateFlow(WhiteboardState())
@@ -212,7 +212,7 @@ class WhiteboardViewModel(
                 upsertWhiteboard()
 
                 updateMiniature = true
-                updateMiniatureTask.start(4000, state.value.copy())
+                updateMiniatureTask.start(4000, _state.value.copy())
             }
 
             is WhiteboardEvent.StrokeColorChange -> {
@@ -404,9 +404,9 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.Undo -> {
-                var pointer: Int? = state.value.updatePointer ?: return
+                var pointer: Int? = _state.value.updatePointer ?: return
                 if (!canUndo) return
-                val update = state.value.updates[pointer!!]
+                val update = _state.value.updates[pointer!!]
                 onUpdate(update.undo(), true)
                 deleteUpdate(update)
                 pointer -= 1
@@ -417,11 +417,11 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.Redo -> {
-                val pointer: Int = state.value.updatePointer ?: -1
-                if (pointer > state.value.updates.size)
+                val pointer: Int = _state.value.updatePointer ?: -1
+                if (pointer > _state.value.updates.size)
                     return
                 if (!canUndo) return
-                val lastUpdate = state.value.undoArray.lastOrNull() ?: return
+                val lastUpdate = _state.value.undoArray.lastOrNull() ?: return
                 onUpdate(lastUpdate, false)
                 insertUpdate(lastUpdate)
                 _state.update { it.copy(updatePointer = pointer + 1, undoArray = it.undoArray.dropLast(1)) }
@@ -447,21 +447,22 @@ class WhiteboardViewModel(
             is WhiteboardEvent.SaveMiniature -> {
                 if (!updateMiniature) return
                 updateMiniature = false
-                val captureController = state.value.captureController ?: return
+                val whiteboardState = event.stateSnapshot ?: _state.value
+                val captureController = whiteboardState.captureController ?: return
                 capture(
                     event.scope,
                     captureController,
                     contextProvider,
-                    state.value.whiteboardName,
+                    whiteboardState.whiteboardName,
                     true,
-                    _state.value.miniatureSrc
+                    whiteboardState.miniatureSrc
                 ) {
                     file: File ->
-                    var newMiniatureSrc = _state.value.miniatureSrc
+                    var newMiniatureSrc = whiteboardState.miniatureSrc
                     if (file.path.isNotEmpty())
                         newMiniatureSrc = file.path
                     _state.update { it.copy(miniatureSrc = newMiniatureSrc) }
-                    upsertWhiteboard(miniatureSrc = newMiniatureSrc)
+                    upsertWhiteboard(miniatureSrc = newMiniatureSrc, whiteboardId = updatedWhiteboardId.value)
                 }
             }
 
@@ -500,8 +501,7 @@ class WhiteboardViewModel(
                 ) }
                 if (_state.value.updates.isNotEmpty()) {
                     updateMiniature = true
-                    updateMiniatureTask.start(4000, state.value.copy())
-                    upsertWhiteboard()
+                    updateMiniatureTask.start(4000, _state.value.copy())
                 }
                 viewModelScope.launch {
                     settingsRepository.saveLastPalette(event.palette)
@@ -563,7 +563,7 @@ class WhiteboardViewModel(
         if (skipMiniature)
             return
         updateMiniature = true
-        updateMiniatureTask.start(4000, state.value.copy())
+        updateMiniatureTask.start(4000, _state.value.copy())
     }
 
     private fun insertUpdate(update: Update) {
@@ -672,11 +672,15 @@ class WhiteboardViewModel(
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    private fun upsertWhiteboard(pointer: Int? = state.value.updatePointer, snapshot: WhiteboardState? = null, miniatureSrc: String? = state.value.miniatureSrc) {
-        val snapshot = snapshot ?: state.value.copy(updatePointer = pointer, miniatureSrc = miniatureSrc)
+    private fun upsertWhiteboard(
+        pointer: Int? = _state.value.updatePointer,
+        snapshot: WhiteboardState? = null,
+        miniatureSrc: String? = _state.value.miniatureSrc,
+        whiteboardId: Long? = updatedWhiteboardId.value) {
+        val snapshot = snapshot ?: _state.value.copy(updatePointer = pointer, miniatureSrc = miniatureSrc)
         GlobalScope.launch(Dispatchers.IO) {
             val now = Clock.System.now()
-            val oldWhiteboardDate = if (updatedWhiteboardId.value == null) now else whiteboardRepository.getWhiteboardById(updatedWhiteboardId.value!!)?.createTime ?: now
+            val oldWhiteboardDate = if (whiteboardId == null) now else whiteboardRepository.getWhiteboardById(updatedWhiteboardId.value!!)?.createTime ?: now
 
             val whiteboard = Whiteboard(
                 name = snapshot.whiteboardName,
@@ -688,7 +692,7 @@ class WhiteboardViewModel(
                 activeStrokeWidthButton = snapshot.activeStrokeWidthButton,
                 opacity = snapshot.opacity,
                 fillColor = snapshot.fillColor,
-                id = updatedWhiteboardId.value,
+                id = whiteboardId,
                 pointer = pointer,
                 miniatureSrc = miniatureSrc
             )
