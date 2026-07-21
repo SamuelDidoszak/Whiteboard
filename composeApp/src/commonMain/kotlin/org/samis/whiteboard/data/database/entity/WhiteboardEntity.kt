@@ -19,5 +19,7 @@ data class WhiteboardEntity(
     val opacity: Float,
     val fillColor: Int,
     val pointer: Int?,
-    val miniatureSrc: String?
+    val miniatureSrc: String?,
+    val canvasWidth: Int,
+    val canvasHeight: Int
 )

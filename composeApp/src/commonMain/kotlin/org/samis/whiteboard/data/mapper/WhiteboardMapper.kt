@@ -2,6 +2,7 @@ package org.samis.whiteboard.data.mapper
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.IntSize
 import org.samis.whiteboard.data.database.entity.WhiteboardEntity
 import org.samis.whiteboard.domain.model.Whiteboard
 import org.samis.whiteboard.presentation.util.Palette
@@ -19,7 +20,9 @@ fun Whiteboard.toWhiteboardEntity(): WhiteboardEntity {
         opacity = opacity,
         fillColor = fillColor.toArgb(),
         pointer = pointer,
-        miniatureSrc = miniatureSrc
+        miniatureSrc = miniatureSrc,
+        canvasWidth = canvasSize.width,
+        canvasHeight = canvasSize.height
     )
 }
 
@@ -36,7 +39,8 @@ fun WhiteboardEntity.toWhiteboard(): Whiteboard {
         opacity = opacity,
         fillColor = Color(fillColor),
         pointer = pointer,
-        miniatureSrc = miniatureSrc
+        miniatureSrc = miniatureSrc,
+        canvasSize = IntSize(canvasWidth, canvasHeight)
     )
 }
 

@@ -2,6 +2,7 @@ package org.samis.whiteboard.presentation.whiteboard
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntSize
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
@@ -56,6 +57,8 @@ data class WhiteboardState(
     val preferredFillColors: List<Color> = defaultDrawingColors,
     val preferredCanvasColors: List<Color> = defaultCanvasColors,
     val stylusInput: Boolean = false,
+
+    val canvasSize: IntSize = IntSize.Zero,
 
     val captureController: Any? = null
 ) {

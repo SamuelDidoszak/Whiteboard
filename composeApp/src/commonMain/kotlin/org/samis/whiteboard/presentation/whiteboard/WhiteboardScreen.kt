@@ -25,6 +25,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -140,21 +142,24 @@ fun WhiteboardScreen(
                         )
                     },
                 ) {
-                    DrawingCanvas(
-                        modifier = Modifier.fillMaxSize()
-                            .pointerInput(Unit) {
-                                awaitPointerEventScope {
-                                    while (true) {
-                                        val down = awaitFirstDown(requireUnconsumed = false)
-                                        onEvent(WhiteboardEvent.OnCardClose)
-                                        onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
-                                        onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
-                                        down.consume()
-                                    }
-                                }},
+                    key(screenSize) {
+                        DrawingCanvas(
+                            modifier = Modifier.fillMaxSize()
+                                .onSizeChanged { size -> onEvent(WhiteboardEvent.CanvasSizeChanged(size)) }
+                                .pointerInput(Unit) {
+                                    awaitPointerEventScope {
+                                        while (true) {
+                                            val down = awaitFirstDown(requireUnconsumed = false)
+                                            onEvent(WhiteboardEvent.OnCardClose)
+                                            onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                            onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                            down.consume()
+                                        }
+                                    }},
                         state = state,
                         onEvent = onEvent
                     )
+                    }
 
                     CommandBarHorizontal(
                         modifier = Modifier
@@ -290,21 +295,24 @@ fun WhiteboardScreen(
             }
 
             else -> {
-                DrawingCanvas(
-                    modifier = Modifier.fillMaxSize()
-                        .pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val down = awaitFirstDown(requireUnconsumed = false)
-                                onEvent(WhiteboardEvent.OnCardClose)
-                                onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
-                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
-                                down.consume()
-                            }
-                        }},
+                key(screenSize) {
+                    DrawingCanvas(
+                        modifier = Modifier.fillMaxSize()
+                            .onSizeChanged { size -> onEvent(WhiteboardEvent.CanvasSizeChanged(size)) }
+                            .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    onEvent(WhiteboardEvent.OnCardClose)
+                                    onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                    onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                    down.consume()
+                                }
+                            }},
                     state = state,
                     onEvent = onEvent
                 )
+                }
                 Row(
                     modifier = Modifier
                         .fillMaxHeight()

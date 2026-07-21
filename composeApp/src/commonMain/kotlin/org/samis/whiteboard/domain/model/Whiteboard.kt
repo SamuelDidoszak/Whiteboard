@@ -1,6 +1,7 @@
 package org.samis.whiteboard.domain.model
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntSize
 import kotlinx.datetime.Instant
 import org.samis.whiteboard.presentation.theme.Palettes
 import org.samis.whiteboard.presentation.util.Palette
@@ -17,5 +18,6 @@ data class Whiteboard(
     val opacity: Float = 100f,
     val fillColor: Color = Color.Transparent,
     val pointer: Int? = null,
-    val miniatureSrc: String? = null
+    val miniatureSrc: String? = null,
+    val canvasSize: IntSize = IntSize.Zero
 )

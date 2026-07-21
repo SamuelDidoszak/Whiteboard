@@ -6,6 +6,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -67,6 +68,7 @@ class WhiteboardViewModel(
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
     private var canUndo = true
     private var isFirstPath = true
+    private var tempInitSize = IntSize.Zero
 
     private var updatedWhiteboardId = MutableStateFlow(whiteboardId)
     private var updateMiniature = false
@@ -470,6 +472,36 @@ class WhiteboardViewModel(
                 _state.update { it.copy(isStrokeWidthSliderOpen = false) }
             }
 
+            is WhiteboardEvent.CanvasSizeChanged -> {
+                val oldSize = _state.value.canvasSize
+                val newSize = event.size
+
+                if (whiteboardId == null)
+                    _state.update { it.copy(canvasSize = newSize) }
+                else if (_state.value.paths.isEmpty())
+                    tempInitSize = newSize
+                else if (oldSize != newSize) {
+                    val offsetX = (newSize.width - oldSize.width) / 2f
+                    val offsetY = (newSize.height - oldSize.height) / 2f
+                    val translation = Offset(offsetX, offsetY)
+                    _state.update { it.copy(
+                        canvasSize = newSize,
+                        paths = it.paths.map { path -> path.translate(translation) },
+                        updates = it.updates.map { update ->
+                            val p = (update as Update.HasPath).path
+                            update.copyWithPath(p.translate(translation))
+                        },
+                        undoArray = it.undoArray.map { update ->
+                            val p = (update as Update.HasPath).path
+                            update.copyWithPath(p.translate(translation))
+                        },
+                        currentPath = it.currentPath?.translate(translation),
+                        pathsToBeDeleted = it.pathsToBeDeleted.map { path -> path.translate(translation) },
+                        laserPenPath = it.laserPenPath?.translate(translation)
+                    )}
+                }
+            }
+
             is WhiteboardEvent.StrokeWidthButtonClicked -> {
                 val open = state.value.activeStrokeWidthButton == event.strokeNum && !state.value.isStrokeWidthSliderOpen
                 _state.update { it.copy(
@@ -605,7 +637,7 @@ class WhiteboardViewModel(
                             }
                             else
                                 onUpdate(it, skipMiniature = true)
-                        }
+                        }.also { onEvent(WhiteboardEvent.CanvasSizeChanged(tempInitSize)) }
                     }
             }
     }
@@ -664,7 +696,8 @@ class WhiteboardViewModel(
                         opacity = whiteboard.opacity,
                         fillColor = whiteboard.fillColor,
                         updatePointer = whiteboard.pointer,
-                        miniatureSrc = whiteboard.miniatureSrc
+                        miniatureSrc = whiteboard.miniatureSrc,
+                        canvasSize = whiteboard.canvasSize
                     )
                 }
             }
@@ -694,7 +727,8 @@ class WhiteboardViewModel(
                 fillColor = snapshot.fillColor,
                 id = whiteboardId,
                 pointer = pointer,
-                miniatureSrc = miniatureSrc
+                miniatureSrc = miniatureSrc,
+                canvasSize = snapshot.canvasSize
             )
             val newId = whiteboardRepository.upsertWhiteboard(whiteboard)
             updatedWhiteboardId.value = newId

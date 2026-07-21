@@ -2,6 +2,7 @@ package org.samis.whiteboard.presentation.whiteboard
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.CoroutineScope
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
@@ -49,4 +50,6 @@ sealed class WhiteboardEvent {
     data object OnStrokeWidthSliderClose: WhiteboardEvent()
 
     data class OnPalettePicked(val palette: Palette): WhiteboardEvent()
+
+    data class CanvasSizeChanged(val size: IntSize) : WhiteboardEvent()
 }

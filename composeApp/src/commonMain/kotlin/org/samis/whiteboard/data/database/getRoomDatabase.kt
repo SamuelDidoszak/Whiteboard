@@ -7,6 +7,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
 import kotlinx.coroutines.Dispatchers
 import org.samis.whiteboard.data.util.Constant.PALETTE_TABLE_NAME
+import org.samis.whiteboard.data.util.Constant.WHITEBOARD_TABLE_NAME
 
 fun getRoomDatabase(
     builder: RoomDatabase.Builder<AppDatabase>,
@@ -14,10 +15,16 @@ fun getRoomDatabase(
     return builder
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
-        .addMigrations(MIGRATION_12_13)
+        .addMigrations(MIGRATION_12_13, MIGRATION_13_14)
         .build()
 }
 
+private val MIGRATION_13_14 = object : Migration(13, 14) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE $WHITEBOARD_TABLE_NAME ADD COLUMN canvasWidth INTEGER NOT NULL DEFAULT 0")
+        connection.execSQL("ALTER TABLE $WHITEBOARD_TABLE_NAME ADD COLUMN canvasHeight INTEGER NOT NULL DEFAULT 0")
+    }
+}
 
 private val MIGRATION_12_13 = object : Migration(12, 13) {
     override fun migrate(connection: SQLiteConnection) {
