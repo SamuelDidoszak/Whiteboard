@@ -59,6 +59,7 @@ data class WhiteboardState(
     val stylusInput: Boolean = false,
 
     val canvasSize: IntSize = IntSize.Zero,
+    val pathOffset: Offset = Offset.Zero,
 
     val captureController: Any? = null
 ) {

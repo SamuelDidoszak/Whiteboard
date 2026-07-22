@@ -29,6 +29,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ButtonDefaults
@@ -47,8 +49,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import org.samis.whiteboard.domain.model.ColorPaletteType
@@ -80,10 +84,14 @@ fun CommandPaletteDrawerContent(
     onSetColorDeletionMode: (Boolean) -> Unit,
     onColorDeleted: (Color, ColorPaletteType) -> Unit,
 ) {
+    val focusManager = LocalFocusManager.current
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth(0.8f)
             .fillMaxHeight()
+            .pointerInput(Unit) {
+                detectTapGestures { focusManager.clearFocus() }
+            }
     ) {
         CommandPaletteContent(
             title = title,
@@ -184,6 +192,7 @@ private fun CommandPaletteContent(
     onColorDeleted: (Color, ColorPaletteType) -> Unit,
 ) {
     val updatedCanvasColors = listOf(Color.White) + canvasColors
+    val focusManager = LocalFocusManager.current
 
     Column(
         modifier = modifier.padding(10.dp)
@@ -193,9 +202,18 @@ private fun CommandPaletteContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge
+            BasicTextField(
+                value = title,
+                onValueChange = onTitleChange,
+                modifier = Modifier.weight(1f),
+                textStyle = MaterialTheme.typography.titleLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                singleLine = true,
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardActions = KeyboardActions(
+                    onDone = { focusManager.clearFocus() }
+                )
             )
             IconButton(onClick = onCloseIconClick) {
                 Icon(Icons.Default.Close, contentDescription = "Close Command Palette")
@@ -236,6 +254,7 @@ private fun PaletteSection(
     onPaletteAdded: (Palette) -> Unit,
     onPaletteRemoved: (Palette) -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
     val canAdd = palettes.find { it == currentPalette } == null
     val editButtonColor =
         if (!editMode) MaterialTheme.colorScheme.primary else {
@@ -261,7 +280,10 @@ private fun PaletteSection(
                 style = MaterialTheme.typography.titleSmall
             )
             OutlinedButton(
-                onClick = { changeEditMode() },
+                onClick = {
+                    changeEditMode()
+                    focusManager.clearFocus()
+                },
                 modifier = Modifier
                     .defaultMinSize(1.dp, 1.dp)
                     .height(26.dp),
@@ -278,7 +300,10 @@ private fun PaletteSection(
                 )
             }
             OutlinedButton(
-                onClick = { onPaletteAdded(currentPalette) },
+                onClick = {
+                    onPaletteAdded(currentPalette)
+                    focusManager.clearFocus()
+                },
                 modifier = Modifier
                     .defaultMinSize(1.dp, 1.dp)
                     .height(26.dp),
@@ -316,6 +341,7 @@ private fun PaletteSection(
                             shape = RoundedCornerShape(8.dp)
                         )
                         .clickable {
+                            focusManager.clearFocus()
                             if (editMode)
                                 onPaletteRemoved(palette)
                             else
@@ -392,6 +418,7 @@ private fun ColorSection(
     onSetColorDeletionMode: (Boolean) -> Unit,
     onColorDeleted: (Color, ColorPaletteType) -> Unit,
 ) {
+    val focusManager = LocalFocusManager.current
     Column {
         Text(
             text = sectionTitle,
@@ -439,6 +466,7 @@ private fun ColorSection(
                         .pointerInput(colorDeletionMode) {
                             detectTapGestures(
                                 onTap = {
+                                    focusManager.clearFocus()
                                     if (!colorDeletionMode)
                                         onColorChange(color)
                                     else onColorDeleted(color, ColorPaletteType.CANVAS)

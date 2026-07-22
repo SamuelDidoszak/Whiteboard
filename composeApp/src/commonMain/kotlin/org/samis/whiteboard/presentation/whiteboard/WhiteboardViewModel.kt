@@ -398,6 +398,11 @@ class WhiteboardViewModel(
                 }
             }
 
+            is WhiteboardEvent.OnTitleChange -> {
+                _state.update { it.copy(whiteboardName = event.title) }
+                upsertWhiteboard()
+            }
+
             is WhiteboardEvent.OnCardClose -> {
                 _state.update { it.copy(
                     isColorPickerOpen = false,

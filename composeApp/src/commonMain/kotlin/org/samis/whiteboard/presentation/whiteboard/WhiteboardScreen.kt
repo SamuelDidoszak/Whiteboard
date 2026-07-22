@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -93,6 +94,13 @@ fun WhiteboardScreen(
 
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val focusManager = LocalFocusManager.current
+
+    LaunchedEffect(drawerState.targetValue) {
+        if (drawerState.targetValue == DrawerValue.Closed) {
+            focusManager.clearFocus()
+        }
+    }
 
     miniatureSaveHandle(scope, onEvent, navController)
 
@@ -123,7 +131,7 @@ fun WhiteboardScreen(
                             selectedCanvasColor = state.canvasColor,
                             palettes = state.paletteList,
                             currentPalette = state.palette,
-                            onTitleChange = {  },
+                            onTitleChange = { onEvent(WhiteboardEvent.OnTitleChange(it)) },
                             onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
                             onColorPaletteIconClick = {
                                 onEvent(WhiteboardEvent.OnColorPaletteIconClick(it))
@@ -133,7 +141,10 @@ fun WhiteboardScreen(
                             changeEditMode = { onEvent(WhiteboardEvent.OnPaletteEditMode) },
                             onPaletteAdded = { onEvent(WhiteboardEvent.OnPaletteAdded(it)) },
                             onPaletteRemoved = { onEvent(WhiteboardEvent.ShowRemovePaletteDialog(it)) },
-                            onCloseIconClick = { scope.launch { drawerState.close() } },
+                            onCloseIconClick = {
+                                scope.launch { drawerState.close() }
+                                focusManager.clearFocus()
+                            },
                             colorDeletionMode = state.canvasColorDeletionMode,
                             onSetColorDeletionMode = { onEvent(WhiteboardEvent.SetColorDeletionMode(it, ColorPaletteType.CANVAS)) },
                             onColorDeleted = { color: Color, palette: ColorPaletteType ->
@@ -153,6 +164,7 @@ fun WhiteboardScreen(
                                             onEvent(WhiteboardEvent.OnCardClose)
                                             onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                             onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                            focusManager.clearFocus()
                                             down.consume()
                                         }
                                     }},
@@ -294,7 +306,175 @@ fun WhiteboardScreen(
                 }
             }
 
-            else -> {
+            UiType.MEDIUM -> {
+                key(screenSize) {
+                    DrawingCanvas(
+                        modifier = Modifier.fillMaxSize()
+                            .onSizeChanged { size -> onEvent(WhiteboardEvent.CanvasSizeChanged(size)) }
+                            .pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val down = awaitFirstDown(requireUnconsumed = false)
+                                        onEvent(WhiteboardEvent.OnCardClose)
+                                        onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                        onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                        focusManager.clearFocus()
+                                        down.consume()
+                                    }
+                                }},
+                        state = state,
+                        onEvent = onEvent
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .align(Alignment.TopStart)
+                        .padding(10.dp)
+                ) {
+                    CommandBarVertical(
+                        onHomeIconClick = {
+                            onEvent(WhiteboardEvent.SaveMiniature(scope))
+                            onHomeIconClick.invoke()
+                        },
+                        backgroundColor = state.canvasColor,
+                        onMenuIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteIconClick) },
+                        onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
+                        onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
+                        onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    CommandPaletteCard(
+                        isVisible = state.isCommandPaletteOpen,
+                        title = state.whiteboardName,
+                        canvasColors = state.preferredCanvasColors,
+                        selectedCanvasColor = state.canvasColor,
+                        palettes = state.paletteList,
+                        currentPalette = state.palette,
+                        onTitleChange = { onEvent(WhiteboardEvent.OnTitleChange(it)) },
+                        onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
+                        onColorPaletteIconClick = {
+                            onEvent(WhiteboardEvent.OnColorPaletteIconClick(it))
+                        },
+                        onPalettePicked = { onEvent(WhiteboardEvent.OnPalettePicked(it)) },
+                        isPaletteEditMode = state.isPaletteEditMode,
+                        changeEditMode = { onEvent(WhiteboardEvent.OnPaletteEditMode) },
+                        onPaletteAdded = { onEvent(WhiteboardEvent.OnPaletteAdded(it)) },
+                        onPaletteRemoved = { onEvent(WhiteboardEvent.ShowRemovePaletteDialog(it)) },
+                        onCloseIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteClose) },
+                        colorDeletionMode = state.canvasColorDeletionMode,
+                        onSetColorDeletionMode = { onEvent(WhiteboardEvent.SetColorDeletionMode(it, ColorPaletteType.CANVAS)) },
+                        onColorDeleted = { color: Color, palette: ColorPaletteType ->
+                            onEvent(WhiteboardEvent.OnColorDeleted(color, palette))
+                        }
+                    )
+                }
+                DrawingToolBar(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp),
+                    backgroundColor = state.canvasColor,
+                    drawingToolVisibility = state.drawingToolVisibility,
+                    currentDrawingTool = state.selectedDrawingTool,
+                    onDrawingToolClick = { drawingTool: DrawingTool ->
+                        onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
+                        onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                        onEvent(WhiteboardEvent.OnCardClose)
+                        onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                    }
+                )
+                ColorPickerCard(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 20.dp * state.selectedMarker, bottom = 36.dp),
+                    isVisible = state.isColorPickerOpen,
+                    selectedDrawingTool = state.selectedDrawingTool,
+                    strokeColors = state.preferredStrokeColors,
+                    selectedStrokeColor = state.strokeColor,
+                    onStrokeColorChange = { newColor: Color ->
+                        onEvent(WhiteboardEvent.StrokeColorChange(newColor, true))
+                    },
+                    fillColors = state.preferredFillColors,
+                    selectedFillColor = state.fillColor,
+                    onFillColorChange =  { newColor: Color ->
+                        onEvent(WhiteboardEvent.FillColorChange(newColor))
+                    },
+                    colorDeletionMode = state.markerColorDeletionMode,
+                    onSetColorDeletionMode = { mode: Boolean -> onEvent(WhiteboardEvent.SetColorDeletionMode(mode, ColorPaletteType.MARKER))},
+                    onColorDeleted = { color: Color, palette: ColorPaletteType ->
+                        onEvent(WhiteboardEvent.OnColorDeleted(color, palette)) },
+                    onColorPaletteIconClick = { colorPaletteType: ColorPaletteType ->
+                        onEvent(WhiteboardEvent.OnColorPaletteIconClick(colorPaletteType))
+                    },
+                    onCloseIconClick = { onEvent(WhiteboardEvent.OnCardClose) }
+                )
+                Row(
+                    modifier = Modifier.align(Alignment.BottomStart)
+                ) {
+                    Column(
+                        modifier = Modifier.align(Alignment.Bottom)
+                    ) {
+                        MarkerColorBar(
+                            penWidth = 30.dp,
+                            penHeight = 60.dp,
+                            padding = 10.dp,
+                            markerColors = state.markerColors,
+                            selectedMarker = state.selectedMarker,
+                            selectedDrawingTool = state.selectedDrawingTool,
+                            drawingToolVisibility = state.drawingToolVisibility,
+                            onClick = { newColor: Color ->
+                                onEvent(WhiteboardEvent.StrokeColorChange(newColor, false))
+                                onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                            },
+                            onEraserClick = { eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType)) }
+                        )
+                    }
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Bottom)
+                            .padding(start = 5.dp)
+                    ) {
+                        StrokeWidthSliderCard(
+                            modifier = Modifier.padding(start = 20.dp * state.activeStrokeWidthButton, bottom = 6.dp),
+                            isVisible = state.isStrokeWidthSliderOpen,
+                            showOpacity = state.showOpacitySlider,
+                            strokeWidthSliderValue = state.strokeWidthList[state.activeStrokeWidthButton],
+                            onStrokeWidthSliderValueChange = { strokeWidth: Float -> onEvent(WhiteboardEvent.StrokeSliderValueChange(strokeWidth)) },
+                            opacitySliderValue = state.opacity,
+                            onOpacitySliderValueChange = { opacity: Float -> onEvent(WhiteboardEvent.OpacitySliderValueChange(opacity)) },
+                            onCloseIconClick = { onEvent(WhiteboardEvent.OnStrokeWidthSliderClose) }
+                        )
+                        StrokeWidthBar(
+                            modifier = Modifier.height(60.dp),
+                            minButtonSize = 12.dp,
+                            maxButtonSize = 40.dp,
+                            strokeWidthList = state.strokeWidthList,
+                            activeButton = state.activeStrokeWidthButton,
+                            canvasColor = state.canvasColor,
+                            onClick = { strokeNum: Int ->
+                                onEvent(WhiteboardEvent.StrokeWidthButtonClicked(strokeNum))
+                                onEvent(WhiteboardEvent.OnCardClose)
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                            }
+                        )
+                    }
+                }
+
+                Image(
+                    painter = painterResource(Res.drawable.logoWithName),
+                    contentDescription = "Best church is the church as a priority",
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .height(144.dp)
+                        .absoluteOffset(16.dp),
+                    colorFilter = ColorFilter.tint(
+                        if (state.canvasColor.luminance() > 0.5) Color.Black else Color.White
+                    )
+                )
+            }
+
+            UiType.EXPANDED -> {
                 key(screenSize) {
                     DrawingCanvas(
                         modifier = Modifier.fillMaxSize()
@@ -306,6 +486,7 @@ fun WhiteboardScreen(
                                     onEvent(WhiteboardEvent.OnCardClose)
                                     onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                     onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                    focusManager.clearFocus()
                                     down.consume()
                                 }
                             }},
@@ -338,7 +519,7 @@ fun WhiteboardScreen(
                         selectedCanvasColor = state.canvasColor,
                         palettes = state.paletteList,
                         currentPalette = state.palette,
-                        onTitleChange = {  },
+                        onTitleChange = { onEvent(WhiteboardEvent.OnTitleChange(it)) },
                         onCanvasColorChange = { onEvent(WhiteboardEvent.CanvasColorChange(it)) },
                         onColorPaletteIconClick = {
                             onEvent(WhiteboardEvent.OnColorPaletteIconClick(it))

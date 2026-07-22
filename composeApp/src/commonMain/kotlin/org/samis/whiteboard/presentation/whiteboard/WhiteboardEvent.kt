@@ -37,6 +37,7 @@ sealed class WhiteboardEvent {
 
     data object ColorSelectionDialogDismiss : WhiteboardEvent()
     data object OnLaserPathAnimationComplete : WhiteboardEvent()
+    data class OnTitleChange(val title: String): WhiteboardEvent()
     data object OnCardClose: WhiteboardEvent()
 
     data object Undo: WhiteboardEvent()
