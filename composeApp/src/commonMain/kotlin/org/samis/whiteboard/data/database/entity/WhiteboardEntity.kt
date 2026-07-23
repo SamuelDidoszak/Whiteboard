@@ -21,5 +21,7 @@ data class WhiteboardEntity(
     val pointer: Int?,
     val miniatureSrc: String?,
     val canvasWidth: Int,
-    val canvasHeight: Int
+    val canvasHeight: Int,
+    val canvasOffsetX: Float,
+    val canvasOffsetY: Float
 )

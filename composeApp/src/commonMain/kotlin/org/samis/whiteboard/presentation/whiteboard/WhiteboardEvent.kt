@@ -52,5 +52,6 @@ sealed class WhiteboardEvent {
 
     data class OnPalettePicked(val palette: Palette): WhiteboardEvent()
 
+    data class CanvasMoved(val offset: Offset): WhiteboardEvent()
     data class CanvasSizeChanged(val size: IntSize) : WhiteboardEvent()
 }

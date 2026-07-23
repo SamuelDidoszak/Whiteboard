@@ -1,5 +1,6 @@
 package org.samis.whiteboard.data.mapper
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.IntSize
@@ -22,7 +23,9 @@ fun Whiteboard.toWhiteboardEntity(): WhiteboardEntity {
         pointer = pointer,
         miniatureSrc = miniatureSrc,
         canvasWidth = canvasSize.width,
-        canvasHeight = canvasSize.height
+        canvasHeight = canvasSize.height,
+        canvasOffsetX = canvasOffset.x,
+        canvasOffsetY = canvasOffset.y
     )
 }
 
@@ -40,7 +43,8 @@ fun WhiteboardEntity.toWhiteboard(): Whiteboard {
         fillColor = Color(fillColor),
         pointer = pointer,
         miniatureSrc = miniatureSrc,
-        canvasSize = IntSize(canvasWidth, canvasHeight)
+        canvasSize = IntSize(canvasWidth, canvasHeight),
+        canvasOffset = Offset(canvasOffsetX, canvasOffsetY)
     )
 }
 

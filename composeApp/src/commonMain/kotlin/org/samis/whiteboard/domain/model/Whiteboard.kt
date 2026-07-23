@@ -1,5 +1,6 @@
 package org.samis.whiteboard.domain.model
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntSize
 import kotlinx.datetime.Instant
@@ -19,5 +20,6 @@ data class Whiteboard(
     val fillColor: Color = Color.Transparent,
     val pointer: Int? = null,
     val miniatureSrc: String? = null,
-    val canvasSize: IntSize = IntSize.Zero
+    val canvasSize: IntSize = IntSize.Zero,
+    val canvasOffset: Offset = Offset.Zero
 )

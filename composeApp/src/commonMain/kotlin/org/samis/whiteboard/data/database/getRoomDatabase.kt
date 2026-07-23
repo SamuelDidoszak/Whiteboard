@@ -15,8 +15,15 @@ fun getRoomDatabase(
     return builder
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
-        .addMigrations(MIGRATION_12_13, MIGRATION_13_14)
+        .addMigrations(MIGRATION_13_14, MIGRATION_14_15)
         .build()
+}
+
+private val MIGRATION_14_15 = object : Migration(14, 15) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE $WHITEBOARD_TABLE_NAME ADD COLUMN canvasOffsetX FLOAT NOT NULL DEFAULT 0")
+        connection.execSQL("ALTER TABLE $WHITEBOARD_TABLE_NAME ADD COLUMN canvasOffsetY FLOAT NOT NULL DEFAULT 0")
+    }
 }
 
 private val MIGRATION_13_14 = object : Migration(13, 14) {

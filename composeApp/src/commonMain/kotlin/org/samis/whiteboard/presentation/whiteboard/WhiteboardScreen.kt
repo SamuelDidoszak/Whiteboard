@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +26,6 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -38,8 +38,10 @@ import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
@@ -153,25 +155,23 @@ fun WhiteboardScreen(
                         )
                     },
                 ) {
-                    key(screenSize) {
-                        DrawingCanvas(
-                            modifier = Modifier.fillMaxSize()
-                                .onSizeChanged { size -> onEvent(WhiteboardEvent.CanvasSizeChanged(size)) }
-                                .pointerInput(Unit) {
-                                    awaitPointerEventScope {
-                                        while (true) {
-                                            val down = awaitFirstDown(requireUnconsumed = false)
-                                            onEvent(WhiteboardEvent.OnCardClose)
-                                            onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
-                                            onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
-                                            focusManager.clearFocus()
-                                            down.consume()
-                                        }
-                                    }},
+                    DrawingCanvas(
+                        modifier = Modifier.fillMaxSize()
+                            .onSizeChanged { size -> onEvent(WhiteboardEvent.CanvasSizeChanged(size)) }
+                            .pointerInput(Unit) {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        val down = awaitFirstDown(requireUnconsumed = false)
+                                        onEvent(WhiteboardEvent.OnCardClose)
+                                        onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                        onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                        focusManager.clearFocus()
+                                        down.consume()
+                                    }
+                                }},
                         state = state,
                         onEvent = onEvent
                     )
-                    }
 
                     CommandBarHorizontal(
                         modifier = Modifier
@@ -307,25 +307,23 @@ fun WhiteboardScreen(
             }
 
             UiType.MEDIUM -> {
-                key(screenSize) {
-                    DrawingCanvas(
-                        modifier = Modifier.fillMaxSize()
-                            .onSizeChanged { size -> onEvent(WhiteboardEvent.CanvasSizeChanged(size)) }
-                            .pointerInput(Unit) {
-                                awaitPointerEventScope {
-                                    while (true) {
-                                        val down = awaitFirstDown(requireUnconsumed = false)
-                                        onEvent(WhiteboardEvent.OnCardClose)
-                                        onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
-                                        onEvent(WhiteboardEvent.OnCommandPaletteClose)
-                                        focusManager.clearFocus()
-                                        down.consume()
-                                    }
-                                }},
-                        state = state,
-                        onEvent = onEvent
-                    )
-                }
+                DrawingCanvas(
+                    modifier = Modifier.fillMaxSize()
+                        .onSizeChanged { size -> onEvent(WhiteboardEvent.CanvasSizeChanged(size)) }
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    onEvent(WhiteboardEvent.OnCardClose)
+                                    onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                    onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                    focusManager.clearFocus()
+                                    down.consume()
+                                }
+                            }},
+                    state = state,
+                    onEvent = onEvent
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -475,25 +473,23 @@ fun WhiteboardScreen(
             }
 
             UiType.EXPANDED -> {
-                key(screenSize) {
-                    DrawingCanvas(
-                        modifier = Modifier.fillMaxSize()
-                            .onSizeChanged { size -> onEvent(WhiteboardEvent.CanvasSizeChanged(size)) }
-                            .pointerInput(Unit) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    val down = awaitFirstDown(requireUnconsumed = false)
-                                    onEvent(WhiteboardEvent.OnCardClose)
-                                    onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
-                                    onEvent(WhiteboardEvent.OnCommandPaletteClose)
-                                    focusManager.clearFocus()
-                                    down.consume()
-                                }
-                            }},
+                DrawingCanvas(
+                    modifier = Modifier.fillMaxSize()
+                        .onSizeChanged { size -> onEvent(WhiteboardEvent.CanvasSizeChanged(size)) }
+                        .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val down = awaitFirstDown(requireUnconsumed = false)
+                                onEvent(WhiteboardEvent.OnCardClose)
+                                onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                focusManager.clearFocus()
+                                down.consume()
+                            }
+                        }},
                     state = state,
                     onEvent = onEvent
                 )
-                }
                 Row(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -673,13 +669,35 @@ private fun DrawingCanvas(
                     }
                 )
             }
-    ) {
-        state.paths.forEach { path ->
-            drawCustomPath(path)
-        }
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
 
-        state.currentPath?.let { path ->
-            drawCustomPath(path)
+                    do {
+                        val event = awaitPointerEvent()
+                        val pointerCount = event.changes.count { it.pressed }
+
+                        if (pointerCount == 2) {
+                            val offset = event.changes
+                                .filter { it.pressed }
+                                .map { it.positionChange() }
+                                .fold(Offset.Zero) { acc, offset -> acc + offset } / 2f
+
+                            onEvent(WhiteboardEvent.CanvasMoved(offset))
+                            event.changes.forEach { it.consume() }
+                        }
+                    } while (event.changes.any { it.pressed })
+                }
+            }
+    ) {
+        translate(top = state.canvasOffset.y, left = state.canvasOffset.x) {
+            state.paths.forEach { path ->
+                drawCustomPath(path)
+            }
+
+            state.currentPath?.let { path ->
+                drawCustomPath(path)
+            }
         }
     }
     AnimateLaserPath(

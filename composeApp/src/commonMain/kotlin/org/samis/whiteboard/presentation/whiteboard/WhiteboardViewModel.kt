@@ -68,7 +68,8 @@ class WhiteboardViewModel(
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
     private var canUndo = true
     private var isFirstPath = true
-    private var tempInitSize = IntSize.Zero
+
+    private var pendingInitCanvasSize: IntSize? = null
 
     private var updatedWhiteboardId = MutableStateFlow(whiteboardId)
     private var updateMiniature = false
@@ -122,12 +123,15 @@ class WhiteboardViewModel(
                     }
                     isFirstPath = false
                 }
-                _state.update { it.copy(startingOffset = event.offset) }
+
+                val logicalOffset = event.offset - _state.value.canvasOffset
+                _state.update { it.copy(startingOffset = logicalOffset) }
                 updateMiniature = false
             }
 
             is WhiteboardEvent.ContinueDrawing -> {
-                updateContinuingOffsets(event.continuingOffset)
+                val logicalOffset = event.continuingOffset - _state.value.canvasOffset
+                updateContinuingOffsets(logicalOffset)
             }
 
             WhiteboardEvent.FinishDrawing -> {
@@ -477,34 +481,28 @@ class WhiteboardViewModel(
                 _state.update { it.copy(isStrokeWidthSliderOpen = false) }
             }
 
-            is WhiteboardEvent.CanvasSizeChanged -> {
-                val oldSize = _state.value.canvasSize
-                val newSize = event.size
+            is WhiteboardEvent.CanvasMoved -> {
+                val newOffset = _state.value.canvasOffset + event.offset
+                _state.update { it.copy(canvasOffset = newOffset) }
+                upsertWhiteboard()
+            }
 
-                if (whiteboardId == null)
+            is WhiteboardEvent.CanvasSizeChanged -> {
+                val newSize = event.size
+                val oldSize = _state.value.canvasSize
+
+                if (newSize == IntSize.Zero)
+                    return
+                if (whiteboardId == null) {
                     _state.update { it.copy(canvasSize = newSize) }
-                else if (_state.value.paths.isEmpty())
-                    tempInitSize = newSize
-                else if (oldSize != newSize) {
-                    val offsetX = (newSize.width - oldSize.width) / 2f
-                    val offsetY = (newSize.height - oldSize.height) / 2f
-                    val translation = Offset(offsetX, offsetY)
-                    _state.update { it.copy(
-                        canvasSize = newSize,
-                        paths = it.paths.map { path -> path.translate(translation) },
-                        updates = it.updates.map { update ->
-                            val p = (update as Update.HasPath).path
-                            update.copyWithPath(p.translate(translation))
-                        },
-                        undoArray = it.undoArray.map { update ->
-                            val p = (update as Update.HasPath).path
-                            update.copyWithPath(p.translate(translation))
-                        },
-                        currentPath = it.currentPath?.translate(translation),
-                        pathsToBeDeleted = it.pathsToBeDeleted.map { path -> path.translate(translation) },
-                        laserPenPath = it.laserPenPath?.translate(translation)
-                    )}
+                    return
                 }
+                if (_state.value.paths.isEmpty()) {
+                    pendingInitCanvasSize = newSize
+                    return
+                }
+
+                applyCanvasSizeChange(oldSize, newSize)
             }
 
             is WhiteboardEvent.StrokeWidthButtonClicked -> {
@@ -616,6 +614,30 @@ class WhiteboardViewModel(
         }
     }
 
+    private fun applyCanvasSizeChange(oldSize: IntSize, newSize: IntSize) {
+        if (oldSize == newSize) return
+
+        val newOffset = if (oldSize == IntSize.Zero) {
+            val savedSize = _state.value.canvasSize
+            if (savedSize == IntSize.Zero) {
+                _state.value.canvasOffset
+            } else {
+                _state.value.canvasOffset + Offset(
+                    x = (newSize.width - savedSize.width) / 2f,
+                    y = (newSize.height - savedSize.height) / 2f
+                )
+            }
+        } else {
+            _state.value.canvasOffset + Offset(
+                x = (newSize.width - oldSize.width) / 2f,
+                y = (newSize.height - oldSize.height) / 2f
+            )
+        }
+
+        _state.update { it.copy(canvasSize = newSize, canvasOffset = newOffset) }
+        upsertWhiteboard()
+    }
+
     private fun initializeUpdates(whiteboardId: Long) {
             viewModelScope.launch {
                 updateRepository.getWhiteboardUpdates(whiteboardId)
@@ -642,7 +664,13 @@ class WhiteboardViewModel(
                             }
                             else
                                 onUpdate(it, skipMiniature = true)
-                        }.also { onEvent(WhiteboardEvent.CanvasSizeChanged(tempInitSize)) }
+                        }.also {
+                            val pending = pendingInitCanvasSize
+                            pendingInitCanvasSize = null
+                            if (pending != null && pending != IntSize.Zero) {
+                                applyCanvasSizeChange(oldSize = IntSize.Zero, newSize = pending)
+                            }
+                        }
                     }
             }
     }
@@ -702,7 +730,8 @@ class WhiteboardViewModel(
                         fillColor = whiteboard.fillColor,
                         updatePointer = whiteboard.pointer,
                         miniatureSrc = whiteboard.miniatureSrc,
-                        canvasSize = whiteboard.canvasSize
+                        canvasSize = whiteboard.canvasSize,
+                        canvasOffset = whiteboard.canvasOffset
                     )
                 }
             }
@@ -717,6 +746,7 @@ class WhiteboardViewModel(
         whiteboardId: Long? = updatedWhiteboardId.value) {
         val snapshot = snapshot ?: _state.value.copy(updatePointer = pointer, miniatureSrc = miniatureSrc)
         GlobalScope.launch(Dispatchers.IO) {
+            println("UPSERT WHITEBOARD!!!!!!!!!!11111111")
             val now = Clock.System.now()
             val oldWhiteboardDate = if (whiteboardId == null) now else whiteboardRepository.getWhiteboardById(updatedWhiteboardId.value!!)?.createTime ?: now
 
@@ -733,7 +763,8 @@ class WhiteboardViewModel(
                 id = whiteboardId,
                 pointer = pointer,
                 miniatureSrc = miniatureSrc,
-                canvasSize = snapshot.canvasSize
+                canvasSize = snapshot.canvasSize,
+                canvasOffset = snapshot.canvasOffset
             )
             val newId = whiteboardRepository.upsertWhiteboard(whiteboard)
             updatedWhiteboardId.value = newId
