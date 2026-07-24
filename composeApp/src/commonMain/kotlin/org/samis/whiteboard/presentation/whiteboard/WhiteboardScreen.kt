@@ -38,10 +38,11 @@ import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
@@ -673,17 +674,37 @@ private fun DrawingCanvas(
                 awaitEachGesture {
                     awaitFirstDown(requireUnconsumed = false)
 
+                    var previousCenter = Offset.Zero
+                    var previousSpan = 0f
+
                     do {
-                        val event = awaitPointerEvent()
-                        val pointerCount = event.changes.count { it.pressed }
+                        val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                        val pressed = event.changes.filter { it.pressed }
 
-                        if (pointerCount == 2) {
-                            val offset = event.changes
-                                .filter { it.pressed }
-                                .map { it.positionChange() }
-                                .fold(Offset.Zero) { acc, offset -> acc + offset } / 2f
+                        if (pressed.size >= 2) {
+                            val center = pressed
+                                .map { it.position }
+                                .fold(Offset.Zero) { acc, pos -> acc + pos } / pressed.size.toFloat()
 
-                            onEvent(WhiteboardEvent.CanvasMoved(offset))
+                            val span = pressed
+                                .map { (it.position - center).getDistance() }
+                                .average()
+                                .toFloat()
+                                .coerceAtLeast(0.01f)
+
+                            if (previousSpan == 0f) {
+                                previousCenter = center
+                                previousSpan = span
+                            } else {
+                                val zoomChange = span / previousSpan
+                                val offset = center - previousCenter
+
+                                onEvent(WhiteboardEvent.CanvasTransformed(center, offset, zoomChange))
+
+                                previousCenter = center
+                                previousSpan = span
+                            }
+
                             event.changes.forEach { it.consume() }
                         }
                     } while (event.changes.any { it.pressed })
@@ -691,12 +712,14 @@ private fun DrawingCanvas(
             }
     ) {
         translate(top = state.canvasOffset.y, left = state.canvasOffset.x) {
-            state.paths.forEach { path ->
-                drawCustomPath(path)
-            }
+            scale(scale = state.canvasScale, pivot = Offset.Zero) {
+                state.paths.forEach { path ->
+                    drawCustomPath(path)
+                }
 
-            state.currentPath?.let { path ->
-                drawCustomPath(path)
+                state.currentPath?.let { path ->
+                    drawCustomPath(path)
+                }
             }
         }
     }

@@ -25,7 +25,8 @@ fun Whiteboard.toWhiteboardEntity(): WhiteboardEntity {
         canvasWidth = canvasSize.width,
         canvasHeight = canvasSize.height,
         canvasOffsetX = canvasOffset.x,
-        canvasOffsetY = canvasOffset.y
+        canvasOffsetY = canvasOffset.y,
+        canvasScale = canvasScale
     )
 }
 
@@ -44,7 +45,8 @@ fun WhiteboardEntity.toWhiteboard(): Whiteboard {
         pointer = pointer,
         miniatureSrc = miniatureSrc,
         canvasSize = IntSize(canvasWidth, canvasHeight),
-        canvasOffset = Offset(canvasOffsetX, canvasOffsetY)
+        canvasOffset = Offset(canvasOffsetX, canvasOffsetY),
+        canvasScale = canvasScale
     )
 }
 

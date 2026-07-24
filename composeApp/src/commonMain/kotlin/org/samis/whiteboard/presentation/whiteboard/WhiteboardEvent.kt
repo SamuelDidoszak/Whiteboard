@@ -52,6 +52,6 @@ sealed class WhiteboardEvent {
 
     data class OnPalettePicked(val palette: Palette): WhiteboardEvent()
 
-    data class CanvasMoved(val offset: Offset): WhiteboardEvent()
+    data class CanvasTransformed(val center: Offset, val offset: Offset, val zoomChange: Float): WhiteboardEvent()
     data class CanvasSizeChanged(val size: IntSize) : WhiteboardEvent()
 }

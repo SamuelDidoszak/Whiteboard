@@ -21,5 +21,6 @@ data class Whiteboard(
     val pointer: Int? = null,
     val miniatureSrc: String? = null,
     val canvasSize: IntSize = IntSize.Zero,
-    val canvasOffset: Offset = Offset.Zero
+    val canvasOffset: Offset = Offset.Zero,
+    val canvasScale: Float = 1f
 )

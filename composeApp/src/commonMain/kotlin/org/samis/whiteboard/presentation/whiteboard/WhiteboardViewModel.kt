@@ -68,7 +68,8 @@ class WhiteboardViewModel(
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
     private var canUndo = true
     private var isFirstPath = true
-
+    // Holds the first measured canvas size that arrived before paths were loaded.
+    // Null means either paths are not yet loaded, or the initial centering has already been applied.
     private var pendingInitCanvasSize: IntSize? = null
 
     private var updatedWhiteboardId = MutableStateFlow(whiteboardId)
@@ -123,14 +124,13 @@ class WhiteboardViewModel(
                     }
                     isFirstPath = false
                 }
-
-                val logicalOffset = event.offset - _state.value.canvasOffset
+                val logicalOffset = (event.offset - _state.value.canvasOffset) / _state.value.canvasScale
                 _state.update { it.copy(startingOffset = logicalOffset) }
                 updateMiniature = false
             }
 
             is WhiteboardEvent.ContinueDrawing -> {
-                val logicalOffset = event.continuingOffset - _state.value.canvasOffset
+                val logicalOffset = (event.continuingOffset - _state.value.canvasOffset) / _state.value.canvasScale
                 updateContinuingOffsets(logicalOffset)
             }
 
@@ -481,10 +481,14 @@ class WhiteboardViewModel(
                 _state.update { it.copy(isStrokeWidthSliderOpen = false) }
             }
 
-            is WhiteboardEvent.CanvasMoved -> {
-                val newOffset = _state.value.canvasOffset + event.offset
-                _state.update { it.copy(canvasOffset = newOffset) }
-                upsertWhiteboard()
+            is WhiteboardEvent.CanvasTransformed -> {
+                val oldScale = _state.value.canvasScale
+                val newScale = (oldScale * event.zoomChange).coerceIn(0.07f, 12f)
+                val scaleRatio = newScale / oldScale
+                val newOffset = event.center - (event.center - _state.value.canvasOffset) * scaleRatio + event.offset
+                _state.update { it.copy(canvasOffset = newOffset, canvasScale = newScale) }
+                updateMiniature = true
+                updateMiniatureTask.start(4000, _state.value.copy())
             }
 
             is WhiteboardEvent.CanvasSizeChanged -> {
@@ -635,7 +639,8 @@ class WhiteboardViewModel(
         }
 
         _state.update { it.copy(canvasSize = newSize, canvasOffset = newOffset) }
-        upsertWhiteboard()
+        updateMiniature = true
+        updateMiniatureTask.start(4000, _state.value.copy())
     }
 
     private fun initializeUpdates(whiteboardId: Long) {
@@ -731,7 +736,8 @@ class WhiteboardViewModel(
                         updatePointer = whiteboard.pointer,
                         miniatureSrc = whiteboard.miniatureSrc,
                         canvasSize = whiteboard.canvasSize,
-                        canvasOffset = whiteboard.canvasOffset
+                        canvasOffset = whiteboard.canvasOffset,
+                        canvasScale = whiteboard.canvasScale
                     )
                 }
             }
@@ -764,7 +770,8 @@ class WhiteboardViewModel(
                 pointer = pointer,
                 miniatureSrc = miniatureSrc,
                 canvasSize = snapshot.canvasSize,
-                canvasOffset = snapshot.canvasOffset
+                canvasOffset = snapshot.canvasOffset,
+                canvasScale = snapshot.canvasScale
             )
             val newId = whiteboardRepository.upsertWhiteboard(whiteboard)
             updatedWhiteboardId.value = newId

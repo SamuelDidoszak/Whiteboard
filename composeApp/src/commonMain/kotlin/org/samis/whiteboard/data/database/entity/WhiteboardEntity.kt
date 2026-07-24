@@ -23,5 +23,6 @@ data class WhiteboardEntity(
     val canvasWidth: Int,
     val canvasHeight: Int,
     val canvasOffsetX: Float,
-    val canvasOffsetY: Float
+    val canvasOffsetY: Float,
+    val canvasScale: Float = 1f
 )
