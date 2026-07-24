@@ -214,7 +214,7 @@ fun WhiteboardScreen(
                                 .align(Alignment.Bottom)
                         ) {
                             StrokeWidthBar(
-                                modifier = Modifier.height(48.dp),
+                                modifier = Modifier.height(42.dp),
                                 minButtonSize = 12.dp,
                                 maxButtonSize = 30.dp,
                                 strokeWidthList = state.strokeWidthList,
@@ -251,6 +251,7 @@ fun WhiteboardScreen(
                             )
                             ElevatedIconButton(
                                 backgroundColor = state.canvasColor,
+                                size = 46.dp,
                                 isSelected = true,
                                 onClick = {
                                     onEvent(WhiteboardEvent.OnDrawingToolButtonClick)
@@ -368,24 +369,10 @@ fun WhiteboardScreen(
                         }
                     )
                 }
-                DrawingToolBar(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(10.dp),
-                    backgroundColor = state.canvasColor,
-                    drawingToolVisibility = state.drawingToolVisibility,
-                    currentDrawingTool = state.selectedDrawingTool,
-                    onDrawingToolClick = { drawingTool: DrawingTool ->
-                        onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
-                        onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
-                        onEvent(WhiteboardEvent.OnCardClose)
-                        onEvent(WhiteboardEvent.OnCommandPaletteClose)
-                    }
-                )
                 ColorPickerCard(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(start = 20.dp * state.selectedMarker, bottom = 36.dp),
+                        .padding(start = 16.dp * state.selectedMarker, bottom = 30.dp),
                     isVisible = state.isColorPickerOpen,
                     selectedDrawingTool = state.selectedDrawingTool,
                     strokeColors = state.preferredStrokeColors,
@@ -414,9 +401,9 @@ fun WhiteboardScreen(
                         modifier = Modifier.align(Alignment.Bottom)
                     ) {
                         MarkerColorBar(
-                            penWidth = 30.dp,
-                            penHeight = 60.dp,
-                            padding = 10.dp,
+                            penWidth = 24.dp,
+                            penHeight = 48.dp,
+                            padding = 6.dp,
                             markerColors = state.markerColors,
                             selectedMarker = state.selectedMarker,
                             selectedDrawingTool = state.selectedDrawingTool,
@@ -432,10 +419,10 @@ fun WhiteboardScreen(
                     Column(
                         modifier = Modifier
                             .align(Alignment.Bottom)
-                            .padding(start = 5.dp)
+                            .padding(start = 12.dp)
                     ) {
                         StrokeWidthSliderCard(
-                            modifier = Modifier.padding(start = 20.dp * state.activeStrokeWidthButton, bottom = 6.dp),
+                            modifier = Modifier.padding(start = 16.dp * state.activeStrokeWidthButton, bottom = 6.dp),
                             isVisible = state.isStrokeWidthSliderOpen,
                             showOpacity = state.showOpacitySlider,
                             strokeWidthSliderValue = state.strokeWidthList[state.activeStrokeWidthButton],
@@ -445,9 +432,9 @@ fun WhiteboardScreen(
                             onCloseIconClick = { onEvent(WhiteboardEvent.OnStrokeWidthSliderClose) }
                         )
                         StrokeWidthBar(
-                            modifier = Modifier.height(60.dp),
+                            modifier = Modifier.height(42.dp),
                             minButtonSize = 12.dp,
-                            maxButtonSize = 40.dp,
+                            maxButtonSize = 30.dp,
                             strokeWidthList = state.strokeWidthList,
                             activeButton = state.activeStrokeWidthButton,
                             canvasColor = state.canvasColor,
@@ -458,19 +445,45 @@ fun WhiteboardScreen(
                             }
                         )
                     }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(end = 10.dp, bottom = 6.dp, top = 10.dp),
+                        verticalArrangement = Arrangement.Bottom
+                    ) {
+                        DrawingToolDialog(
+                            modifier = Modifier.padding(bottom = 10.dp),
+                            isDrawingToolDialogVisible = state.isDrawingToolDialogOpen,
+                            backgroundColor = state.canvasColor,
+                            drawingToolVisibility = state.drawingToolVisibility,
+                            currentDrawingTool = state.selectedDrawingTool,
+                            onDrawingToolClick = { drawingTool: DrawingTool ->
+                                onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
+                                onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                onEvent(WhiteboardEvent.OnCardClose)
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                            }
+                        )
+                        ElevatedIconButton(
+                            backgroundColor = state.canvasColor,
+                            size = 46.dp,
+                            isSelected = true,
+                            onClick = {
+                                onEvent(WhiteboardEvent.OnDrawingToolButtonClick)
+                                onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                onEvent(WhiteboardEvent.OnCardClose)
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                            }) {
+                            Icon(
+                                painter = painterResource(state.selectedDrawingTool.res),
+                                contentDescription = state.selectedDrawingTool.name.lowercase().replaceFirstChar { it.uppercaseChar() },
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
                 }
-
-                Image(
-                    painter = painterResource(Res.drawable.logoWithName),
-                    contentDescription = "Best church is the church as a priority",
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .height(144.dp)
-                        .absoluteOffset(16.dp),
-                    colorFilter = ColorFilter.tint(
-                        if (state.canvasColor.luminance() > 0.5) Color.Black else Color.White
-                    )
-                )
             }
 
             UiType.EXPANDED -> {
@@ -611,7 +624,7 @@ fun WhiteboardScreen(
                             onCloseIconClick = { onEvent(WhiteboardEvent.OnStrokeWidthSliderClose) }
                         )
                         StrokeWidthBar(
-                            modifier = Modifier.height(60.dp),
+                            modifier = Modifier.height(56.dp),
                             minButtonSize = 12.dp,
                             maxButtonSize = 40.dp,
                             strokeWidthList = state.strokeWidthList,

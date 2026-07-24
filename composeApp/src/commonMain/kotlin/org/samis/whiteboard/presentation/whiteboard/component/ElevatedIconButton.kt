@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.samis.whiteboard.presentation.theme.DarkGreen
 import org.samis.whiteboard.presentation.theme.LightGreen
@@ -24,6 +25,7 @@ import org.samis.whiteboard.presentation.theme.LightGreen
 fun ElevatedIconButton(
     modifier: Modifier = Modifier,
     backgroundColor: Color,
+    size: Dp = 40.dp,
     isSelected: Boolean,
     onClick: () -> Unit,
     icon: @Composable () -> Unit
@@ -39,7 +41,7 @@ fun ElevatedIconButton(
         tonalElevation = elevation,
         color = backgroundColor,
         border = BorderStroke(if (isSelected) 2.dp else 1.dp, getBorderColor(isSelected, backgroundColor)),
-        modifier = modifier.size(40.dp)
+        modifier = modifier.size(size)
     ) {
         CompositionLocalProvider(LocalContentColor provides getButtonContentColor(backgroundColor)) {
             IconButton(
