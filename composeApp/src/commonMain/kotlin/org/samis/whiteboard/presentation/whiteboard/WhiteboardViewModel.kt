@@ -672,9 +672,8 @@ class WhiteboardViewModel(
                         }.also {
                             val pending = pendingInitCanvasSize
                             pendingInitCanvasSize = null
-                            if (pending != null && pending != IntSize.Zero) {
+                            if (pending != null && pending != IntSize.Zero)
                                 applyCanvasSizeChange(oldSize = IntSize.Zero, newSize = pending)
-                            }
                         }
                     }
             }
@@ -752,7 +751,6 @@ class WhiteboardViewModel(
         whiteboardId: Long? = updatedWhiteboardId.value) {
         val snapshot = snapshot ?: _state.value.copy(updatePointer = pointer, miniatureSrc = miniatureSrc)
         GlobalScope.launch(Dispatchers.IO) {
-            println("UPSERT WHITEBOARD!!!!!!!!!!11111111")
             val now = Clock.System.now()
             val oldWhiteboardDate = if (whiteboardId == null) now else whiteboardRepository.getWhiteboardById(updatedWhiteboardId.value!!)?.createTime ?: now
 
@@ -837,6 +835,11 @@ class WhiteboardViewModel(
 
             DrawingTool.TRIANGLE -> {
                 createTrianglePath(start = startOffset, continuingOffset = continuingOffset)
+            }
+
+            DrawingTool.CANVAS_PANNER -> {
+                println("Canvas Panner | Marquee should not create any paths")
+                null
             }
         }
 
@@ -990,13 +993,13 @@ class WhiteboardViewModel(
     private fun initializeWhiteboardName(translatePolish: Boolean): String {
         fun getDayOfWeekInPolish(weekDay: DayOfWeek): String {
             return when(weekDay) {
-                java.time.DayOfWeek.MONDAY -> "Poniedziałek"
-                java.time.DayOfWeek.TUESDAY -> "Wtorek"
-                java.time.DayOfWeek.WEDNESDAY -> "Środa"
-                java.time.DayOfWeek.THURSDAY -> "Czwartek"
-                java.time.DayOfWeek.FRIDAY -> "Piątek"
-                java.time.DayOfWeek.SATURDAY -> "Sobota"
-                java.time.DayOfWeek.SUNDAY -> "Niedziela"
+                DayOfWeek.MONDAY -> "Poniedziałek"
+                DayOfWeek.TUESDAY -> "Wtorek"
+                DayOfWeek.WEDNESDAY -> "Środa"
+                DayOfWeek.THURSDAY -> "Czwartek"
+                DayOfWeek.FRIDAY -> "Piątek"
+                DayOfWeek.SATURDAY -> "Sobota"
+                DayOfWeek.SUNDAY -> "Niedziela"
             }
         }
 

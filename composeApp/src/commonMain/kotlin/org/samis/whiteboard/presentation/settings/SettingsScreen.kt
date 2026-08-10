@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.presentation.settings.component.ColorSchemeDialog
 import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
@@ -109,6 +110,11 @@ fun SettingsScreen(
                             onToggle = {
                                 onEvent(
                                     SettingsEvent.OnStylusInputChanged(!state.stylusInput)
+                                )
+                                onEvent(
+                                    SettingsEvent.OnDrawingToolVisibilityChanged(
+                                        state.drawingToolVisibility.copy(DrawingTool.CANVAS_PANNER, true)
+                                    )
                                 )
                             })
                     )

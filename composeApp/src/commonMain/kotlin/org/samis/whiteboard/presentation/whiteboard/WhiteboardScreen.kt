@@ -262,7 +262,7 @@ fun WhiteboardScreen(
                                 Icon(
                                     painter = painterResource(state.selectedDrawingTool.res),
                                     contentDescription = state.selectedDrawingTool.name.lowercase().replaceFirstChar { it.uppercaseChar() },
-                                    modifier = Modifier.size(28.dp)
+                                    modifier = Modifier.size(30.dp)
                                 )
                             }
                         }
@@ -479,7 +479,7 @@ fun WhiteboardScreen(
                             Icon(
                                 painter = painterResource(state.selectedDrawingTool.res),
                                 contentDescription = state.selectedDrawingTool.name.lowercase().replaceFirstChar { it.uppercaseChar() },
-                                modifier = Modifier.size(28.dp)
+                                modifier = Modifier.size(30.dp)
                             )
                         }
                     }
@@ -682,6 +682,38 @@ private fun DrawingCanvas(
                         onEvent(WhiteboardEvent.FinishDrawing)
                     }
                 )
+            }
+            .pointerInput(state.selectedDrawingTool) {
+                if (state.selectedDrawingTool != DrawingTool.CANVAS_PANNER) return@pointerInput
+
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var previousPosition = down.position
+
+                    do {
+                        val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                        val pressed = event.changes.filter { it.pressed }
+
+                        if (pressed.isEmpty()) break
+                        if (pressed.size == 2) break
+
+                        if (pressed.size == 1) {
+                            val current = pressed.first().position
+                            val delta = current - previousPosition
+
+                            if (delta != Offset.Zero) {
+                                onEvent(WhiteboardEvent.CanvasTransformed(
+                                    center = current,
+                                    offset = delta,
+                                    zoomChange = 1f
+                                ))
+                            }
+
+                            previousPosition = current
+                            event.changes.forEach { it.consume() }
+                        }
+                    } while (event.changes.any { it.pressed })
+                }
             }
             .pointerInput(Unit) {
                 awaitEachGesture {

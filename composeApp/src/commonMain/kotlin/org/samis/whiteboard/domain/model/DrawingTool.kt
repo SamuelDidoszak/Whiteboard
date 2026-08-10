@@ -1,6 +1,8 @@
 package org.samis.whiteboard.domain.model
 
 import org.jetbrains.compose.resources.DrawableResource
+import whiteboard.composeapp.generated.resources.PanZoom
+import whiteboard.composeapp.generated.resources.Pen
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.dotted_line
 import whiteboard.composeapp.generated.resources.ic_arrow
@@ -11,18 +13,18 @@ import whiteboard.composeapp.generated.resources.ic_rectangle
 import whiteboard.composeapp.generated.resources.ic_triangle
 import whiteboard.composeapp.generated.resources.img_eraser
 import whiteboard.composeapp.generated.resources.img_highlighter
-import whiteboard.composeapp.generated.resources.img_pen
 
 enum class DrawingTool(
-    val res: DrawableResource,
-    val isColored: Boolean = false
+    val res: DrawableResource
 ) {
-    PEN(res = Res.drawable.img_pen, isColored = true),
-    LASER_PEN(res = Res.drawable.ic_laser_pointer, isColored = true),
-    DASHER(res = Res.drawable.dotted_line, isColored = true),
-    HIGHLIGHTER(res = Res.drawable.img_highlighter, isColored = true),
-    DELETER(res = Res.drawable.img_eraser, isColored = true),
-    ERASER(res = Res.drawable.img_eraser, isColored = true),
+    PEN(res = Res.drawable.Pen),
+    LASER_PEN(res = Res.drawable.ic_laser_pointer),
+    DASHER(res = Res.drawable.dotted_line),
+    HIGHLIGHTER(res = Res.drawable.img_highlighter),
+    DELETER(res = Res.drawable.img_eraser),
+    ERASER(res = Res.drawable.img_eraser),
+//    MARQUEE(res = Res.drawable.Select),
+    CANVAS_PANNER(res = Res.drawable.PanZoom),
     LINE(res = Res.drawable.ic_line),
     ARROW(res = Res.drawable.ic_arrow),
     RECTANGLE(res = Res.drawable.ic_rectangle),
@@ -31,7 +33,7 @@ enum class DrawingTool(
 
     fun isFillable(): Boolean {
         return when (this) {
-            DrawingTool.RECTANGLE, DrawingTool.CIRCLE, DrawingTool.TRIANGLE -> true
+            RECTANGLE, CIRCLE, TRIANGLE -> true
             else -> false
         }
     }

@@ -3,11 +3,13 @@ package org.samis.whiteboard.presentation.util
 import org.samis.whiteboard.domain.model.DrawingTool
 
 class DrawingToolVisibility(
-    private val toolVisibility: Map<DrawingTool, Boolean> = DrawingTool.entries.associateWith { true }.toMap()
+    private val initialVisibility: Map<DrawingTool, Boolean> = emptyMap()
 ) {
 
+    private val toolVisibility: Map<DrawingTool, Boolean> = DrawingTool.entries.associateWith { tool -> initialVisibility[tool] ?: true }.toMap()
+
     fun isToolVisible(tool: DrawingTool): Boolean {
-        return toolVisibility[tool] ?: false
+        return toolVisibility[tool] ?: true
     }
 
     fun getAllToolStates(): Map<DrawingTool, Boolean> {

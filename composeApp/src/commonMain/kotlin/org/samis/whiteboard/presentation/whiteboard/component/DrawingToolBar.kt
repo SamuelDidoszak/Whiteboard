@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -28,16 +26,8 @@ fun DrawingToolBar(
     fun isTool(drawingTool: DrawingTool): Boolean = currentDrawingTool == drawingTool
 
     Column(modifier = modifier) {
-        if (isVisible(DrawingTool.PEN)) {
-            ElevatedIconButton(backgroundColor = backgroundColor, isSelected = isTool(DrawingTool.PEN), onClick = { onDrawingToolClick(DrawingTool.PEN) }) {
-                Icon(
-                    imageVector = Icons.Rounded.Edit,
-                    contentDescription = "Pen",
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-        }
+        if (isVisible(DrawingTool.PEN))
+            AddButton(DrawingTool.PEN, backgroundColor, isTool(DrawingTool.PEN), onDrawingToolClick, 28.dp)
         if (isVisible(DrawingTool.LASER_PEN))
             AddButton(DrawingTool.LASER_PEN, backgroundColor, isTool(DrawingTool.LASER_PEN), onDrawingToolClick, 28.dp)
         if (isVisible(DrawingTool.DASHER))
@@ -45,6 +35,13 @@ fun DrawingToolBar(
         if (isVisible(DrawingTool.HIGHLIGHTER))
             AddButton(DrawingTool.HIGHLIGHTER, backgroundColor, isTool(DrawingTool.HIGHLIGHTER), onDrawingToolClick)
         if (isVisible(DrawingTool.PEN) || isVisible(DrawingTool.LASER_PEN) || isVisible(DrawingTool.DASHER) || isVisible(DrawingTool.HIGHLIGHTER))
+            Spacer(modifier = Modifier.height(12.dp))
+
+//        if (isVisible(DrawingTool.MARQUEE))
+//            AddButton(DrawingTool.MARQUEE, backgroundColor, isTool(DrawingTool.MARQUEE), onDrawingToolClick, 28.dp)
+        if (isVisible(DrawingTool.CANVAS_PANNER))
+            AddButton(DrawingTool.CANVAS_PANNER, backgroundColor, isTool(DrawingTool.CANVAS_PANNER), onDrawingToolClick, 28.dp)
+        if (isVisible(DrawingTool.CANVAS_PANNER))
             Spacer(modifier = Modifier.height(12.dp))
 
         if (isVisible(DrawingTool.LINE))
