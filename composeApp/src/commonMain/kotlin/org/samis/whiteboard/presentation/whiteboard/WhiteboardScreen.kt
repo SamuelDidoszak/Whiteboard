@@ -76,6 +76,7 @@ import org.samis.whiteboard.presentation.whiteboard.component.MarkerColorBar
 import org.samis.whiteboard.presentation.whiteboard.component.RemovePaletteDialog
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthBar
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthSliderCard
+import org.samis.whiteboard.presentation.whiteboard.component.ZoomSliderCard
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.logoWithName
 
@@ -179,6 +180,9 @@ fun WhiteboardScreen(
                             .align(Alignment.TopCenter)
                             .padding(10.dp),
                         backgroundColor = state.canvasColor,
+                        canvasScale = state.canvasScale,
+                        selectedDrawingTool = state.selectedDrawingTool,
+                        isZoomSliderOpen = state.isZoomSliderOpen,
                         onHomeIconClick = {
                             onEvent(WhiteboardEvent.SaveMiniature(scope))
                             onHomeIconClick.invoke()
@@ -186,7 +190,8 @@ fun WhiteboardScreen(
                         onMenuIconClick = { scope.launch { drawerState.open() } },
                         onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
-                        onRedoIconClick = { onEvent(WhiteboardEvent.Redo) }
+                        onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
+                        onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) }
                     )
                     Row(
                         modifier = Modifier.align(Alignment.BottomStart)
@@ -206,8 +211,16 @@ fun WhiteboardScreen(
                                 onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                 onEvent(WhiteboardEvent.OnCommandPaletteClose)
                                 onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                             },
-                            onEraserClick = { eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType)) }
+                            onEraserClick = {
+                                eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType))
+                                onEvent(WhiteboardEvent.OnCardClose)
+                                onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
+                            }
                         )
                         Column(
                             modifier = Modifier
@@ -225,6 +238,7 @@ fun WhiteboardScreen(
                                     onEvent(WhiteboardEvent.OnCardClose)
                                     onEvent(WhiteboardEvent.OnCommandPaletteClose)
                                     onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                    onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                                 }
                             )
                         }
@@ -247,6 +261,7 @@ fun WhiteboardScreen(
                                     onEvent(WhiteboardEvent.OnCardClose)
                                     onEvent(WhiteboardEvent.OnCommandPaletteClose)
                                     onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                    onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                                 }
                             )
                             ElevatedIconButton(
@@ -258,6 +273,7 @@ fun WhiteboardScreen(
                                     onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                     onEvent(WhiteboardEvent.OnCardClose)
                                     onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                    onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                                 }) {
                                 Icon(
                                     painter = painterResource(state.selectedDrawingTool.res),
@@ -305,6 +321,16 @@ fun WhiteboardScreen(
                         onOpacitySliderValueChange = { opacity: Float -> onEvent(WhiteboardEvent.OpacitySliderValueChange(opacity)) },
                         onCloseIconClick = { onEvent(WhiteboardEvent.OnStrokeWidthSliderClose) }
                     )
+                    ZoomSliderCard(
+                        modifier = Modifier
+                            .padding(top = 30.dp)
+                            .align(Alignment.TopStart),
+                        width = 256.dp,
+                        isVisible = state.isZoomSliderOpen,
+                        zoomSliderValue = state.canvasScale,
+                        onZoomSliderValueChange = { zoom -> onEvent(WhiteboardEvent.CanvasZoomChange(zoom)) },
+                        onCloseIconClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false)) }
+                    )
                 }
             }
 
@@ -319,6 +345,7 @@ fun WhiteboardScreen(
                                     onEvent(WhiteboardEvent.OnCardClose)
                                     onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                     onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                    onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                                     focusManager.clearFocus()
                                     down.consume()
                                 }
@@ -338,10 +365,14 @@ fun WhiteboardScreen(
                             onHomeIconClick.invoke()
                         },
                         backgroundColor = state.canvasColor,
+                        canvasScale = state.canvasScale,
+                        selectedDrawingTool = state.selectedDrawingTool,
+                        isZoomSliderOpen = state.isZoomSliderOpen,
                         onMenuIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteIconClick) },
                         onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
                         onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
+                        onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) }
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     CommandPaletteCard(
@@ -369,6 +400,16 @@ fun WhiteboardScreen(
                         }
                     )
                 }
+                ZoomSliderCard(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 32.dp, top = 102.dp),
+                    width = 258.dp,
+                    isVisible = state.isZoomSliderOpen,
+                    zoomSliderValue = state.canvasScale,
+                    onZoomSliderValueChange = { zoom -> onEvent(WhiteboardEvent.CanvasZoomChange(zoom)) },
+                    onCloseIconClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false)) }
+                )
                 ColorPickerCard(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -412,8 +453,16 @@ fun WhiteboardScreen(
                                 onEvent(WhiteboardEvent.StrokeColorChange(newColor, false))
                                 onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                 onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                             },
-                            onEraserClick = { eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType)) }
+                            onEraserClick = {
+                                eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType))
+                                onEvent(WhiteboardEvent.OnCardClose)
+                                onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
+                            }
                         )
                     }
                     Column(
@@ -442,6 +491,7 @@ fun WhiteboardScreen(
                                 onEvent(WhiteboardEvent.StrokeWidthButtonClicked(strokeNum))
                                 onEvent(WhiteboardEvent.OnCardClose)
                                 onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                             }
                         )
                     }
@@ -464,6 +514,7 @@ fun WhiteboardScreen(
                                 onEvent(WhiteboardEvent.OnCardClose)
                                 onEvent(WhiteboardEvent.OnCommandPaletteClose)
                                 onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                             }
                         )
                         ElevatedIconButton(
@@ -475,6 +526,7 @@ fun WhiteboardScreen(
                                 onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                 onEvent(WhiteboardEvent.OnCardClose)
                                 onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                             }) {
                             Icon(
                                 painter = painterResource(state.selectedDrawingTool.res),
@@ -497,6 +549,7 @@ fun WhiteboardScreen(
                                 onEvent(WhiteboardEvent.OnCardClose)
                                 onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                 onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                                 focusManager.clearFocus()
                                 down.consume()
                             }
@@ -516,10 +569,14 @@ fun WhiteboardScreen(
                             onHomeIconClick.invoke()
                         },
                         backgroundColor = state.canvasColor,
+                        canvasScale = state.canvasScale,
+                        selectedDrawingTool = state.selectedDrawingTool,
+                        isZoomSliderOpen = state.isZoomSliderOpen,
                         onMenuIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteIconClick) },
                         onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
                         onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
+                        onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) }
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     CommandPaletteCard(
@@ -547,6 +604,16 @@ fun WhiteboardScreen(
                         }
                     )
                 }
+                ZoomSliderCard(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 32.dp, top = 102.dp),
+                    width = 256.dp,
+                    isVisible = state.isZoomSliderOpen,
+                    zoomSliderValue = state.canvasScale,
+                    onZoomSliderValueChange = { zoom -> onEvent(WhiteboardEvent.CanvasZoomChange(zoom)) },
+                    onCloseIconClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false)) }
+                )
                 DrawingToolBar(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -559,6 +626,7 @@ fun WhiteboardScreen(
                         onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                         onEvent(WhiteboardEvent.OnCardClose)
                         onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                        onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                     }
                 )
                 ColorPickerCard(
@@ -604,8 +672,16 @@ fun WhiteboardScreen(
                                 onEvent(WhiteboardEvent.StrokeColorChange(newColor, false))
                                 onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                 onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                             },
-                            onEraserClick = { eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType)) }
+                            onEraserClick = {
+                                eraserType: DrawingTool -> onEvent(WhiteboardEvent.OnDrawingToolSelected(eraserType))
+                                onEvent(WhiteboardEvent.OnCardClose)
+                                onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
+                                onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
+                            }
                         )
                     }
                     Column(
@@ -634,6 +710,7 @@ fun WhiteboardScreen(
                                 onEvent(WhiteboardEvent.StrokeWidthButtonClicked(strokeNum))
                                 onEvent(WhiteboardEvent.OnCardClose)
                                 onEvent(WhiteboardEvent.OnCommandPaletteClose)
+                                onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                             }
                         )
                     }

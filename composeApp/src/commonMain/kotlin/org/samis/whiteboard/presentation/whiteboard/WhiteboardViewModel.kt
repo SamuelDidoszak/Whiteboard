@@ -483,7 +483,7 @@ class WhiteboardViewModel(
 
             is WhiteboardEvent.CanvasTransformed -> {
                 val oldScale = _state.value.canvasScale
-                val newScale = (oldScale * event.zoomChange).coerceIn(0.07f, 12f)
+                val newScale = (oldScale * event.zoomChange).coerceIn(1f / 12f, 12f)
                 val scaleRatio = newScale / oldScale
                 val newOffset = event.center - (event.center - _state.value.canvasOffset) * scaleRatio + event.offset
                 _state.update { it.copy(canvasOffset = newOffset, canvasScale = newScale) }
@@ -545,6 +545,24 @@ class WhiteboardViewModel(
                 viewModelScope.launch {
                     settingsRepository.saveLastPalette(event.palette)
                 }
+            }
+
+            is WhiteboardEvent.ZoomSliderVisibilityChange -> {
+                val zoomSliderOpen = event.visible ?: !_state.value.isZoomSliderOpen
+                _state.update { it.copy(isZoomSliderOpen = zoomSliderOpen) }
+            }
+
+            is WhiteboardEvent.CanvasZoomChange -> {
+                val canvasSize = _state.value.canvasSize
+                val screenCenter = Offset(
+                    x = canvasSize.width / 2f,
+                    y = canvasSize.height / 2f
+                )
+                onEvent(WhiteboardEvent.CanvasTransformed(
+                    center = screenCenter,
+                    offset = Offset.Zero,
+                    zoomChange = event.zoom / _state.value.canvasScale
+                ))
             }
         }
     }

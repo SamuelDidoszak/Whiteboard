@@ -61,6 +61,7 @@ data class WhiteboardState(
     val canvasSize: IntSize = IntSize.Zero,
     val canvasOffset: Offset = Offset.Zero,
     val canvasScale: Float = 1f,
+    val isZoomSliderOpen: Boolean = false,
 
     val captureController: Any? = null
 ) {
