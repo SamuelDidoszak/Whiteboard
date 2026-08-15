@@ -1,5 +1,8 @@
 package org.samis.whiteboard.presentation.dashboard
 
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -157,22 +160,22 @@ class DashboardViewModel(
                 when (it) {
                     is Update.AddPath -> {
                         it.path.id = null
-                        it.path.id = pathRepository.upsertPath(it.path)
+                        it.path.id = pathRepository.upsertPath(it.path, it.path.path.toPointList())
                     }
 
                     is Update.RemovePath -> {
                         it.path.id = null
-                        it.path.id = pathRepository.upsertPath(it.path)
+                        it.path.id = pathRepository.upsertPath(it.path, it.path.path.toPointList())
                     }
 
                     is Update.Erase -> {
                         it.path.id = null
-                        it.path.id = pathRepository.upsertPath(it.path)
+                        it.path.id = pathRepository.upsertPath(it.path, it.path.path.toPointList())
                     }
 
                     is Update.RemoveErase -> {
                         it.path.id = null
-                        it.path.id = pathRepository.upsertPath(it.path)
+                        it.path.id = pathRepository.upsertPath(it.path, it.path.path.toPointList())
                     }
                 }
                 it.whiteboardId = whiteboardId
@@ -185,5 +188,23 @@ class DashboardViewModel(
         viewModelScope.launch {
             updateRepository.upsertUpdate(update)
         }
+    }
+
+    private fun Path.toPointList(stepDistance: Float = 2f): List<Offset> {
+        val points = mutableListOf<Offset>()
+        val measure = PathMeasure()
+        measure.setPath(this, false)
+        val length = measure.length
+        if (length == 0f) return emptyList()
+        var distance = 0f
+        while (distance <= length) {
+            points.add(measure.getPosition(distance))
+            distance += stepDistance
+        }
+
+        if (points.last() != measure.getPosition(length)) {
+            points.add(measure.getPosition(length))
+        }
+        return points
     }
 }

@@ -49,11 +49,13 @@ import org.samis.whiteboard.presentation.util.formatDate
 import org.samis.whiteboard.presentation.util.minusLast
 import org.samis.whiteboard.presentation.util.roundTo
 import java.io.File
+import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 class WhiteboardViewModel(
     private val pathRepository: PathRepository,
@@ -65,11 +67,12 @@ class WhiteboardViewModel(
     private val contextProvider: IContextProvider
 ) : ViewModel() {
 
+    private val smoothPoints = true
+
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
     private var canUndo = true
     private var isFirstPath = true
-    // Holds the first measured canvas size that arrived before paths were loaded.
-    // Null means either paths are not yet loaded, or the initial centering has already been applied.
+    private val currentPathPoints = mutableListOf<Offset>()
     private var pendingInitCanvasSize: IntSize? = null
 
     private var updatedWhiteboardId = MutableStateFlow(whiteboardId)
@@ -125,17 +128,29 @@ class WhiteboardViewModel(
                     isFirstPath = false
                 }
                 val logicalOffset = (event.offset - _state.value.canvasOffset) / _state.value.canvasScale
-                _state.update { it.copy(startingOffset = logicalOffset) }
+                _state.update { it.copy(startingOffset = logicalOffset, previousOffset = null) }
+                currentPathPoints.clear()
+                currentPathPoints.add(logicalOffset)
                 updateMiniature = false
             }
 
             is WhiteboardEvent.ContinueDrawing -> {
                 val logicalOffset = (event.continuingOffset - _state.value.canvasOffset) / _state.value.canvasScale
                 updateContinuingOffsets(logicalOffset)
+                currentPathPoints.add(logicalOffset)
+                _state.update { it.copy(previousOffset = logicalOffset) }
             }
 
             WhiteboardEvent.FinishDrawing -> {
-                state.value.currentPath?.let { drawnPath ->
+                state.value.previousOffset?.let { currentPathPoints.add(it) }
+                if (smoothPoints) {
+                    val simplified = simplifyPath(currentPathPoints, 1.8f)
+                    currentPathPoints.clear()
+                    currentPathPoints.addAll(simplified)
+                    val finalPath = pathFromPointList(simplified)
+                    _state.update { it.copy(currentPath = _state.value.currentPath?.copy(path = finalPath)) }
+                }
+                _state.value.currentPath?.let { drawnPath ->
                     when (drawnPath.drawingTool) {
                         DrawingTool.DELETER -> {
                             // Deleter removes lines on the go. Code for DELETER logic is in the updateContinuingOffsets() method
@@ -147,11 +162,11 @@ class WhiteboardViewModel(
                                 drawnPath,
                                 Update.Erase(drawnPath, whiteboardId = updatedWhiteboardId.value)
                             )
-                            _state.update { it.copy(selectedDrawingTool = DrawingTool.PEN) }
+                            _state.update { it.copy(selectedDrawingTool = DrawingTool.PEN, previousOffset = null) }
                         }
 
                         DrawingTool.LASER_PEN -> {
-                            _state.update { it.copy(laserPenPath = drawnPath) }
+                            _state.update { it.copy(laserPenPath = drawnPath, previousOffset = null) }
                         }
 
                         else -> {
@@ -159,9 +174,11 @@ class WhiteboardViewModel(
                                 drawnPath,
                                 Update.AddPath(drawnPath, whiteboardId = updatedWhiteboardId.value)
                             )
+                            _state.update { it.copy(previousOffset = null) }
                         }
                     }
                 }
+                currentPathPoints.clear()
 
                 _state.update {
                     it.copy(
@@ -701,7 +718,7 @@ class WhiteboardViewModel(
     private fun insertPathAndUpdate(path: DrawnPath, update: Update) {
         viewModelScope.launch {
             val currentPath: DrawnPath? = _state.value.currentPath
-            val pathId = pathRepository.upsertPath(path)
+            val pathId = pathRepository.upsertPath(path, currentPathPoints)
             path.id = pathId
             val update = update.copyWithPath(path)
             insertUpdate(update)
@@ -904,10 +921,71 @@ class WhiteboardViewModel(
         val existingPath = state.value.currentPath?.path ?: Path().apply {
             moveTo(start.x, start.y)
         }
+
+        val previousOffset = state.value.previousOffset ?: start
+
+        val mid = Offset(
+            x = (previousOffset.x + continuingOffset.x) / 2f,
+            y = (previousOffset.y + continuingOffset.y) / 2f
+        )
+
         return Path().apply {
             addPath(existingPath)
-            lineTo(continuingOffset.x, continuingOffset.y)
+            quadraticBezierTo(
+                x1 = previousOffset.x,
+                y1 = previousOffset.y,
+                x2 = mid.x,
+                y2 = mid.y
+            )
         }
+    }
+
+    fun pathFromPointList(points: List<Offset>): Path {
+        if (points.isEmpty()) return Path()
+        return Path().apply {
+            moveTo(points.first().x, points.first().y)
+            for (i in 1 until points.size - 1) {
+                val mid = Offset(
+                    x = (points[i].x + points[i + 1].x) / 2f,
+                    y = (points[i].y + points[i + 1].y) / 2f
+                )
+                quadraticBezierTo(points[i].x, points[i].y, mid.x, mid.y)
+            }
+            lineTo(points.last().x, points.last().y)
+        }
+    }
+
+    fun simplifyPath(points: List<Offset>, epsilon: Float): List<Offset> {
+        if (points.size < 3) return points
+
+        val first = points.first()
+        val last = points.last()
+        var maxDistance = 0f
+        var maxIndex = 0
+
+        for (i in 1 until points.size - 1) {
+            val distance = perpendicularDistance(points[i], first, last)
+            if (distance > maxDistance) {
+                maxDistance = distance
+                maxIndex = i
+            }
+        }
+
+        return if (maxDistance > epsilon) {
+            val left = simplifyPath(points.subList(0, maxIndex + 1), epsilon)
+            val right = simplifyPath(points.subList(maxIndex, points.size), epsilon)
+            left.dropLast(1) + right
+        } else {
+            listOf(first, last)
+        }
+    }
+
+    private fun perpendicularDistance(point: Offset, lineStart: Offset, lineEnd: Offset): Float {
+        val dx = lineEnd.x - lineStart.x
+        val dy = lineEnd.y - lineStart.y
+        val magnitude = sqrt(dx * dx + dy * dy)
+        if (magnitude == 0f) return (point - lineStart).getDistance()
+        return abs(dy * point.x - dx * point.y + lineEnd.x * lineStart.y - lineEnd.y * lineStart.x) / magnitude
     }
 
     private fun createLinePath(start: Offset, continuingOffset: Offset): Path {

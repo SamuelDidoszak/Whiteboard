@@ -1,5 +1,6 @@
 package org.samis.whiteboard.data.repository
 
+import androidx.compose.ui.geometry.Offset
 import org.samis.whiteboard.data.database.dao.PathDao
 import org.samis.whiteboard.data.database.entity.PathEntity
 import org.samis.whiteboard.data.mapper.toPathEntity
@@ -10,12 +11,12 @@ class PathRepositoryImpl(
     private val pathDao: PathDao
 ): PathRepository {
 
-    override suspend fun upsertPath(path: DrawnPath): Long {
-        return pathDao.upsertPath(path.toPathEntity())
+    override suspend fun upsertPath(path: DrawnPath, points: List<Offset>): Long {
+        return pathDao.upsertPath(path.toPathEntity(points))
     }
 
     override suspend fun deletePath(path: DrawnPath) {
-        pathDao.deletePath(path.toPathEntity())
+        pathDao.deletePath(path.toPathEntity(listOf()))
     }
 
     override suspend fun getPathById(pathId: Long): PathEntity? {

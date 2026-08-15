@@ -23,6 +23,7 @@ data class WhiteboardState(
     val laserPenPath: DrawnPath? = null,
 
     val startingOffset: Offset = Offset.Zero,
+    val previousOffset: Offset? = null,
     val selectedDrawingTool: DrawingTool = DrawingTool.PEN,
     val drawingToolVisibility: DrawingToolVisibility = DrawingToolVisibility(),
 
