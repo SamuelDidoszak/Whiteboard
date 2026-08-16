@@ -607,9 +607,6 @@ class WhiteboardViewModel(
             }
         }
 
-        if (undo == null)
-            _state.value.undoArray.forEach { deleteUpdate(it) }
-
         _state.update {
             it.copy(
                 updates =
@@ -617,11 +614,6 @@ class WhiteboardViewModel(
                         it.updates.dropLast(1)
                     else
                         it.updates.plus(update),
-                undoArray =
-                    if (undo == null)
-                        emptyList()
-                    else
-                        it.undoArray,
                 updatePointer = if (undo == null) it.updates.size else it.updatePointer, // it.updates.size is size - 1
                 paths =
                     if (add) {
@@ -728,14 +720,6 @@ class WhiteboardViewModel(
         }
     }
 
-    private fun deletePaths(paths: List<DrawnPath>) {
-        viewModelScope.launch {
-            paths.forEach { path ->
-                pathRepository.deletePath(path)
-            }
-        }
-    }
-
     private fun initializeDefaultPalette() {
         viewModelScope.launch {
             val palette = settingsRepository.getLastPalette().first()
@@ -828,6 +812,22 @@ class WhiteboardViewModel(
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        AppScope.scope.launch {
+            _state.value.undoArray.forEach {
+                updateRepository.deleteUpdate(it)
+                val path = when (it) {
+                    is Update.AddPath -> it.path
+                    is Update.RemovePath -> it.path
+                    is Update.RemoveErase -> it.path
+                    is Update.Erase -> it.path
+                }
+                pathRepository.deletePath(path)
+            }
+        }
+        super.onCleared()
     }
 
     private fun updateContinuingOffsets(continuingOffset: Offset) {
