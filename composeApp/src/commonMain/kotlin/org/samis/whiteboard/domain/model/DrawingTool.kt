@@ -37,4 +37,11 @@ enum class DrawingTool(
             else -> false
         }
     }
+
+    fun isSmoothable(): Boolean {
+        return when (this) {
+            PEN, ERASER, HIGHLIGHTER, DASHER -> true
+            else -> false
+        }
+    }
 }

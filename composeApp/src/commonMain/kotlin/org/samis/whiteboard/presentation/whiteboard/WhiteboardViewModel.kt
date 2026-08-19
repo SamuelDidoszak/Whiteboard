@@ -143,7 +143,7 @@ class WhiteboardViewModel(
 
             WhiteboardEvent.FinishDrawing -> {
                 state.value.previousOffset?.let { currentPathPoints.add(it) }
-                if (smoothPoints) {
+                if (smoothPoints && _state.value.selectedDrawingTool.isSmoothable()) {
                     val simplified = simplifyPath(currentPathPoints, 1.8f)
                     currentPathPoints.clear()
                     currentPathPoints.addAll(simplified)
