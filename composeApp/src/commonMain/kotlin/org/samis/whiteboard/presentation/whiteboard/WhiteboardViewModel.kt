@@ -67,7 +67,7 @@ class WhiteboardViewModel(
     private val contextProvider: IContextProvider
 ) : ViewModel() {
 
-    private val smoothPoints = true
+    private val smoothPoints = false
 
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
     private var canUndo = true
@@ -117,8 +117,8 @@ class WhiteboardViewModel(
     fun onEvent(event: WhiteboardEvent) {
         when (event) {
             is WhiteboardEvent.StartDrawing -> {
-                if (isFirstPath) {
-                    if (state.value.whiteboardName == "Untitled")
+                if (isFirstPath && _state.value.selectedDrawingTool != DrawingTool.LASER_PEN) {
+                    if (whiteboardId == null)
                         _state.update { it.copy(whiteboardName = initializeWhiteboardName(translatePolish = true)) }
 
                     viewModelScope.launch {
@@ -166,6 +166,7 @@ class WhiteboardViewModel(
                         }
 
                         DrawingTool.LASER_PEN -> {
+                            println("FInished lasering")
                             _state.update { it.copy(laserPenPath = drawnPath, previousOffset = null) }
                         }
 
@@ -214,12 +215,14 @@ class WhiteboardViewModel(
 
             is WhiteboardEvent.FillColorChange -> {
                 _state.update { it.copy(fillColor = event.fillColor) }
-                upsertWhiteboard()
+                if (whiteboardId != null)
+                    upsertWhiteboard()
             }
 
             is WhiteboardEvent.OpacitySliderValueChange -> {
                 _state.update { it.copy(opacity = event.opacity) }
-                upsertWhiteboard()
+                if (whiteboardId != null)
+                    upsertWhiteboard()
             }
 
             is WhiteboardEvent.CanvasColorChange -> {
@@ -232,10 +235,12 @@ class WhiteboardViewModel(
                     canvasColor = event.canvasColor,
                     updates = it.updates
                 ) }
-                upsertWhiteboard()
 
-                updateMiniature = true
-                updateMiniatureTask.start(4000, _state.value.copy())
+                if (whiteboardId != null) {
+                    upsertWhiteboard()
+                    updateMiniature = true
+                    updateMiniatureTask.start(4000, _state.value.copy())
+                }
             }
 
             is WhiteboardEvent.StrokeColorChange -> {
@@ -406,7 +411,8 @@ class WhiteboardViewModel(
                     return
                 }
                 savePreferredColors(colors.minus(event.color), event.colorPaletteType)
-                upsertWhiteboard()
+                if (whiteboardId != null)
+                    upsertWhiteboard()
             }
 
             is WhiteboardEvent.SetColorDeletionMode -> {
@@ -421,7 +427,8 @@ class WhiteboardViewModel(
 
             is WhiteboardEvent.OnTitleChange -> {
                 _state.update { it.copy(whiteboardName = event.title) }
-                upsertWhiteboard()
+                if (whiteboardId != null)
+                    upsertWhiteboard()
             }
 
             is WhiteboardEvent.OnCardClose -> {
@@ -542,12 +549,18 @@ class WhiteboardViewModel(
                     _state.update {
                         it.copy(strokeWidthList = it.strokeWidthList.toMutableList().apply { this[it.activeStrokeWidthButton] = rounded })
                     }
-                    upsertWhiteboard()
+                    if (whiteboardId != null)
+                        upsertWhiteboard()
                 }
             }
 
             is WhiteboardEvent.OnPalettePicked -> {
                 val newColorList = event.palette.colorList.minus(event.palette.background)
+                _state.value.updates.forEach {
+                    if (it is Update.Erase) {
+                        it.path.strokeColor = event.palette.background
+                    }
+                }
                 _state.update { it.copy(
                     canvasColor = event.palette.background,
                     strokeColor = newColorList[it.selectedMarker],
@@ -555,9 +568,10 @@ class WhiteboardViewModel(
                     preferredStrokeColors = newColorList,
                     preferredFillColors = newColorList
                 ) }
-                if (_state.value.updates.isNotEmpty()) {
+                if (whiteboardId != null) {
                     updateMiniature = true
                     updateMiniatureTask.start(4000, _state.value.copy())
+                    upsertWhiteboard()
                 }
                 viewModelScope.launch {
                     settingsRepository.saveLastPalette(event.palette)
@@ -878,7 +892,6 @@ class WhiteboardViewModel(
             }
         }
 
-        updatedWhiteboardId.value?.let { id ->
             var eraserSize = state.value.strokeWidth
             eraserSize = max(eraserSize * 2f, eraserSize + 20)
             _state.update {
@@ -895,6 +908,7 @@ class WhiteboardViewModel(
                             fillColor = state.value.fillColor,
                             opacity =
                                 when (state.value.selectedDrawingTool) {
+                                    DrawingTool.ERASER -> 100f
                                     DrawingTool.HIGHLIGHTER -> 40f
                                     DrawingTool.DASHER -> 50f
                                     else -> state.value.opacity
@@ -908,7 +922,6 @@ class WhiteboardViewModel(
                     }
                 )
             }
-        }
     }
 
     private fun createEraserPath(continuingOffset: Offset): Path {
@@ -1087,6 +1100,17 @@ class WhiteboardViewModel(
     }
 
     private fun initializeWhiteboardName(translatePolish: Boolean): String {
+        fun getDayOfWeek(weekDay: DayOfWeek): String {
+            return when(weekDay) {
+                DayOfWeek.MONDAY -> "Monday"
+                DayOfWeek.TUESDAY -> "Tuesday"
+                DayOfWeek.WEDNESDAY -> "Wednesday"
+                DayOfWeek.THURSDAY -> "Thursday"
+                DayOfWeek.FRIDAY -> "Friday"
+                DayOfWeek.SATURDAY -> "Saturday"
+                DayOfWeek.SUNDAY -> "Sunday"
+            }
+        }
         fun getDayOfWeekInPolish(weekDay: DayOfWeek): String {
             return when(weekDay) {
                 DayOfWeek.MONDAY -> "Poniedziałek"
@@ -1100,7 +1124,8 @@ class WhiteboardViewModel(
         }
 
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        return getDayOfWeekInPolish(today.dayOfWeek) + " " + today.formatDate()
+        val weekDay = if (translatePolish) getDayOfWeekInPolish(today.dayOfWeek) else getDayOfWeek(today.dayOfWeek)
+        return weekDay + " " + today.formatDate()
     }
 }
 

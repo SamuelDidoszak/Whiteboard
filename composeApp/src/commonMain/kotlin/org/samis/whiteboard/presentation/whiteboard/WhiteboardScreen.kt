@@ -847,6 +847,7 @@ private fun DrawingCanvas(
     }
     AnimateLaserPath(
         laserPenPath = state.laserPenPath,
+        state,
         onPathAnimationComplete = { onEvent(WhiteboardEvent.OnLaserPathAnimationComplete) }
     )
 }
@@ -876,6 +877,7 @@ private fun DrawScope.drawCustomPath(path: DrawnPath) {
 @Composable
 fun AnimateLaserPath(
     laserPenPath: DrawnPath?,
+    state: WhiteboardState,
     onPathAnimationComplete: () -> Unit
 ) {
     val animationProgress = remember { Animatable(initialValue = 1f) }
@@ -898,13 +900,17 @@ fun AnimateLaserPath(
             destination = trimmedPath //stores the resulting path segment in trimmedPath.
         )
     }
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        laserPenPath?.let {
-            drawPath(
-                path = trimmedPath,
-                color = laserPenPath.strokeColor,
-                style = Stroke(width = laserPenPath.strokeWidth.dp.toPx())
-            )
+    Canvas(modifier = Modifier) {
+        translate(top = state.canvasOffset.y, left = state.canvasOffset.x) {
+            scale(scale = state.canvasScale, pivot = Offset.Zero) {
+                laserPenPath?.let {
+                    drawPath(
+                        path = trimmedPath,
+                        color = laserPenPath.strokeColor,
+                        style = Stroke(width = laserPenPath.strokeWidth.dp.toPx())
+                    )
+                }
+            }
         }
     }
 }
