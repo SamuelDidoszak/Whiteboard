@@ -128,21 +128,22 @@ class WhiteboardViewModel(
                     isFirstPath = false
                 }
                 val logicalOffset = (event.offset - _state.value.canvasOffset) / _state.value.canvasScale
-                _state.update { it.copy(startingOffset = logicalOffset, previousOffset = null) }
                 currentPathPoints.clear()
                 currentPathPoints.add(logicalOffset)
-                updateMiniature = false
+                _state.update { it.copy(startingOffset = logicalOffset, previousOffset = null) }
+                if (_state.value.selectedDrawingTool != DrawingTool.LASER_PEN)
+                    updateMiniature = false
             }
 
             is WhiteboardEvent.ContinueDrawing -> {
                 val logicalOffset = (event.continuingOffset - _state.value.canvasOffset) / _state.value.canvasScale
-                updateContinuingOffsets(logicalOffset)
                 currentPathPoints.add(logicalOffset)
+                updateContinuingOffsets(logicalOffset)
                 _state.update { it.copy(previousOffset = logicalOffset) }
             }
 
             WhiteboardEvent.FinishDrawing -> {
-                state.value.previousOffset?.let { currentPathPoints.add(it) }
+//                state.value.previousOffset?.let { currentPathPoints.add(it) }
                 if (smoothPoints && _state.value.selectedDrawingTool.isSmoothable()) {
                     val simplified = simplifyPath(currentPathPoints, 1.8f)
                     currentPathPoints.clear()
@@ -166,7 +167,6 @@ class WhiteboardViewModel(
                         }
 
                         DrawingTool.LASER_PEN -> {
-                            println("FInished lasering")
                             _state.update { it.copy(laserPenPath = drawnPath, previousOffset = null) }
                         }
 
@@ -936,20 +936,24 @@ class WhiteboardViewModel(
         }
 
         val previousOffset = state.value.previousOffset ?: start
-
         val mid = Offset(
             x = (previousOffset.x + continuingOffset.x) / 2f,
             y = (previousOffset.y + continuingOffset.y) / 2f
         )
+        val distance = (continuingOffset - previousOffset).getDistance()
+        val distanceToMid = (mid - previousOffset).getDistance()
 
         return Path().apply {
             addPath(existingPath)
-            quadraticBezierTo(
-                x1 = previousOffset.x,
-                y1 = previousOffset.y,
-                x2 = mid.x,
-                y2 = mid.y
-            )
+            if (state.value.previousOffset == null || distance < 1f || distanceToMid < 2f)
+                lineTo(continuingOffset.x, continuingOffset.y)
+            else
+                quadraticBezierTo(
+                    x1 = previousOffset.x,
+                    y1 = previousOffset.y,
+                    x2 = mid.x,
+                    y2 = mid.y
+                )
         }
     }
 
@@ -964,7 +968,13 @@ class WhiteboardViewModel(
                 )
                 quadraticBezierTo(points[i].x, points[i].y, mid.x, mid.y)
             }
-            lineTo(points.last().x, points.last().y)
+
+            val lastMid = Offset(
+                x = (points[points.size - 2].x + points.last().x) / 2f,
+                y = (points[points.size - 2].y + points.last().y) / 2f
+            )
+            if ((points.last() - lastMid).getDistance() >= 1f)
+                lineTo(points.last().x, points.last().y)
         }
     }
 
@@ -1010,42 +1020,34 @@ class WhiteboardViewModel(
 
     private fun createArrowPath(start: Offset, continuingOffset: Offset, strokeWidth: Float = state.value.strokeWidth): Path {
         val arrowHeadAngle = 30.0
-        val arrowHeadLength = 70f * (max(5f, strokeWidth) / 8f)
+        val length = (continuingOffset - start).getDistance()
+        val arrowHeadLength = 70f * (max(5f, strokeWidth) / 8f) * (length / 200f).coerceIn(0.3f, 1f)
 
         return Path().apply {
-            // Main line
             moveTo(start.x, start.y)
             lineTo(continuingOffset.x, continuingOffset.y)
 
-            // Angle of the arrow in radians
             val angle = atan2(
                 continuingOffset.y - start.y,
                 continuingOffset.x - start.x
             )
-
-            // Offset tip backward by half line thickness
-            val tipOffsetX = strokeWidth * 0.5f * cos(angle)
-            val tipOffsetY = strokeWidth * 0.5f * sin(angle)
-            val adjustedTipX = continuingOffset.x - tipOffsetX
-            val adjustedTipY = continuingOffset.y - tipOffsetY
 
             // Arrowhead side angles
             val angle1 = angle - Math.toRadians(arrowHeadAngle).toFloat()
             val angle2 = angle + Math.toRadians(arrowHeadAngle).toFloat()
 
             // Left side point
-            val x1 = adjustedTipX - arrowHeadLength * cos(angle1)
-            val y1 = adjustedTipY - arrowHeadLength * sin(angle1)
+            val x1 = continuingOffset.x - arrowHeadLength * cos(angle1)
+            val y1 = continuingOffset.y - arrowHeadLength * sin(angle1)
 
             // Right side point
-            val x2 = adjustedTipX - arrowHeadLength * cos(angle2)
-            val y2 = adjustedTipY - arrowHeadLength * sin(angle2)
+            val x2 = continuingOffset.x - arrowHeadLength * cos(angle2)
+            val y2 = continuingOffset.y - arrowHeadLength * sin(angle2)
 
-            // Draw arrowhead lines meeting at adjusted tip
-            moveTo(adjustedTipX, adjustedTipY)
+            moveTo(continuingOffset.x, continuingOffset.y)
             lineTo(x1, y1)
 
-            moveTo(adjustedTipX, adjustedTipY)
+            moveTo(continuingOffset.x, continuingOffset.y)
             lineTo(x2, y2)
         }
     }

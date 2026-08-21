@@ -35,8 +35,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -860,7 +861,11 @@ private fun DrawScope.drawCustomPath(path: DrawnPath) {
             drawPath(
                 path = path.path,
                 color = path.strokeColor.copy(alpha = pathOpacity),
-                style = Stroke(width = path.strokeWidth.dp.toPx())
+                style = Stroke(
+                    width = path.strokeWidth.dp.toPx(),
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round
+                )
             )
         }
 
@@ -868,7 +873,11 @@ private fun DrawScope.drawCustomPath(path: DrawnPath) {
             drawPath(
                 path = path.path,
                 color = path.fillColor.copy(alpha = pathOpacity),
-                style = Fill
+                style = Stroke(
+                    width = path.strokeWidth.dp.toPx(),
+                    cap = StrokeCap.Round,
+                    join = StrokeJoin.Round
+                )
             )
         }
     }
@@ -881,25 +890,32 @@ fun AnimateLaserPath(
     onPathAnimationComplete: () -> Unit
 ) {
     val animationProgress = remember { Animatable(initialValue = 1f) }
+    val pathMeasure = remember { PathMeasure() }
+
     LaunchedEffect(laserPenPath) {
+        animationProgress.snapTo(1f)
         laserPenPath?.let {
+            pathMeasure.setPath(it.path, false)
             animationProgress.animateTo(
                 targetValue = 0f,
                 animationSpec = tween(durationMillis = 1000)
             )
             onPathAnimationComplete()
-            animationProgress.snapTo(targetValue = 1f)
         }
     }
+
     val trimmedPath = Path()
-    PathMeasure().apply {
-        setPath(path = laserPenPath?.path, forceClosed = false)
-        getSegment(
-            startDistance = length * (1 - animationProgress.value),
-            stopDistance = length,
-            destination = trimmedPath //stores the resulting path segment in trimmedPath.
-        )
+    if (laserPenPath != null) {
+        pathMeasure.apply {
+            setPath(path = laserPenPath.path, forceClosed = false)
+            getSegment(
+                startDistance = length * (1 - animationProgress.value),
+                stopDistance = length,
+                destination = trimmedPath
+            )
+        }
     }
+
     Canvas(modifier = Modifier) {
         translate(top = state.canvasOffset.y, left = state.canvasOffset.x) {
             scale(scale = state.canvasScale, pivot = Offset.Zero) {
