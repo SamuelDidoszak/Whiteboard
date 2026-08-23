@@ -168,6 +168,7 @@ fun WhiteboardScreen(
                                         onEvent(WhiteboardEvent.OnCardClose)
                                         onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
                                         onEvent(WhiteboardEvent.OnDrawingToolDialogClose)
+                                        onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                                         focusManager.clearFocus()
                                         down.consume()
                                     }
@@ -192,7 +193,11 @@ fun WhiteboardScreen(
                         onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
                         onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
-                        onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) }
+                        onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) },
+                        onZoomButtonDoubleClick = {
+                            onEvent(WhiteboardEvent.CanvasZoomChange(1.0f))
+                            onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(visible = false))
+                        }
                     )
                     Row(
                         modifier = Modifier.align(Alignment.BottomStart)
@@ -324,7 +329,7 @@ fun WhiteboardScreen(
                     )
                     ZoomSliderCard(
                         modifier = Modifier
-                            .padding(top = 30.dp)
+                            .padding(top = 30.dp, start = 6.dp)
                             .align(Alignment.TopStart),
                         width = 256.dp,
                         isVisible = state.isZoomSliderOpen,
@@ -373,7 +378,11 @@ fun WhiteboardScreen(
                         onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
                         onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
-                        onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) }
+                        onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) },
+                        onZoomButtonDoubleClick = {
+                            onEvent(WhiteboardEvent.CanvasZoomChange(1.0f))
+                            onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(visible = false))
+                        }
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     CommandPaletteCard(
@@ -405,7 +414,7 @@ fun WhiteboardScreen(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(start = 32.dp, top = 102.dp),
-                    width = 258.dp,
+                    width = 288.dp,
                     isVisible = state.isZoomSliderOpen,
                     zoomSliderValue = state.canvasScale,
                     onZoomSliderValueChange = { zoom -> onEvent(WhiteboardEvent.CanvasZoomChange(zoom)) },
@@ -577,7 +586,11 @@ fun WhiteboardScreen(
                         onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
                         onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
-                        onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) }
+                        onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) },
+                        onZoomButtonDoubleClick = {
+                            onEvent(WhiteboardEvent.CanvasZoomChange(1.0f))
+                            onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(visible = false))
+                        }
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     CommandPaletteCard(
@@ -609,7 +622,7 @@ fun WhiteboardScreen(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(start = 32.dp, top = 102.dp),
-                    width = 256.dp,
+                    width = 304.dp,
                     isVisible = state.isZoomSliderOpen,
                     zoomSliderValue = state.canvasScale,
                     onZoomSliderValueChange = { zoom -> onEvent(WhiteboardEvent.CanvasZoomChange(zoom)) },

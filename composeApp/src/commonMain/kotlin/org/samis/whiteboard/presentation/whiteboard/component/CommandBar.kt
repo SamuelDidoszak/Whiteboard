@@ -37,7 +37,8 @@ fun CommandBarHorizontal(
     onSaveIconClick: () -> Unit,
     onUndoIconClick: () -> Unit,
     onRedoIconClick: () -> Unit,
-    onZoomButtonClick: () -> Unit
+    onZoomButtonClick: () -> Unit,
+    onZoomButtonDoubleClick: () -> Unit
 ) {
     Row(modifier = modifier) {
         ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onHomeIconClick) {
@@ -57,7 +58,7 @@ fun CommandBarHorizontal(
         }
         Spacer(modifier = Modifier.size(6.dp))
         if (selectedDrawingTool == DrawingTool.CANVAS_PANNER || !canvasScale.equalsDelta(1f) || isZoomSliderOpen) {
-            ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onZoomButtonClick) {
+            ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onZoomButtonClick, onDoubleClick = onZoomButtonDoubleClick) {
                 Icon(
                     painter = painterResource(getDrawable(canvasScale)),
                     contentDescription = "Home",
@@ -104,7 +105,8 @@ fun CommandBarVertical(
     onSaveIconClick: () -> Unit,
     onUndoIconClick: () -> Unit,
     onRedoIconClick: () -> Unit,
-    onZoomButtonClick: () -> Unit
+    onZoomButtonClick: () -> Unit,
+    onZoomButtonDoubleClick: () -> Unit
 ) {
     Column(modifier = modifier) {
         ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onHomeIconClick) {
@@ -139,8 +141,8 @@ fun CommandBarVertical(
             )
         }
         Spacer(modifier = Modifier.height(18.dp))
-        if (selectedDrawingTool == DrawingTool.CANVAS_PANNER || !canvasScale.equalsDelta(1f)) {
-            ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onZoomButtonClick) {
+        if (selectedDrawingTool == DrawingTool.CANVAS_PANNER || !canvasScale.equalsDelta(1f) || isZoomSliderOpen) {
+            ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onZoomButtonClick, onDoubleClick = onZoomButtonDoubleClick) {
                 Icon(
                     painter = painterResource(getDrawable(canvasScale)),
                     contentDescription = "Home",
