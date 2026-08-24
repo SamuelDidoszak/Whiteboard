@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -886,6 +887,11 @@ private fun DrawScope.drawCustomPath(path: DrawnPath) {
             drawPath(
                 path = path.path,
                 color = path.fillColor.copy(alpha = pathOpacity),
+                style = Fill
+            )
+            drawPath(
+                path = path.path,
+                color = path.strokeColor.copy(alpha = pathOpacity),
                 style = Stroke(
                     width = path.strokeWidth.dp.toPx(),
                     cap = StrokeCap.Round,

@@ -3,6 +3,7 @@ package org.samis.whiteboard.presentation.dashboard
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +20,7 @@ import org.samis.whiteboard.domain.repository.PathRepository
 import org.samis.whiteboard.domain.repository.SettingsRepository
 import org.samis.whiteboard.domain.repository.UpdateRepository
 import org.samis.whiteboard.domain.repository.WhiteboardRepository
+import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.util.AppScope
 import org.samis.whiteboard.presentation.util.IContextProvider
 import java.io.File
@@ -79,6 +81,21 @@ class DashboardViewModel(
                     whiteboardForUpdate = event.whiteboard,
                     isRenamePromptOpen = event.show
                 ) }
+            }
+
+            is DashboardEvent.OnSizeChanged -> {
+                if (state.value.whiteboards.isNotEmpty())
+                    return
+                val dashboardSize = when (event.size.widthDp) {
+                    in 0.dp..640.dp -> DashboardSizeOption.SMALL
+                    in 640.dp..780.dp -> DashboardSizeOption.MEDIUM
+                    in 781.dp .. 960.dp -> DashboardSizeOption.LARGE
+                    else -> DashboardSizeOption.XLARGE
+                }
+                _state.update { it.copy(dashboardSize = dashboardSize) }
+                viewModelScope.launch {
+                    settingsRepository.saveDashboardSize(dashboardSize)
+                }
             }
         }
     }

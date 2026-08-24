@@ -77,11 +77,11 @@ fun SettingsScreen(
         SettingsTopBar(onBackIconClick = onBackIconClick)
 
         LazyColumn(
-            modifier = Modifier.width(320.dp)
+            modifier = Modifier.width(336.dp)
         ) {
             item {
                 DashboardSizeGroup(
-                    modifier = Modifier.width(320.dp),
+                    modifier = Modifier.width(336.dp),
                     dashboardSize = state.dashboardSize,
                     onOptionSelected = { onEvent(SettingsEvent.OnDashboardSizeChanged(it)) }
                 )
@@ -300,7 +300,7 @@ private fun SettingsItemRow(item: SettingsItem) {
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = item.text,
+                text = item.text.split('_').joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } },
                 style = MaterialTheme.typography.bodyMedium
             )
         }

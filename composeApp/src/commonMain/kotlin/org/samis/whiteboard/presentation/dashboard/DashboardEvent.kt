@@ -1,6 +1,7 @@
 package org.samis.whiteboard.presentation.dashboard
 
 import org.samis.whiteboard.domain.model.Whiteboard
+import org.samis.whiteboard.presentation.util.ScreenSizeInfo
 
 sealed class DashboardEvent {
     data class DeleteWhiteboard(val whiteboard: Whiteboard?): DashboardEvent()
@@ -9,4 +10,6 @@ sealed class DashboardEvent {
 
     data class ShowDeletePrompt(val whiteboard: Whiteboard?, val show: Boolean): DashboardEvent()
     data class ShowRenamePrompt(val whiteboard: Whiteboard?, val show: Boolean): DashboardEvent()
+
+    data class OnSizeChanged(val size: ScreenSizeInfo): DashboardEvent()
 }

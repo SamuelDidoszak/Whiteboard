@@ -22,10 +22,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import org.samis.whiteboard.presentation.dashboard.component.DeleteWhiteboardDialog
 import org.samis.whiteboard.presentation.dashboard.component.RenameWhiteboardDialog
 import org.samis.whiteboard.presentation.dashboard.component.WhiteboardItemCard
+import org.samis.whiteboard.presentation.util.rememberScreenSizeSize
 
 @Composable
 fun DashboardScreen(
@@ -35,6 +37,7 @@ fun DashboardScreen(
     onAddNewWhiteboardClick: () -> Unit,
     onCardClick: (Long) -> Unit
 ) {
+    val screenSizeInfo = rememberScreenSizeSize()
 
     RenameWhiteboardDialog(
         state.whiteboardForUpdate?.name ?: "",
@@ -58,7 +61,9 @@ fun DashboardScreen(
     )
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .onSizeChanged { onEvent(DashboardEvent.OnSizeChanged(screenSizeInfo)) }
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
