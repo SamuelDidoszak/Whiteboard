@@ -257,7 +257,10 @@ fun Eraser(width: Dp, height: Dp, selectedDrawingTool: DrawingTool, drawingToolV
                 .width(width)
                 .height(height)
                 .offset(y = yOffset)
-                .clickable {
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
                     if (drawingToolVisibility.isToolVisible(DrawingTool.ERASER)) {
                         val eraserType =
                             if (selectedDrawingTool == DrawingTool.ERASER && drawingToolVisibility.isToolVisible(DrawingTool.DELETER)) DrawingTool.DELETER

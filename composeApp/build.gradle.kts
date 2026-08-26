@@ -30,6 +30,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.koin.android)
             implementation(libs.capturable)
+            implementation(libs.androidx.compose.ui.graphics)
         }
         commonMain.dependencies {
             implementation(compose.runtime)

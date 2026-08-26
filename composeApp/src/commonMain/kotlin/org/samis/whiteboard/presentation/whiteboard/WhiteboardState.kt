@@ -18,7 +18,7 @@ data class WhiteboardState(
     val updatePointer: Int? = null,
 
     val paths: List<DrawnPath> = emptyList(),
-    val pathsToBeDeleted: List<DrawnPath> = emptyList(),
+    val pathsToBeDeleted: HashSet<DrawnPath> = hashSetOf(),
     var currentPath: DrawnPath? = null,
     val laserPenPath: DrawnPath? = null,
 

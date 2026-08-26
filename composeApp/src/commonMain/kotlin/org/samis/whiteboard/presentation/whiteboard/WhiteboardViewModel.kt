@@ -45,6 +45,7 @@ import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.IContextProvider
 import org.samis.whiteboard.presentation.util.Palette
 import org.samis.whiteboard.presentation.util.capture
+import org.samis.whiteboard.presentation.util.findPathsAt
 import org.samis.whiteboard.presentation.util.formatDate
 import org.samis.whiteboard.presentation.util.minusLast
 import org.samis.whiteboard.presentation.util.roundTo
@@ -143,7 +144,6 @@ class WhiteboardViewModel(
             }
 
             WhiteboardEvent.FinishDrawing -> {
-//                state.value.previousOffset?.let { currentPathPoints.add(it) }
                 if (smoothPoints && _state.value.selectedDrawingTool.isSmoothable()) {
                     val simplified = simplifyPath(currentPathPoints, 1.8f)
                     currentPathPoints.clear()
@@ -189,7 +189,7 @@ class WhiteboardViewModel(
                                 it.paths.plus(it.currentPath!!)
                             else it.paths,
                         currentPath = null,
-                        pathsToBeDeleted = emptyList()
+                        pathsToBeDeleted = hashSetOf()
                     )
                 }
             }
@@ -854,16 +854,20 @@ class WhiteboardViewModel(
             }
 
             DrawingTool.DELETER -> {
-                updatePathsToBeDeleted(start = startOffset, continuingOffset = continuingOffset)
-                for (path in state.value.pathsToBeDeleted) {
-                    if (path.strokeColor == state.value.canvasColor)
+                updatePathsToBeDeleted(
+                    start = startOffset,
+                    previousOffset = state.value.previousOffset,
+                    continuingOffset = continuingOffset
+                )
+                for (path in _state.value.pathsToBeDeleted) {
+                    if (path.drawingTool == DrawingTool.ERASER)
                         continue
                     val update = Update.RemovePath(path, whiteboardId = updatedWhiteboardId.value)
                     insertUpdate(update)
                     onUpdate(update)
                 }
-                _state.update { it.copy(pathsToBeDeleted = emptyList()) }
-                createEraserPath(continuingOffset = continuingOffset)
+                _state.update { it.copy(pathsToBeDeleted = hashSetOf()) }
+                createDeleterPath(continuingOffset = continuingOffset)
             }
 
             DrawingTool.LINE -> {
@@ -892,39 +896,40 @@ class WhiteboardViewModel(
             }
         }
 
-            var eraserSize = state.value.strokeWidth
-            eraserSize = max(eraserSize * 2f, eraserSize + 20)
-            _state.update {
-                it.copy(
-                    currentPath = updatedPath?.let { path ->
-                        DrawnPath(
-                            path = path,
-                            drawingTool = state.value.selectedDrawingTool,
-                            strokeColor =
-                                if (state.value.selectedDrawingTool == DrawingTool.ERASER)
-                                    state.value.canvasColor
-                                else
-                                    state.value.strokeColor,
-                            fillColor = state.value.fillColor,
-                            opacity =
-                                when (state.value.selectedDrawingTool) {
-                                    DrawingTool.ERASER -> 100f
-                                    DrawingTool.HIGHLIGHTER -> 40f
-                                    DrawingTool.DASHER -> 50f
-                                    else -> state.value.opacity
-                                },
-                            strokeWidth =
-                                if (state.value.selectedDrawingTool == DrawingTool.ERASER || state.value.selectedDrawingTool == DrawingTool.HIGHLIGHTER)
-                                    eraserSize
-                                else
-                                    state.value.strokeWidth
-                        )
-                    }
-                )
-            }
+        var eraserSize = state.value.strokeWidth
+        eraserSize = max(eraserSize * 2f, eraserSize + 20)
+        _state.update {
+            it.copy(
+                currentPath = updatedPath?.let { path ->
+                    DrawnPath(
+                        path = path,
+                        drawingTool = state.value.selectedDrawingTool,
+                        strokeColor =
+                            if (state.value.selectedDrawingTool == DrawingTool.ERASER)
+                                state.value.canvasColor
+                            else
+                                state.value.strokeColor,
+                        fillColor = state.value.fillColor,
+                        opacity =
+                            when (state.value.selectedDrawingTool) {
+                                DrawingTool.ERASER -> 100f
+                                DrawingTool.HIGHLIGHTER -> 40f
+                                DrawingTool.DASHER -> 50f
+                                else -> state.value.opacity
+                            },
+                        strokeWidth =
+                            when (state.value.selectedDrawingTool) {
+                                DrawingTool.ERASER, DrawingTool.HIGHLIGHTER -> eraserSize
+                                DrawingTool.DELETER -> 5f
+                                else -> _state.value.strokeWidth
+                            }
+                    )
+                }
+            )
+        }
     }
 
-    private fun createEraserPath(continuingOffset: Offset): Path {
+    private fun createDeleterPath(continuingOffset: Offset): Path {
         return Path().apply {
             addOval(Rect(center = continuingOffset, radius = 5f))
         }
@@ -1021,7 +1026,7 @@ class WhiteboardViewModel(
     private fun createArrowPath(start: Offset, continuingOffset: Offset, strokeWidth: Float = state.value.strokeWidth): Path {
         val arrowHeadAngle = 30.0
         val length = (continuingOffset - start).getDistance()
-        val arrowHeadLength = 70f * (max(5f, strokeWidth) / 8f) * (length / 200f).coerceIn(0.3f, 1f)
+        val arrowHeadLength = 100f * (max(5f, strokeWidth) / 8f) * (length / 400f).coerceIn(0.3f, 1f)
 
         return Path().apply {
             moveTo(start.x, start.y)
@@ -1081,16 +1086,25 @@ class WhiteboardViewModel(
         }
     }
 
-    private fun updatePathsToBeDeleted(start: Offset, continuingOffset: Offset) {
-        val pathsToBeDeleted = state.value.pathsToBeDeleted.toMutableList()
-        state.value.paths.forEach { drawnPath ->
-            val bounds = drawnPath.path.getBounds()
-            if (bounds.contains(start) || bounds.contains(continuingOffset)) {
-                if (!pathsToBeDeleted.contains(drawnPath)) {
-                    pathsToBeDeleted.add(drawnPath)
-                }
-            }
+    private fun updatePathsToBeDeleted(start: Offset, previousOffset: Offset?, continuingOffset: Offset) {
+        val pathsToBeDeleted = _state.value.pathsToBeDeleted.toHashSet()
+        val from = previousOffset ?: start
+        val distance = continuingOffset - from
+        val segmentDistance = (continuingOffset - from).getDistance()
+        val steps = maxOf(1f, segmentDistance.toInt() / 5f).toInt()
+
+        for (i in 0..steps) {
+            val fraction = i / steps.toFloat()
+            val position = from + distance * fraction
+            pathsToBeDeleted += findPathsAt(
+                touchPoint = position,
+                drawnPaths = _state.value.paths,
+                rejectedPaths = pathsToBeDeleted,
+                canvasOffset = _state.value.canvasOffset,
+                canvasScale = _state.value.canvasScale
+            )
         }
+
         _state.update { it.copy(pathsToBeDeleted = pathsToBeDeleted) }
     }
 
