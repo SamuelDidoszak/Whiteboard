@@ -68,8 +68,6 @@ class WhiteboardViewModel(
     private val contextProvider: IContextProvider
 ) : ViewModel() {
 
-    private val smoothPoints = false
-
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
     private var canUndo = true
     private var isFirstPath = true
@@ -144,11 +142,8 @@ class WhiteboardViewModel(
             }
 
             WhiteboardEvent.FinishDrawing -> {
-                if (smoothPoints && _state.value.selectedDrawingTool.isSmoothable()) {
-                    val simplified = simplifyPath(currentPathPoints, 1.8f)
-                    currentPathPoints.clear()
-                    currentPathPoints.addAll(simplified)
-                    val finalPath = pathFromPointList(simplified)
+                if (_state.value.selectedDrawingTool.isSmoothable()) {
+                    val finalPath = pathFromPointList(currentPathPoints)
                     _state.update { it.copy(currentPath = _state.value.currentPath?.copy(path = finalPath)) }
                 }
                 _state.value.currentPath?.let { drawnPath ->
@@ -981,39 +976,6 @@ class WhiteboardViewModel(
             if ((points.last() - lastMid).getDistance() >= 1f)
                 lineTo(points.last().x, points.last().y)
         }
-    }
-
-    fun simplifyPath(points: List<Offset>, epsilon: Float): List<Offset> {
-        if (points.size < 3) return points
-
-        val first = points.first()
-        val last = points.last()
-        var maxDistance = 0f
-        var maxIndex = 0
-
-        for (i in 1 until points.size - 1) {
-            val distance = perpendicularDistance(points[i], first, last)
-            if (distance > maxDistance) {
-                maxDistance = distance
-                maxIndex = i
-            }
-        }
-
-        return if (maxDistance > epsilon) {
-            val left = simplifyPath(points.subList(0, maxIndex + 1), epsilon)
-            val right = simplifyPath(points.subList(maxIndex, points.size), epsilon)
-            left.dropLast(1) + right
-        } else {
-            listOf(first, last)
-        }
-    }
-
-    private fun perpendicularDistance(point: Offset, lineStart: Offset, lineEnd: Offset): Float {
-        val dx = lineEnd.x - lineStart.x
-        val dy = lineEnd.y - lineStart.y
-        val magnitude = sqrt(dx * dx + dy * dy)
-        if (magnitude == 0f) return (point - lineStart).getDistance()
-        return abs(dy * point.x - dx * point.y + lineEnd.x * lineStart.y - lineEnd.y * lineStart.x) / magnitude
     }
 
     private fun createLinePath(start: Offset, continuingOffset: Offset): Path {
