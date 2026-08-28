@@ -8,7 +8,7 @@ import org.samis.whiteboard.data.database.AppDatabase
 import org.samis.whiteboard.data.database.getRoomDatabase
 import org.samis.whiteboard.data.repository.PaletteRepositoryImpl
 import org.samis.whiteboard.data.repository.PathRepositoryImpl
-import org.samis.whiteboard.data.repository.SettingRepositoryImpl
+import org.samis.whiteboard.data.repository.SettingsRepositoryImpl
 import org.samis.whiteboard.data.repository.UpdateRepositoryImpl
 import org.samis.whiteboard.data.repository.WhiteboardRepositoryImpl
 import org.samis.whiteboard.domain.repository.PaletteRepository
@@ -37,7 +37,7 @@ val sharedModule = module {
     //Repositories
     singleOf(::PathRepositoryImpl).bind<PathRepository>()
     singleOf(::UpdateRepositoryImpl).bind<UpdateRepository>()
-    singleOf(::SettingRepositoryImpl).bind<SettingsRepository>()
+    singleOf(::SettingsRepositoryImpl).bind<SettingsRepository>()
     singleOf(::WhiteboardRepositoryImpl).bind<WhiteboardRepository>()
     singleOf(::PaletteRepositoryImpl).bind<PaletteRepository>()
 }

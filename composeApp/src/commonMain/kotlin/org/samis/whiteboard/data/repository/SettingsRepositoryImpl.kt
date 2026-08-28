@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.samis.whiteboard.data.util.Constant.ASKED_FOR_PERMISSIONS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.CANVAS_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.COLOR_SCHEME_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.DASHBOARD_SIZE_PREF_KEY
@@ -15,6 +16,7 @@ import org.samis.whiteboard.data.util.Constant.DRAWING_TOOLS_KEY
 import org.samis.whiteboard.data.util.Constant.FILL_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.LAST_PALETTE_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.MARKER_COLORS_PREF_KEY
+import org.samis.whiteboard.data.util.Constant.SAVE_MINIATURES_TO_EXTERNAL_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.SHOW_OPACITY_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.STROKE_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.STYLUS_INPUT_PREF_KEY
@@ -29,7 +31,7 @@ import org.samis.whiteboard.presentation.theme.defaultDrawingColors
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.Palette
 
-class SettingRepositoryImpl(
+class SettingsRepositoryImpl(
     private val prefs: DataStore<Preferences>
 ): SettingsRepository {
 
@@ -44,6 +46,8 @@ class SettingRepositoryImpl(
         private val STYLUS_INPUT_KEY = stringPreferencesKey(STYLUS_INPUT_PREF_KEY)
         private val SHOW_OPACITY_SLIDER_KEY = stringPreferencesKey(SHOW_OPACITY_PREF_KEY)
         private val LAST_PALETTE_KEY = stringPreferencesKey(LAST_PALETTE_PREF_KEY)
+        private val ASKED_FOR_PERMISSIONS_KEY = stringPreferencesKey(ASKED_FOR_PERMISSIONS_PREF_KEY)
+        private val SAVE_MINIATURES_TO_EXTERNAL_KEY = stringPreferencesKey(SAVE_MINIATURES_TO_EXTERNAL_PREF_KEY)
     }
 
     override suspend fun saveColorScheme(colorScheme: ColorScheme) {
@@ -126,6 +130,20 @@ class SettingRepositoryImpl(
         }
     }
 
+    override fun getAskedForPermissions(): Flow<Boolean> {
+        return prefs.data.map { preferences ->
+            val asked = preferences[ASKED_FOR_PERMISSIONS_KEY] ?: "false"
+            asked.toBoolean()
+        }
+    }
+
+    override fun getMiniatureSaveLocation(): Flow<Boolean> {
+        return prefs.data.map { preferences ->
+            val saveToExternal = preferences[SAVE_MINIATURES_TO_EXTERNAL_KEY] ?: "false"
+            saveToExternal.toBoolean()
+        }
+    }
+
     override suspend fun savePreferredColors(
         colors: List<Color>,
         colorPaletteType: ColorPaletteType
@@ -169,8 +187,20 @@ class SettingRepositoryImpl(
     }
 
     override suspend fun saveLastPalette(palette: Palette) {
-        prefs.edit { preferences ->
-            preferences[LAST_PALETTE_KEY] = palette.toString()
+        prefs.edit { preference ->
+            preference[LAST_PALETTE_KEY] = palette.toString()
+        }
+    }
+
+    override suspend fun saveAskedForPermissions(asked: Boolean) {
+        prefs.edit { preference ->
+            preference[ASKED_FOR_PERMISSIONS_KEY] = asked.toString()
+        }
+    }
+
+    override suspend fun saveMiniatureSaveLocation(external: Boolean) {
+        prefs.edit { preference ->
+            preference[SAVE_MINIATURES_TO_EXTERNAL_KEY] = external.toString()
         }
     }
 

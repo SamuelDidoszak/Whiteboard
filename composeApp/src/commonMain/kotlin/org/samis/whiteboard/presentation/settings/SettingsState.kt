@@ -12,5 +12,8 @@ data class SettingsState(
     val dashboardSize: DashboardSizeOption = DashboardSizeOption.MEDIUM,
     val stylusInput: Boolean = false,
     val showOpacitySlider: Boolean = true,
-    val lastPalette: Palette = Palettes.defaultPalettes[0]
+    val lastPalette: Palette = Palettes.defaultPalettes[0],
+    val saveMiniatureToExternal: Boolean = false,
+    val askedForPermissions: Boolean = false,
+    val grantedExternalStoragePermission: Boolean = false
 )

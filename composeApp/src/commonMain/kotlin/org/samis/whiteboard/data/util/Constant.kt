@@ -19,4 +19,6 @@ object Constant {
     const val STYLUS_INPUT_PREF_KEY = "stylus_input"
     const val SHOW_OPACITY_PREF_KEY = "show_opacity_slider"
     const val LAST_PALETTE_PREF_KEY = "last_palette"
+    const val ASKED_FOR_PERMISSIONS_PREF_KEY = "asked_for_permissions"
+    const val SAVE_MINIATURES_TO_EXTERNAL_PREF_KEY = "save_miniatures_to_external"
 }

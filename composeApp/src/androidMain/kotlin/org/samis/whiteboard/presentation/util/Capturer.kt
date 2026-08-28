@@ -27,6 +27,7 @@ actual fun capture(
     contextProvider: IContextProvider,
     fileName: String,
     miniature: Boolean,
+    saveToExternalPath: Boolean,
     miniaturePath: String?,
     onFileSave: (file: File) -> Unit
 ) {
@@ -38,7 +39,11 @@ actual fun capture(
                 val bitmap = bitmapAsync.await()
                 val byteArray = bitmap.asAndroidBitmap().toByteArray()
 
-                val directory = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Whiteboard")
+                val directory =
+                    if (saveToExternalPath)
+                        File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Whiteboard")
+                    else
+                        File(contextProvider.getExternalFilesDir("DIRECTORY_PICTURES"), "Whiteboard")
                 if (!directory.exists()) {
                     directory.mkdirs()
                 }
@@ -66,12 +71,14 @@ actual fun capture(
                     outputStream.flush()
                     outputStream.close()
                     onFileSave(file)
-                    MediaScannerConnection.scanFile(
-                        contextProvider.applicationContext as Context?,
-                        arrayOf(file.absolutePath),
-                        arrayOf("image/png"),
-                        null
-                    )
+                    if (saveToExternalPath) {
+                        MediaScannerConnection.scanFile(
+                            contextProvider.applicationContext as Context?,
+                            arrayOf(file.absolutePath),
+                            arrayOf("image/png"),
+                            null
+                        )
+                    }
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }

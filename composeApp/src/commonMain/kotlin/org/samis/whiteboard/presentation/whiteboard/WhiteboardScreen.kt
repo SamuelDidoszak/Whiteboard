@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -64,6 +66,7 @@ import org.samis.whiteboard.presentation.util.detectStylusDragGestures
 import org.samis.whiteboard.presentation.util.getUiType
 import org.samis.whiteboard.presentation.util.registerBackHandler
 import org.samis.whiteboard.presentation.util.rememberCaptureController
+import org.samis.whiteboard.presentation.util.rememberPicturePermissionRequester
 import org.samis.whiteboard.presentation.util.rememberScreenSizeSize
 import org.samis.whiteboard.presentation.whiteboard.component.ColorPickerCard
 import org.samis.whiteboard.presentation.whiteboard.component.ColorSelectionDialog
@@ -102,7 +105,15 @@ fun WhiteboardScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val focusManager = LocalFocusManager.current
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val requestPicturePermission = rememberPicturePermissionRequester(state.askedForPermissions)
+
     LaunchedEffect(drawerState.targetValue) {
+        requestPicturePermission(
+            false,
+            { onEvent(WhiteboardEvent.OnPicturePermissionChanged(true)) },
+            { onEvent(WhiteboardEvent.OnPicturePermissionChanged(false)) }
+        )
         if (drawerState.targetValue == DrawerValue.Closed) {
             focusManager.clearFocus()
         }
@@ -191,7 +202,27 @@ fun WhiteboardScreen(
                             onHomeIconClick.invoke()
                         },
                         onMenuIconClick = { scope.launch { drawerState.open() } },
-                        onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
+                        onSaveIconClick = {
+                            if (!state.grantedExternalStoragePermission)
+                                requestPicturePermission(
+                                    true,
+                                    {
+                                        onEvent(WhiteboardEvent.OnAskedForPermissions)
+                                        onEvent(WhiteboardEvent.OnPicturePermissionChanged(true))
+                                        onEvent(WhiteboardEvent.SavePicture(scope))
+                                        scope.launch { snackbarHostState.showSnackbar(message = "Picture saved!") }
+                                    },
+                                    {
+                                        onEvent(WhiteboardEvent.OnAskedForPermissions)
+                                        onEvent(WhiteboardEvent.OnPicturePermissionChanged(false))
+                                        scope.launch { snackbarHostState.showSnackbar(message = "Permission is required to save pictures") }
+                                    }
+                                )
+                            else {
+                                onEvent(WhiteboardEvent.SavePicture(scope))
+                                scope.launch { snackbarHostState.showSnackbar(message = "Picture saved!") }
+                            }
+                        },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
                         onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
                         onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) },
@@ -339,6 +370,12 @@ fun WhiteboardScreen(
                         onCloseIconClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false)) }
                     )
                 }
+                Box(modifier = Modifier.fillMaxSize()) {
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
+                }
             }
 
             UiType.MEDIUM -> {
@@ -376,7 +413,27 @@ fun WhiteboardScreen(
                         selectedDrawingTool = state.selectedDrawingTool,
                         isZoomSliderOpen = state.isZoomSliderOpen,
                         onMenuIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteIconClick) },
-                        onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
+                        onSaveIconClick = {
+                            if (!state.grantedExternalStoragePermission)
+                                requestPicturePermission(
+                                    true,
+                                    {
+                                        onEvent(WhiteboardEvent.OnAskedForPermissions)
+                                        onEvent(WhiteboardEvent.OnPicturePermissionChanged(true))
+                                        onEvent(WhiteboardEvent.SavePicture(scope))
+                                        scope.launch { snackbarHostState.showSnackbar(message = "Picture saved!") }
+                                    },
+                                    {
+                                        onEvent(WhiteboardEvent.OnAskedForPermissions)
+                                        onEvent(WhiteboardEvent.OnPicturePermissionChanged(false))
+                                        scope.launch { snackbarHostState.showSnackbar(message = "Permission is required to save pictures") }
+                                    }
+                                )
+                            else {
+                                onEvent(WhiteboardEvent.SavePicture(scope))
+                                scope.launch { snackbarHostState.showSnackbar(message = "Picture saved!") }
+                            }
+                        },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
                         onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
                         onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) },
@@ -547,6 +604,12 @@ fun WhiteboardScreen(
                         }
                     }
                 }
+                Box(modifier = Modifier.fillMaxSize()) {
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
+                }
             }
 
             UiType.EXPANDED -> {
@@ -584,7 +647,27 @@ fun WhiteboardScreen(
                         selectedDrawingTool = state.selectedDrawingTool,
                         isZoomSliderOpen = state.isZoomSliderOpen,
                         onMenuIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteIconClick) },
-                        onSaveIconClick = { onEvent(WhiteboardEvent.SavePicture(scope)) },
+                        onSaveIconClick = {
+                            if (!state.grantedExternalStoragePermission)
+                                requestPicturePermission(
+                                    true,
+                                    {
+                                        onEvent(WhiteboardEvent.OnAskedForPermissions)
+                                        onEvent(WhiteboardEvent.OnPicturePermissionChanged(true))
+                                        onEvent(WhiteboardEvent.SavePicture(scope))
+                                        scope.launch { snackbarHostState.showSnackbar(message = "Picture saved!") }
+                                    },
+                                    {
+                                        onEvent(WhiteboardEvent.OnAskedForPermissions)
+                                        onEvent(WhiteboardEvent.OnPicturePermissionChanged(false))
+                                        scope.launch { snackbarHostState.showSnackbar(message = "Permission is required to save pictures") }
+                                    }
+                                )
+                            else {
+                                onEvent(WhiteboardEvent.SavePicture(scope))
+                                scope.launch { snackbarHostState.showSnackbar(message = "Picture saved!") }
+                            }
+                        },
                         onUndoIconClick = { onEvent(WhiteboardEvent.Undo) },
                         onRedoIconClick = { onEvent(WhiteboardEvent.Redo) },
                         onZoomButtonClick = { onEvent(WhiteboardEvent.ZoomSliderVisibilityChange()) },
@@ -730,7 +813,6 @@ fun WhiteboardScreen(
                         )
                     }
                 }
-
                 Image(
                     painter = painterResource(Res.drawable.logoWithName),
                     contentDescription = "Best church is the church as a priority",
@@ -742,7 +824,12 @@ fun WhiteboardScreen(
                         if (state.canvasColor.luminance() > 0.5) Color.Black else Color.White
                     )
                 )
-
+                Box(modifier = Modifier.fillMaxSize()) {
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
+                }
             }
         }
 

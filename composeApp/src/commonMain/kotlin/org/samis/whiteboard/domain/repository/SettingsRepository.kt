@@ -19,6 +19,8 @@ interface SettingsRepository {
     fun getStylusInput(): Flow<Boolean>
     fun getShowOpacitySlider(): Flow<Boolean>
     fun getLastPalette(): Flow<Palette>
+    fun getMiniatureSaveLocation(): Flow<Boolean>
+    fun getAskedForPermissions(): Flow<Boolean>
     suspend fun saveColorScheme(colorScheme: ColorScheme)
     suspend fun savePreferredColors(colors: List<Color>, colorPaletteType: ColorPaletteType)
     suspend fun saveDrawingToolVisibility(toolVisibility: DrawingToolVisibility)
@@ -26,4 +28,6 @@ interface SettingsRepository {
     suspend fun saveStylusInput(stylusInput: Boolean)
     suspend fun saveShowOpacitySlider(showOpacitySlider: Boolean)
     suspend fun saveLastPalette(palette: Palette)
+    suspend fun saveMiniatureSaveLocation(external: Boolean)
+    suspend fun saveAskedForPermissions(asked: Boolean)
 }

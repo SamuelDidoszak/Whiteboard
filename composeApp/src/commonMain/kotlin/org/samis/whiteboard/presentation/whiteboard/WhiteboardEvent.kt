@@ -44,6 +44,8 @@ sealed class WhiteboardEvent {
     data object Redo: WhiteboardEvent()
 
     data class SetCaptureController(val captureController: Any): WhiteboardEvent()
+    data object OnAskedForPermissions: WhiteboardEvent()
+    data class OnPicturePermissionChanged(val granted: Boolean): WhiteboardEvent()
     data class SavePicture(val scope: CoroutineScope): WhiteboardEvent()
     data class SaveMiniature(val scope: CoroutineScope, val stateSnapshot: WhiteboardState? = null): WhiteboardEvent()
 

@@ -10,5 +10,7 @@ sealed class SettingsEvent {
     data class OnDashboardSizeChanged(val dashboardSize: DashboardSizeOption): SettingsEvent()
     data class OnStylusInputChanged(val stylusInput: Boolean): SettingsEvent()
     data class OnShowOpacityChanged(val showOpacity: Boolean): SettingsEvent()
-    data class OnLastPaletteChanged(val lastPalette: Boolean): SettingsEvent()
+    data class OnAskedForPermissionsChanged(val asked: Boolean): SettingsEvent()
+    data class OnPicturePermissionChanged(val granted: Boolean): SettingsEvent()
+    data class OnMiniatureSaveLocationChanged(val external: Boolean): SettingsEvent()
 }

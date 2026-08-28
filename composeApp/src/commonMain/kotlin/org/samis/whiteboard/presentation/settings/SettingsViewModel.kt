@@ -7,12 +7,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.samis.whiteboard.domain.model.ColorScheme
 import org.samis.whiteboard.domain.repository.SettingsRepository
 import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
-import org.samis.whiteboard.presentation.util.Palette
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository
@@ -21,27 +21,32 @@ class SettingsViewModel(
     private val _state = MutableStateFlow(SettingsState())
     val state = combine(
         listOf(
+            _state,
             settingsRepository.getColorScheme(),
             settingsRepository.getDrawingToolVisibility(),
             settingsRepository.getDashboardSize(),
             settingsRepository.getStylusInput(),
             settingsRepository.getShowOpacitySlider(),
-            settingsRepository.getLastPalette()
+            settingsRepository.getAskedForPermissions(),
+            settingsRepository.getMiniatureSaveLocation(),
         )
     ) { flows ->
-        val colorScheme = flows[0] as ColorScheme
-        val drawingToolVisibility = flows[1] as DrawingToolVisibility
-        val dashboardSize = flows[2] as DashboardSizeOption
-        val stylusInput = flows[3] as Boolean
-        val showOpacitySlider = flows[4] as Boolean
-        val lastPalette = flows[5] as Palette
-        SettingsState(
+        val state = flows[0] as SettingsState
+        val colorScheme = flows[1] as ColorScheme
+        val drawingToolVisibility = flows[2] as DrawingToolVisibility
+        val dashboardSize = flows[3] as DashboardSizeOption
+        val stylusInput = flows[4] as Boolean
+        val showOpacitySlider = flows[5] as Boolean
+        val askedForPermissions = flows[6] as Boolean
+        val saveMiniatureToExternal = flows[7] as Boolean
+        state.copy(
             currentScheme = colorScheme,
             drawingToolVisibility = drawingToolVisibility,
             dashboardSize = dashboardSize,
             stylusInput = stylusInput,
             showOpacitySlider = showOpacitySlider,
-            lastPalette = lastPalette
+            askedForPermissions = askedForPermissions,
+            saveMiniatureToExternal = saveMiniatureToExternal
         )
     }.stateIn(
         scope = viewModelScope,
@@ -81,8 +86,26 @@ class SettingsViewModel(
                 }
             }
 
-            is SettingsEvent.OnLastPaletteChanged -> {
-                TODO()
+            is SettingsEvent.OnAskedForPermissionsChanged -> {
+                viewModelScope.launch {
+                    settingsRepository.saveAskedForPermissions(true)
+                }
+            }
+
+            is SettingsEvent.OnPicturePermissionChanged -> {
+                _state.update { _state.value.copy(grantedExternalStoragePermission = event.granted) }
+            }
+
+            is SettingsEvent.OnMiniatureSaveLocationChanged -> {
+                val externalStoragePermissionGranted = _state.value.grantedExternalStoragePermission
+                val miniatureSaveLocation =
+                    if (externalStoragePermissionGranted)
+                        event.external
+                    else
+                        false
+                viewModelScope.launch {
+                    settingsRepository.saveMiniatureSaveLocation(miniatureSaveLocation)
+                }
             }
         }
     }

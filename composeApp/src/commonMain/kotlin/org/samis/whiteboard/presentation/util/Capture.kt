@@ -11,6 +11,7 @@ expect fun capture(
     contextProvider: IContextProvider,
     fileName: String,
     miniature: Boolean,
+    saveToExternalPath: Boolean,
     miniaturePath: String?,
     onFileSave: (file: File) -> Unit
 )

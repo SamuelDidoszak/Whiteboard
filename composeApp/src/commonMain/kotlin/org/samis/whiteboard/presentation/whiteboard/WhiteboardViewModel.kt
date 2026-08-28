@@ -38,6 +38,7 @@ import org.samis.whiteboard.domain.repository.SettingsRepository
 import org.samis.whiteboard.domain.repository.UpdateRepository
 import org.samis.whiteboard.domain.repository.WhiteboardRepository
 import org.samis.whiteboard.presentation.navigation.Routes
+import org.samis.whiteboard.presentation.settings.SettingsEvent
 import org.samis.whiteboard.presentation.theme.Palettes
 import org.samis.whiteboard.presentation.util.AppScope
 import org.samis.whiteboard.presentation.util.DelayedTask
@@ -50,13 +51,11 @@ import org.samis.whiteboard.presentation.util.formatDate
 import org.samis.whiteboard.presentation.util.minusLast
 import org.samis.whiteboard.presentation.util.roundTo
 import java.io.File
-import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
-import kotlin.math.sqrt
 
 class WhiteboardViewModel(
     private val pathRepository: PathRepository,
@@ -87,7 +86,9 @@ class WhiteboardViewModel(
         settingsRepository.getDrawingToolVisibility(),
         settingsRepository.getStylusInput(),
         paletteRepository.getAllPalettes(),
-        settingsRepository.getShowOpacitySlider()
+        settingsRepository.getShowOpacitySlider(),
+        settingsRepository.getAskedForPermissions(),
+        settingsRepository.getMiniatureSaveLocation()
     ){ flows ->
         val state = flows[0] as WhiteboardState
         canUndo = true
@@ -96,7 +97,9 @@ class WhiteboardViewModel(
             drawingToolVisibility = flows[2] as DrawingToolVisibility,
             stylusInput = flows[3] as Boolean,
             paletteList = flows[4] as List<Palette>,
-            showOpacitySlider = flows[5] as Boolean
+            showOpacitySlider = flows[5] as Boolean,
+            askedForPermissions = flows[6] as Boolean,
+            saveMiniatureToExternal = flows[7] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,
@@ -462,6 +465,16 @@ class WhiteboardViewModel(
                 _state.update { it.copy(captureController = event.captureController) }
             }
 
+            is WhiteboardEvent.OnAskedForPermissions -> {
+                viewModelScope.launch {
+                    settingsRepository.saveAskedForPermissions(true)
+                }
+            }
+
+            is WhiteboardEvent.OnPicturePermissionChanged -> {
+                _state.update { _state.value.copy(grantedExternalStoragePermission = event.granted) }
+            }
+
             is WhiteboardEvent.SavePicture -> {
                 val captureController = state.value.captureController ?: return
                 capture(
@@ -469,8 +482,9 @@ class WhiteboardViewModel(
                     captureController,
                     contextProvider,
                     state.value.whiteboardName,
-                    false,
-                    null
+                    miniature = false,
+                    saveToExternalPath = true,
+                    miniaturePath = null
                 ) {}
             }
 
@@ -485,14 +499,17 @@ class WhiteboardViewModel(
                     contextProvider,
                     whiteboardState.whiteboardName,
                     true,
+                    state.value.saveMiniatureToExternal,
                     whiteboardState.miniatureSrc
-                ) {
-                    file: File ->
+                ) { file: File ->
                     var newMiniatureSrc = whiteboardState.miniatureSrc
                     if (file.path.isNotEmpty())
                         newMiniatureSrc = file.path
                     _state.update { it.copy(miniatureSrc = newMiniatureSrc) }
-                    upsertWhiteboard(miniatureSrc = newMiniatureSrc, whiteboardId = updatedWhiteboardId.value)
+                    upsertWhiteboard(
+                        miniatureSrc = newMiniatureSrc,
+                        whiteboardId = updatedWhiteboardId.value
+                    )
                 }
             }
 

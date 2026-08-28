@@ -35,6 +35,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,7 +51,9 @@ import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.presentation.settings.component.ColorSchemeDialog
 import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
+import org.samis.whiteboard.presentation.util.rememberPicturePermissionRequester
 import whiteboard.composeapp.generated.resources.Res
+import whiteboard.composeapp.generated.resources.gallerySave
 import whiteboard.composeapp.generated.resources.ic_theme
 import whiteboard.composeapp.generated.resources.img_pen
 import whiteboard.composeapp.generated.resources.opacity
@@ -63,6 +66,16 @@ fun SettingsScreen(
 ) {
 
     var isColorSchemeDialogOpen by rememberSaveable { mutableStateOf(false) }
+
+    val requestPicturePermission = rememberPicturePermissionRequester(state.askedForPermissions)
+
+    LaunchedEffect(Unit) {
+        requestPicturePermission(
+            false,
+            { onEvent(SettingsEvent.OnPicturePermissionChanged(true)) },
+            { onEvent(SettingsEvent.OnPicturePermissionChanged(false)) }
+        )
+    }
 
     ColorSchemeDialog(
         isOpen = isColorSchemeDialogOpen,
@@ -130,6 +143,30 @@ fun SettingsScreen(
                             onToggle = {
                                 onEvent(
                                     SettingsEvent.OnShowOpacityChanged(!state.showOpacitySlider)
+                                )
+                            })
+                    )
+                }
+            }
+            item {
+                Box(modifier = Modifier.padding(start = 16.dp)) {
+                    SettingsItemRow(
+                        SettingsItem(
+                            Res.drawable.gallerySave,
+                            "Save miniatures to gallery",
+                            initialState = state.saveMiniatureToExternal,
+                            onToggle = {
+                                requestPicturePermission(
+                                    true,
+                                    {
+                                        onEvent(SettingsEvent.OnAskedForPermissionsChanged(true))
+                                        onEvent(SettingsEvent.OnPicturePermissionChanged(true))
+                                        onEvent(SettingsEvent.OnMiniatureSaveLocationChanged(!state.saveMiniatureToExternal))
+                                    },
+                                    {
+                                        onEvent(SettingsEvent.OnAskedForPermissionsChanged(true))
+                                        onEvent(SettingsEvent.OnPicturePermissionChanged(false))
+                                    }
                                 )
                             })
                     )
