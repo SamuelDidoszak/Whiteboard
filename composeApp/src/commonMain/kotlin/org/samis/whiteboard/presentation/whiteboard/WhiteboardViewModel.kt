@@ -1070,14 +1070,12 @@ class WhiteboardViewModel(
     }
 
     private fun createTrianglePath(start: Offset, continuingOffset: Offset): Path {
-        val height = continuingOffset.y - start.y
-        val baseWidth = continuingOffset.x - start.x
-        val remainingVertex = Offset(x = start.x - baseWidth, y = start.y + height)
+        val width = continuingOffset.x - start.x
 
         return Path().apply {
             moveTo(start.x, start.y)
-            lineTo(continuingOffset.x, continuingOffset.y)
-            lineTo(remainingVertex.x, remainingVertex.y)
+            lineTo(continuingOffset.x, start.y)
+            lineTo(continuingOffset.x - width / 2f, continuingOffset.y)
             close()
         }
     }
