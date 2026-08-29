@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.asAndroidPath
+import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.domain.model.DrawnPath
 
 actual fun findPathsAt(
@@ -53,7 +54,7 @@ actual fun findPathsAt(
         val threshold = (drawnPath.strokeWidth / 1.25f) + hitPadding
         val logicalRect = inRectangle.inflate(threshold)
 
-        if (!drawnPath.path.getBounds().overlaps(logicalRect)) return@filter false
+        if (drawnPath.drawingTool == DrawingTool.ERASER || !drawnPath.path.getBounds().overlaps(logicalRect)) return@filter false
 
         if (drawnPath.drawingTool.isFillable() && drawnPath.fillColor != Color.Transparent) {
             val bounds = drawnPath.path.getBounds()

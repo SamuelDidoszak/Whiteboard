@@ -38,7 +38,6 @@ import org.samis.whiteboard.domain.repository.SettingsRepository
 import org.samis.whiteboard.domain.repository.UpdateRepository
 import org.samis.whiteboard.domain.repository.WhiteboardRepository
 import org.samis.whiteboard.presentation.navigation.Routes
-import org.samis.whiteboard.presentation.settings.SettingsEvent
 import org.samis.whiteboard.presentation.theme.Palettes
 import org.samis.whiteboard.presentation.util.AppScope
 import org.samis.whiteboard.presentation.util.DelayedTask
@@ -119,7 +118,7 @@ class WhiteboardViewModel(
     fun onEvent(event: WhiteboardEvent) {
         when (event) {
             is WhiteboardEvent.StartDrawing -> {
-                if (isFirstPath && _state.value.selectedDrawingTool != DrawingTool.LASER_PEN) {
+                if (isFirstPath && _state.value.selectedDrawingTool != DrawingTool.LASER_PEN && _state.value.selectedDrawingTool != DrawingTool.DELETER) {
                     if (whiteboardId == null)
                         _state.update { it.copy(whiteboardName = initializeWhiteboardName(translatePolish = true)) }
 
@@ -152,7 +151,10 @@ class WhiteboardViewModel(
                 _state.value.currentPath?.let { drawnPath ->
                     when (drawnPath.drawingTool) {
                         DrawingTool.DELETER -> {
-                            // Deleter removes lines on the go. Code for DELETER logic is in the updateContinuingOffsets() method
+                            _state.update { it.copy(
+                                selectedDrawingTool = _state.value.previousDrawingTool,
+                                previousOffset = null
+                            ) }
                         }
 
                         DrawingTool.ERASER -> {
@@ -161,7 +163,10 @@ class WhiteboardViewModel(
                                 drawnPath,
                                 Update.Erase(drawnPath, whiteboardId = updatedWhiteboardId.value)
                             )
-                            _state.update { it.copy(selectedDrawingTool = DrawingTool.PEN, previousOffset = null) }
+                            _state.update { it.copy(
+                                selectedDrawingTool = _state.value.previousDrawingTool,
+                                previousOffset = null
+                            ) }
                         }
 
                         DrawingTool.LASER_PEN -> {
@@ -183,7 +188,7 @@ class WhiteboardViewModel(
                     it.copy(
                         // removes flickering
                         paths =
-                            if (it.selectedDrawingTool != DrawingTool.LASER_PEN && it.selectedDrawingTool != DrawingTool.DELETER && it.currentPath != null)
+                            if (it.selectedDrawingTool != DrawingTool.LASER_PEN && it.currentPath?.drawingTool != DrawingTool.DELETER && it.currentPath != null)
                                 it.paths.plus(it.currentPath!!)
                             else it.paths,
                         currentPath = null,
@@ -194,6 +199,16 @@ class WhiteboardViewModel(
 
             is WhiteboardEvent.OnDrawingToolSelected -> {
                 when (event.drawingTool) {
+                    DrawingTool.ERASER, DrawingTool.DELETER -> {
+                        val currentTool = _state.value.selectedDrawingTool
+                        val updatedPreviousTool =
+                            if (!currentTool.isErasing()) currentTool
+                            else _state.value.previousDrawingTool
+                        _state.update { it.copy(
+                            previousDrawingTool = updatedPreviousTool,
+                            selectedDrawingTool = event.drawingTool
+                        ) }
+                    }
                     DrawingTool.RECTANGLE, DrawingTool.CIRCLE, DrawingTool.TRIANGLE -> {
                         _state.update {
                             it.copy(selectedDrawingTool = event.drawingTool)
@@ -242,8 +257,8 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.StrokeColorChange -> {
-                if (state.value.selectedDrawingTool == DrawingTool.ERASER || state.value.selectedDrawingTool == DrawingTool.DELETER)
-                    _state.update { it.copy(selectedDrawingTool = DrawingTool.PEN) }
+                if (state.value.selectedDrawingTool.isErasing())
+                    _state.update { it.copy(selectedDrawingTool = _state.value.previousDrawingTool) }
 
                 var markerNum = state.value.markerColors.indexOf(event.strokeColor)
                 if (markerNum == -1 || markerNum > 3)
@@ -986,12 +1001,14 @@ class WhiteboardViewModel(
                 quadraticBezierTo(points[i].x, points[i].y, mid.x, mid.y)
             }
 
-            val lastMid = Offset(
-                x = (points[points.size - 2].x + points.last().x) / 2f,
-                y = (points[points.size - 2].y + points.last().y) / 2f
-            )
-            if ((points.last() - lastMid).getDistance() >= 1f)
-                lineTo(points.last().x, points.last().y)
+            if (points.size > 1) {
+                val lastMid = Offset(
+                    x = (points[points.size - 2].x + points.last().x) / 2f,
+                    y = (points[points.size - 2].y + points.last().y) / 2f
+                )
+                if ((points.last() - lastMid).getDistance() >= 1f)
+                    lineTo(points.last().x, points.last().y)
+            }
         }
     }
 

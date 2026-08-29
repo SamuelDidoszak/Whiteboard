@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -221,8 +222,10 @@ private fun curvedTip(
 
 @Composable
 fun Eraser(width: Dp, height: Dp, selectedDrawingTool: DrawingTool, drawingToolVisibility: DrawingToolVisibility, onEraserClick: (DrawingTool) -> Unit) {
-    val isOffsetDown = selectedDrawingTool == DrawingTool.ERASER || selectedDrawingTool == DrawingTool.DELETER
+    val isOffsetDown = selectedDrawingTool.isErasing()
     val offsetDownValue = height / 5
+
+    val eraserType = remember { mutableStateOf(DrawingTool.ERASER) }
 
     val yOffset: Dp by animateDpAsState(
         targetValue = if (isOffsetDown) offsetDownValue else 0.dp,
@@ -262,17 +265,21 @@ fun Eraser(width: Dp, height: Dp, selectedDrawingTool: DrawingTool, drawingToolV
                     indication = null
                 ) {
                     if (drawingToolVisibility.isToolVisible(DrawingTool.ERASER)) {
-                        val eraserType =
-                            if (selectedDrawingTool == DrawingTool.ERASER && drawingToolVisibility.isToolVisible(DrawingTool.DELETER)) DrawingTool.DELETER
-                            else DrawingTool.ERASER
-                        onEraserClick(eraserType)
+                        eraserType.value =
+                            if (!selectedDrawingTool.isErasing())
+                                eraserType.value
+                            else if (eraserType.value == DrawingTool.ERASER && drawingToolVisibility.isToolVisible(DrawingTool.DELETER))
+                                DrawingTool.DELETER
+                            else
+                                DrawingTool.ERASER
                     } else if (drawingToolVisibility.isToolVisible(DrawingTool.DELETER)) {
-                        onEraserClick(DrawingTool.DELETER)
+                        eraserType.value = DrawingTool.DELETER
                     }
+                    onEraserClick(eraserType.value)
                 }
         ) {
             val eraserColor =
-                if (selectedDrawingTool == DrawingTool.DELETER || !drawingToolVisibility.isToolVisible(DrawingTool.ERASER)) eraserHard else eraserSoft
+                if (eraserType.value == DrawingTool.DELETER || !drawingToolVisibility.isToolVisible(DrawingTool.ERASER)) eraserHard else eraserSoft
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.85f)

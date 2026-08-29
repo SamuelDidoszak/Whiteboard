@@ -292,7 +292,7 @@ fun WhiteboardScreen(
                                 isDrawingToolDialogVisible = state.isDrawingToolDialogOpen,
                                 backgroundColor = state.canvasColor,
                                 drawingToolVisibility = state.drawingToolVisibility,
-                                currentDrawingTool = state.selectedDrawingTool,
+                                currentDrawingTool = if (!state.selectedDrawingTool.isErasing()) state.selectedDrawingTool else state.previousDrawingTool,
                                 onDrawingToolClick = { drawingTool: DrawingTool ->
                                     onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
                                     onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
@@ -314,7 +314,10 @@ fun WhiteboardScreen(
                                     onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                                 }) {
                                 Icon(
-                                    painter = painterResource(state.selectedDrawingTool.res),
+                                    painter = painterResource(
+                                        if (!state.selectedDrawingTool.isErasing()) state.selectedDrawingTool.res
+                                        else state.previousDrawingTool.res
+                                    ),
                                     contentDescription = state.selectedDrawingTool.name.lowercase().replaceFirstChar { it.uppercaseChar() },
                                     modifier = Modifier.size(30.dp)
                                 )
@@ -575,7 +578,7 @@ fun WhiteboardScreen(
                             isDrawingToolDialogVisible = state.isDrawingToolDialogOpen,
                             backgroundColor = state.canvasColor,
                             drawingToolVisibility = state.drawingToolVisibility,
-                            currentDrawingTool = state.selectedDrawingTool,
+                            currentDrawingTool = if (!state.selectedDrawingTool.isErasing()) state.selectedDrawingTool else state.previousDrawingTool,
                             onDrawingToolClick = { drawingTool: DrawingTool ->
                                 onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
                                 onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)
@@ -597,7 +600,10 @@ fun WhiteboardScreen(
                                 onEvent(WhiteboardEvent.ZoomSliderVisibilityChange(false))
                             }) {
                             Icon(
-                                painter = painterResource(state.selectedDrawingTool.res),
+                                painter = painterResource(
+                                    if (!state.selectedDrawingTool.isErasing()) state.selectedDrawingTool.res
+                                    else state.previousDrawingTool.res
+                                ),
                                 contentDescription = state.selectedDrawingTool.name.lowercase().replaceFirstChar { it.uppercaseChar() },
                                 modifier = Modifier.size(30.dp)
                             )
@@ -718,7 +724,7 @@ fun WhiteboardScreen(
                         .padding(10.dp),
                     backgroundColor = state.canvasColor,
                     drawingToolVisibility = state.drawingToolVisibility,
-                    currentDrawingTool = state.selectedDrawingTool,
+                    currentDrawingTool = if (!state.selectedDrawingTool.isErasing()) state.selectedDrawingTool else state.previousDrawingTool,
                     onDrawingToolClick = { drawingTool: DrawingTool ->
                         onEvent(WhiteboardEvent.OnDrawingToolSelected(drawingTool))
                         onEvent(WhiteboardEvent.OnStrokeWidthSliderClose)

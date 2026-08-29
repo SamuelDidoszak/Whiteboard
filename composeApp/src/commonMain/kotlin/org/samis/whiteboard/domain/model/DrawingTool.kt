@@ -44,4 +44,11 @@ enum class DrawingTool(
             else -> false
         }
     }
+
+    fun isErasing(): Boolean {
+        return when (this) {
+            ERASER, DELETER -> true
+            else -> false
+        }
+    }
 }

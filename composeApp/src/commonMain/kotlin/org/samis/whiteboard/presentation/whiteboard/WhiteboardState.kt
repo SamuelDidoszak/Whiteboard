@@ -24,6 +24,7 @@ data class WhiteboardState(
 
     val startingOffset: Offset = Offset.Zero,
     val previousOffset: Offset? = null,
+    val previousDrawingTool: DrawingTool = DrawingTool.PEN,
     val selectedDrawingTool: DrawingTool = DrawingTool.PEN,
     val drawingToolVisibility: DrawingToolVisibility = DrawingToolVisibility(),
 
