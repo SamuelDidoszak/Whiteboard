@@ -479,22 +479,34 @@ class WhiteboardViewModel(
                 }
 
                 update?.let {
-                    onUpdate(update.undo(), true)
+                    val undoUpdate = update.undo()
+                    onUpdate(undoUpdate, true)
                     deleteUpdate(it)
+                    if (undoUpdate is Update.AddPath)
+                        insertUpdate(undoUpdate)
                     upsertWhiteboard(pointer)
-
                 }
             }
 
             is WhiteboardEvent.Redo -> {
-                val pointer: Int = _state.value.updatePointer ?: -1
-                if (pointer > _state.value.updates.size)
-                    return
-                val lastUpdate = _state.value.undoArray.lastOrNull() ?: return
-                onUpdate(lastUpdate, false)
-                insertUpdate(lastUpdate)
-                _state.update { it.copy(updatePointer = pointer + 1, undoArray = it.undoArray.dropLast(1)) }
-                upsertWhiteboard(pointer + 1)
+                var pointer: Int = -1
+                var lastUpdate: Update? = null
+                _state.update {
+                    pointer = it.updatePointer ?: -1
+                    if (pointer > it.updates.size)
+                        return
+                    lastUpdate = it.undoArray.lastOrNull() ?: return
+
+                    it.copy(updatePointer = pointer + 1, undoArray = it.undoArray.dropLast(1))
+                }
+
+                lastUpdate?.let {
+                    onUpdate(lastUpdate, false)
+                    insertUpdate(lastUpdate)
+                    if (lastUpdate is Update.RemovePath)
+                        deleteUpdate(lastUpdate.undo())
+                    upsertWhiteboard(pointer + 1)
+                }
             }
 
             is WhiteboardEvent.SetCaptureController -> {
