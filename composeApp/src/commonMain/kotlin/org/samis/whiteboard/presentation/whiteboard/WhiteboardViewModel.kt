@@ -14,6 +14,7 @@ import androidx.navigation.toRoute
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -67,7 +68,7 @@ class WhiteboardViewModel(
 ) : ViewModel() {
 
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
-    private var canUndo = true
+    private var initialPointer: Int? = null
     private var isFirstPath = true
     private val currentPathPoints = mutableListOf<Offset>()
     private var pendingInitCanvasSize: IntSize? = null
@@ -90,7 +91,6 @@ class WhiteboardViewModel(
         settingsRepository.getMiniatureSaveLocation()
     ){ flows ->
         val state = flows[0] as WhiteboardState
-        canUndo = true
         state.copy(
             preferredCanvasColors = flows[1] as List<Color>,
             drawingToolVisibility = flows[2] as DrawingToolVisibility,
@@ -108,8 +108,10 @@ class WhiteboardViewModel(
 
     init {
         whiteboardId?.let { id ->
-            initializeWhiteboardById(id)
-            initializeUpdates(id)
+            viewModelScope.launch {
+                initializeWhiteboardById(id)
+                initializeUpdates(id)
+            }
         }
         if (whiteboardId == null)
             initializeDefaultPalette()
@@ -179,6 +181,20 @@ class WhiteboardViewModel(
                                 Update.AddPath(drawnPath, whiteboardId = updatedWhiteboardId.value)
                             )
                             _state.update { it.copy(previousOffset = null) }
+
+                            AppScope.scope.launch {
+                                _state.value.undoArray.forEach {
+                                    updateRepository.deleteUpdate(it)
+                                    val path = when (it) {
+                                        is Update.AddPath -> it.path
+                                        is Update.RemovePath -> it.path
+                                        is Update.RemoveErase -> it.path
+                                        is Update.Erase -> it.path
+                                    }
+                                    pathRepository.deletePath(path)
+                                }
+                                _state.update { it.copy(undoArray = emptyList()) }
+                            }
                         }
                     }
                 }
@@ -191,8 +207,7 @@ class WhiteboardViewModel(
                             if (it.selectedDrawingTool != DrawingTool.LASER_PEN && it.currentPath?.drawingTool != DrawingTool.DELETER && it.currentPath != null)
                                 it.paths.plus(it.currentPath!!)
                             else it.paths,
-                        currentPath = null,
-                        pathsToBeDeleted = hashSetOf()
+                        currentPath = null
                     )
                 }
             }
@@ -452,23 +467,29 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.Undo -> {
-                var pointer: Int? = _state.value.updatePointer ?: return
-                if (!canUndo) return
-                val update = _state.value.updates[pointer!!]
-                onUpdate(update.undo(), true)
-                deleteUpdate(update)
-                pointer -= 1
-                if (pointer < 0)
-                    pointer = null
-                _state.update { it.copy(updatePointer = pointer, undoArray = it.undoArray.plus(update)) }
-                upsertWhiteboard(pointer)
+                var pointer: Int? = null
+                var update: Update? = null
+                _state.update {
+                    pointer = it.updatePointer ?: return
+                    update = it.updates[pointer]
+                    pointer -= 1
+                    if (pointer < 0)
+                        pointer = null
+                    it.copy(updatePointer = pointer, undoArray = it.undoArray.plus(update))
+                }
+
+                update?.let {
+                    onUpdate(update.undo(), true)
+                    deleteUpdate(it)
+                    upsertWhiteboard(pointer)
+
+                }
             }
 
             is WhiteboardEvent.Redo -> {
                 val pointer: Int = _state.value.updatePointer ?: -1
                 if (pointer > _state.value.updates.size)
                     return
-                if (!canUndo) return
                 val lastUpdate = _state.value.undoArray.lastOrNull() ?: return
                 onUpdate(lastUpdate, false)
                 insertUpdate(lastUpdate)
@@ -711,39 +732,41 @@ class WhiteboardViewModel(
         updateMiniatureTask.start(4000, _state.value.copy())
     }
 
-    private fun initializeUpdates(whiteboardId: Long) {
-            viewModelScope.launch {
-                updateRepository.getWhiteboardUpdates(whiteboardId)
-                    .take(1)
-                    .collectLatest { updates ->
-                        updates.forEach {
-                            if (it is Update.AddPath && it.path.drawingTool == DrawingTool.ARROW) {
-                                val measure = PathMeasure()
-                                measure.setPath(it.path.path, false)
-                                val startPos = measure.getPosition(0f)
-                                val endPos = measure.getPosition(measure.length)
+    private suspend fun initializeUpdates(whiteboardId: Long) {
+        val undoArray = mutableListOf<Update>()
+        updateRepository.getWhiteboardUpdates(whiteboardId)
+            .take(1)
+            .collectLatest { updates ->
+                updates.forEachIndexed { i, it ->
+                    val update = if (it is Update.AddPath && it.path.drawingTool == DrawingTool.ARROW) {
+                        val measure = PathMeasure()
+                        measure.setPath(it.path.path, false)
+                        val startPos = measure.getPosition(0f)
+                        val endPos = measure.getPosition(measure.length)
 
-                                val drawnPath = DrawnPath(
-                                    it.path.id,
-                                    createArrowPath(startPos, endPos, it.path.strokeWidth),
-                                    DrawingTool.ARROW,
-                                    it.path.strokeWidth,
-                                    it.path.strokeColor,
-                                    it.path.fillColor,
-                                    it.path.opacity
-                                )
+                        val drawnPath = DrawnPath(
+                            it.path.id,
+                            createArrowPath(startPos, endPos, it.path.strokeWidth),
+                            DrawingTool.ARROW,
+                            it.path.strokeWidth,
+                            it.path.strokeColor,
+                            it.path.fillColor,
+                            it.path.opacity
+                        )
+                        Update.AddPath(drawnPath, it.id, it.whiteboardId)
+                    } else it
 
-                                onUpdate(Update.AddPath(drawnPath, it.id, it.whiteboardId), skipMiniature = true)
-                            }
-                            else
-                                onUpdate(it, skipMiniature = true)
-                        }.also {
-                            val pending = pendingInitCanvasSize
-                            pendingInitCanvasSize = null
-                            if (pending != null && pending != IntSize.Zero)
-                                applyCanvasSizeChange(oldSize = IntSize.Zero, newSize = pending)
-                        }
-                    }
+                    if (initialPointer == null || (initialPointer != null && i > initialPointer!!))
+                        undoArray += update
+                    else
+                        onUpdate(update, skipMiniature = true)
+                }.also {
+                    val pending = pendingInitCanvasSize
+                    pendingInitCanvasSize = null
+                    if (pending != null && pending != IntSize.Zero)
+                        applyCanvasSizeChange(oldSize = IntSize.Zero, newSize = pending)
+                    _state.update { state -> state.copy(undoArray = state.undoArray + undoArray.asReversed()) }
+                }
             }
     }
 
@@ -776,29 +799,27 @@ class WhiteboardViewModel(
         }
     }
 
-    private fun initializeWhiteboardById(whiteboardId: Long) {
-        viewModelScope.launch {
-            val whiteboard = whiteboardRepository.getWhiteboardById(whiteboardId)
-            whiteboard?.let {
-                _state.update {
-                    it.copy(
-                        whiteboardName = whiteboard.name,
-                        canvasColor = whiteboard.palette.background,
-                        preferredStrokeColors = whiteboard.palette.colorList.minus(whiteboard.palette.background),
-                        preferredFillColors = whiteboard.palette.colorList.minus(whiteboard.palette.background),
-                        markerColors = whiteboard.markerColors,
-                        strokeColor = whiteboard.palette.foreground,
-                        strokeWidthList = whiteboard.strokeWidths,
-                        activeStrokeWidthButton = whiteboard.activeStrokeWidthButton,
-                        opacity = whiteboard.opacity,
-                        fillColor = whiteboard.fillColor,
-                        updatePointer = whiteboard.pointer,
-                        miniatureSrc = whiteboard.miniatureSrc,
-                        canvasSize = whiteboard.canvasSize,
-                        canvasOffset = whiteboard.canvasOffset,
-                        canvasScale = whiteboard.canvasScale
-                    )
-                }
+    private suspend fun initializeWhiteboardById(whiteboardId: Long) {
+        val whiteboard = whiteboardRepository.getWhiteboardById(whiteboardId)
+        whiteboard?.let {
+            initialPointer = whiteboard.pointer
+            _state.update {
+                it.copy(
+                    whiteboardName = whiteboard.name,
+                    canvasColor = whiteboard.palette.background,
+                    preferredStrokeColors = whiteboard.palette.colorList.minus(whiteboard.palette.background),
+                    preferredFillColors = whiteboard.palette.colorList.minus(whiteboard.palette.background),
+                    markerColors = whiteboard.markerColors,
+                    strokeColor = whiteboard.palette.foreground,
+                    strokeWidthList = whiteboard.strokeWidths,
+                    activeStrokeWidthButton = whiteboard.activeStrokeWidthButton,
+                    opacity = whiteboard.opacity,
+                    fillColor = whiteboard.fillColor,
+                    miniatureSrc = whiteboard.miniatureSrc,
+                    canvasSize = whiteboard.canvasSize,
+                    canvasOffset = whiteboard.canvasOffset,
+                    canvasScale = whiteboard.canvasScale
+                )
             }
         }
     }
@@ -858,14 +879,7 @@ class WhiteboardViewModel(
     override fun onCleared() {
         AppScope.scope.launch {
             _state.value.undoArray.forEach {
-                updateRepository.deleteUpdate(it)
-                val path = when (it) {
-                    is Update.AddPath -> it.path
-                    is Update.RemovePath -> it.path
-                    is Update.RemoveErase -> it.path
-                    is Update.Erase -> it.path
-                }
-                pathRepository.deletePath(path)
+                updateRepository.upsertUpdate(it)
             }
         }
         super.onCleared()
