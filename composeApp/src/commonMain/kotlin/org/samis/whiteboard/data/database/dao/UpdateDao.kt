@@ -17,6 +17,6 @@ interface UpdateDao {
     @Delete
     suspend fun deleteUpdate(updateEntity: UpdateEntity)
 
-    @Query("SELECT * FROM $UPDATE_TABLE_NAME WHERE whiteboardId = :whiteboardId")
+    @Query("SELECT * FROM $UPDATE_TABLE_NAME WHERE whiteboardId = :whiteboardId ORDER BY id ASC")
     fun getWhiteboardUpdates(whiteboardId: Long): Flow<List<UpdateEntity>>
 }

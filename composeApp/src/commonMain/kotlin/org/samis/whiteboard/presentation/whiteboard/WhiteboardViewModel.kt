@@ -11,10 +11,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -67,6 +68,7 @@ class WhiteboardViewModel(
     private val contextProvider: IContextProvider
 ) : ViewModel() {
 
+    private val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
     private var initialPointer: Int? = null
     private var isFirstPath = true
@@ -152,13 +154,6 @@ class WhiteboardViewModel(
                 }
                 _state.value.currentPath?.let { drawnPath ->
                     when (drawnPath.drawingTool) {
-                        DrawingTool.DELETER -> {
-                            _state.update { it.copy(
-                                selectedDrawingTool = _state.value.previousDrawingTool,
-                                previousOffset = null
-                            ) }
-                        }
-
                         DrawingTool.ERASER -> {
                             drawnPath.strokeColor = _state.value.canvasColor
                             insertPathAndUpdate(
@@ -176,11 +171,18 @@ class WhiteboardViewModel(
                         }
 
                         else -> {
-                            insertPathAndUpdate(
-                                drawnPath,
-                                Update.AddPath(drawnPath, whiteboardId = updatedWhiteboardId.value)
-                            )
-                            _state.update { it.copy(previousOffset = null) }
+                            if (drawnPath.drawingTool == DrawingTool.DELETER) {
+                                _state.update { it.copy(
+                                    selectedDrawingTool = _state.value.previousDrawingTool,
+                                    previousOffset = null
+                                ) }
+                            } else {
+                                insertPathAndUpdate(
+                                    drawnPath,
+                                    Update.AddPath(drawnPath, whiteboardId = updatedWhiteboardId.value)
+                                )
+                                _state.update { it.copy(previousOffset = null) }
+                            }
 
                             AppScope.scope.launch {
                                 _state.value.undoArray.forEach {
@@ -479,11 +481,7 @@ class WhiteboardViewModel(
                 }
 
                 update?.let {
-                    val undoUpdate = update.undo()
-                    onUpdate(undoUpdate, true)
-                    deleteUpdate(it)
-                    if (undoUpdate is Update.AddPath)
-                        insertUpdate(undoUpdate)
+                    onUpdate(update.undo(), true)
                     upsertWhiteboard(pointer)
                 }
             }
@@ -492,19 +490,16 @@ class WhiteboardViewModel(
                 var pointer: Int = -1
                 var lastUpdate: Update? = null
                 _state.update {
+                    lastUpdate = it.undoArray.lastOrNull() ?: return
                     pointer = it.updatePointer ?: -1
                     if (pointer > it.updates.size)
                         return
-                    lastUpdate = it.undoArray.lastOrNull() ?: return
 
                     it.copy(updatePointer = pointer + 1, undoArray = it.undoArray.dropLast(1))
                 }
 
                 lastUpdate?.let {
                     onUpdate(lastUpdate, false)
-                    insertUpdate(lastUpdate)
-                    if (lastUpdate is Update.RemovePath)
-                        deleteUpdate(lastUpdate.undo())
                     upsertWhiteboard(pointer + 1)
                 }
             }
@@ -843,9 +838,10 @@ class WhiteboardViewModel(
         miniatureSrc: String? = _state.value.miniatureSrc,
         whiteboardId: Long? = updatedWhiteboardId.value) {
         val snapshot = snapshot ?: _state.value.copy(updatePointer = pointer, miniatureSrc = miniatureSrc)
-        GlobalScope.launch(Dispatchers.IO) {
+        val updatedWhiteboardIdValue = updatedWhiteboardId.value
+        persistenceScope.launch(Dispatchers.IO) {
             val now = Clock.System.now()
-            val oldWhiteboardDate = if (whiteboardId == null) now else whiteboardRepository.getWhiteboardById(updatedWhiteboardId.value!!)?.createTime ?: now
+            val oldWhiteboardDate = if (whiteboardId == null) now else whiteboardRepository.getWhiteboardById(updatedWhiteboardIdValue!!)?.createTime ?: now
 
             val whiteboard = Whiteboard(
                 name = snapshot.whiteboardName,
@@ -888,15 +884,6 @@ class WhiteboardViewModel(
         }
     }
 
-    override fun onCleared() {
-        AppScope.scope.launch {
-            _state.value.undoArray.forEach {
-                updateRepository.upsertUpdate(it)
-            }
-        }
-        super.onCleared()
-    }
-
     private fun updateContinuingOffsets(continuingOffset: Offset) {
 
         val startOffset = state.value.startingOffset
@@ -912,6 +899,12 @@ class WhiteboardViewModel(
                     previousOffset = state.value.previousOffset,
                     continuingOffset = continuingOffset
                 )
+                for (path in _state.value.pathsToBeDeleted) {
+                    if (path.drawingTool == DrawingTool.ERASER) {
+                        _state.update { it.copy(pathsToBeDeleted = hashSetOf()) }
+                        return
+                    }
+                }
                 for (path in _state.value.pathsToBeDeleted) {
                     if (path.drawingTool == DrawingTool.ERASER)
                         continue
