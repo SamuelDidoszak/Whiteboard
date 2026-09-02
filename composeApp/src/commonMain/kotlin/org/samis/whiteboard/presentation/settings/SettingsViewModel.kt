@@ -18,6 +18,7 @@ class SettingsViewModel(
     private val settingsRepository: SettingsRepository
 ): ViewModel() {
 
+    private var naSkaleCountdown = 0
     private val _state = MutableStateFlow(SettingsState())
     val state = combine(
         listOf(
@@ -29,6 +30,7 @@ class SettingsViewModel(
             settingsRepository.getShowOpacitySlider(),
             settingsRepository.getAskedForPermissions(),
             settingsRepository.getMiniatureSaveLocation(),
+            settingsRepository.getNaSkaleMode()
         )
     ) { flows ->
         val state = flows[0] as SettingsState
@@ -39,6 +41,7 @@ class SettingsViewModel(
         val showOpacitySlider = flows[5] as Boolean
         val askedForPermissions = flows[6] as Boolean
         val saveMiniatureToExternal = flows[7] as Boolean
+        val naSkaleMode = flows[8] as Boolean
         state.copy(
             currentScheme = colorScheme,
             drawingToolVisibility = drawingToolVisibility,
@@ -46,7 +49,8 @@ class SettingsViewModel(
             stylusInput = stylusInput,
             showOpacitySlider = showOpacitySlider,
             askedForPermissions = askedForPermissions,
-            saveMiniatureToExternal = saveMiniatureToExternal
+            saveMiniatureToExternal = saveMiniatureToExternal,
+            naSkaleMode = naSkaleMode
         )
     }.stateIn(
         scope = viewModelScope,
@@ -75,8 +79,17 @@ class SettingsViewModel(
             }
 
             is SettingsEvent.OnStylusInputChanged -> {
+                if (event.stylusInput &&
+                    state.value.dashboardSize == DashboardSizeOption.XLARGE &&
+                    state.value.saveMiniatureToExternal) naSkaleCountdown++
+
+                val naSkaleModeOn = state.value.naSkaleMode
                 viewModelScope.launch {
                     settingsRepository.saveStylusInput(event.stylusInput)
+                    if (event.stylusInput && naSkaleCountdown % 7 == 0) {
+                        settingsRepository.saveNaSkaleMode(!naSkaleModeOn)
+                        onEvent(SettingsEvent.OnNaSkalePopupVisibilityChanged(true))
+                    }
                 }
             }
 
@@ -106,6 +119,10 @@ class SettingsViewModel(
                 viewModelScope.launch {
                     settingsRepository.saveMiniatureSaveLocation(miniatureSaveLocation)
                 }
+            }
+
+            is SettingsEvent.OnNaSkalePopupVisibilityChanged -> {
+                _state.update { _state.value.copy(isNaSkalePopupVisible = event.visible) }
             }
         }
     }

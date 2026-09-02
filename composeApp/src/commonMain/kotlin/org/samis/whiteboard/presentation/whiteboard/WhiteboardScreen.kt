@@ -825,17 +825,20 @@ fun WhiteboardScreen(
                         )
                     }
                 }
-                Image(
-                    painter = painterResource(Res.drawable.logoWithName),
-                    contentDescription = "Best church is the church as a priority",
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .height(144.dp)
-                        .absoluteOffset(16.dp),
-                    colorFilter = ColorFilter.tint(
-                        if (state.canvasColor.luminance() > 0.5) Color.Black else Color.White
+                if (state.naSkaleMode) {
+                    Image(
+                        painter = painterResource(Res.drawable.logoWithName),
+                        contentDescription = "Best church is the church as a priority",
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .height(144.dp)
+                            .absoluteOffset(16.dp),
+                        colorFilter = ColorFilter.tint(
+                            if (state.canvasColor.luminance() > 0.5) Color.Black else Color.White
+                        )
                     )
-                )
+                }
+
                 Box(modifier = Modifier.fillMaxSize()) {
                     SnackbarHost(
                         hostState = snackbarHostState,

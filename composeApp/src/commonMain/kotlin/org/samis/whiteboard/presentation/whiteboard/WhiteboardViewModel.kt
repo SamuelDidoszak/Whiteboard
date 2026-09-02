@@ -90,7 +90,8 @@ class WhiteboardViewModel(
         paletteRepository.getAllPalettes(),
         settingsRepository.getShowOpacitySlider(),
         settingsRepository.getAskedForPermissions(),
-        settingsRepository.getMiniatureSaveLocation()
+        settingsRepository.getMiniatureSaveLocation(),
+        settingsRepository.getNaSkaleMode()
     ){ flows ->
         val state = flows[0] as WhiteboardState
         state.copy(
@@ -100,7 +101,8 @@ class WhiteboardViewModel(
             paletteList = flows[4] as List<Palette>,
             showOpacitySlider = flows[5] as Boolean,
             askedForPermissions = flows[6] as Boolean,
-            saveMiniatureToExternal = flows[7] as Boolean
+            saveMiniatureToExternal = flows[7] as Boolean,
+            naSkaleMode = flows[8] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,
@@ -124,7 +126,7 @@ class WhiteboardViewModel(
             is WhiteboardEvent.StartDrawing -> {
                 if (isFirstPath && _state.value.selectedDrawingTool != DrawingTool.LASER_PEN && _state.value.selectedDrawingTool != DrawingTool.DELETER) {
                     if (whiteboardId == null)
-                        _state.update { it.copy(whiteboardName = initializeWhiteboardName(translatePolish = true)) }
+                        _state.update { it.copy(whiteboardName = initializeWhiteboardName(translatePolish = _state.value.naSkaleMode)) }
 
                     viewModelScope.launch {
                         _state.first()

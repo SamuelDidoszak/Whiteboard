@@ -21,6 +21,7 @@ interface SettingsRepository {
     fun getLastPalette(): Flow<Palette>
     fun getMiniatureSaveLocation(): Flow<Boolean>
     fun getAskedForPermissions(): Flow<Boolean>
+    fun getNaSkaleMode(): Flow<Boolean>
     suspend fun saveColorScheme(colorScheme: ColorScheme)
     suspend fun savePreferredColors(colors: List<Color>, colorPaletteType: ColorPaletteType)
     suspend fun saveDrawingToolVisibility(toolVisibility: DrawingToolVisibility)
@@ -30,4 +31,5 @@ interface SettingsRepository {
     suspend fun saveLastPalette(palette: Palette)
     suspend fun saveMiniatureSaveLocation(external: Boolean)
     suspend fun saveAskedForPermissions(asked: Boolean)
+    suspend fun saveNaSkaleMode(isOn: Boolean)
 }

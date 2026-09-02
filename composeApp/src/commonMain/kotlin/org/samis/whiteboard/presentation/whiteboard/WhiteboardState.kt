@@ -52,6 +52,7 @@ data class WhiteboardState(
     val askedForPermissions: Boolean = false,
     val grantedExternalStoragePermission: Boolean = false,
     val saveMiniatureToExternal: Boolean = false,
+    val naSkaleMode: Boolean = false,
     val markerColors: List<Color> = defaultDrawingColors,
     val strokeWidthList: List<Float> = listOf(1.8f, 5f, 10f),
     val activeStrokeWidthButton: Int = 1,

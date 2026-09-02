@@ -45,10 +45,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.presentation.settings.component.ColorSchemeDialog
+import org.samis.whiteboard.presentation.settings.component.NaSkalePopup
 import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.rememberPicturePermissionRequester
@@ -57,6 +59,7 @@ import whiteboard.composeapp.generated.resources.gallerySave
 import whiteboard.composeapp.generated.resources.ic_theme
 import whiteboard.composeapp.generated.resources.img_pen
 import whiteboard.composeapp.generated.resources.opacity
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun SettingsScreen(
@@ -75,6 +78,14 @@ fun SettingsScreen(
             { onEvent(SettingsEvent.OnPicturePermissionChanged(true)) },
             { onEvent(SettingsEvent.OnPicturePermissionChanged(false)) }
         )
+    }
+
+    LaunchedEffect(state.isNaSkalePopupVisible) {
+        if (state.isNaSkalePopupVisible) {
+            onEvent(SettingsEvent.OnNaSkalePopupVisibilityChanged(true))
+            delay(3.seconds)
+            onEvent(SettingsEvent.OnNaSkalePopupVisibilityChanged(false))
+        }
     }
 
     ColorSchemeDialog(
@@ -187,6 +198,13 @@ fun SettingsScreen(
                 )
             }
         }
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        NaSkalePopup(isVisible = state.isNaSkalePopupVisible, activated = state.naSkaleMode)
     }
 }
 

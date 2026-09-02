@@ -13,4 +13,5 @@ sealed class SettingsEvent {
     data class OnAskedForPermissionsChanged(val asked: Boolean): SettingsEvent()
     data class OnPicturePermissionChanged(val granted: Boolean): SettingsEvent()
     data class OnMiniatureSaveLocationChanged(val external: Boolean): SettingsEvent()
+    data class OnNaSkalePopupVisibilityChanged(val visible: Boolean): SettingsEvent()
 }

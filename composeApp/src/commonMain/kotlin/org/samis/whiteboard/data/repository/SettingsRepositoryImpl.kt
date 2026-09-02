@@ -16,6 +16,7 @@ import org.samis.whiteboard.data.util.Constant.DRAWING_TOOLS_KEY
 import org.samis.whiteboard.data.util.Constant.FILL_COLORS_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.LAST_PALETTE_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.MARKER_COLORS_PREF_KEY
+import org.samis.whiteboard.data.util.Constant.NA_SKALE_MODE_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.SAVE_MINIATURES_TO_EXTERNAL_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.SHOW_OPACITY_PREF_KEY
 import org.samis.whiteboard.data.util.Constant.STROKE_COLORS_PREF_KEY
@@ -48,6 +49,8 @@ class SettingsRepositoryImpl(
         private val LAST_PALETTE_KEY = stringPreferencesKey(LAST_PALETTE_PREF_KEY)
         private val ASKED_FOR_PERMISSIONS_KEY = stringPreferencesKey(ASKED_FOR_PERMISSIONS_PREF_KEY)
         private val SAVE_MINIATURES_TO_EXTERNAL_KEY = stringPreferencesKey(SAVE_MINIATURES_TO_EXTERNAL_PREF_KEY)
+        private val NA_SKALE_MODE_KEY = stringPreferencesKey(NA_SKALE_MODE_PREF_KEY)
+
     }
 
     override suspend fun saveColorScheme(colorScheme: ColorScheme) {
@@ -144,6 +147,13 @@ class SettingsRepositoryImpl(
         }
     }
 
+    override fun getNaSkaleMode(): Flow<Boolean> {
+        return prefs.data.map { preferences ->
+            val isOn = preferences[NA_SKALE_MODE_KEY] ?: "false"
+            isOn.toBoolean()
+        }
+    }
+
     override suspend fun savePreferredColors(
         colors: List<Color>,
         colorPaletteType: ColorPaletteType
@@ -201,6 +211,12 @@ class SettingsRepositoryImpl(
     override suspend fun saveMiniatureSaveLocation(external: Boolean) {
         prefs.edit { preference ->
             preference[SAVE_MINIATURES_TO_EXTERNAL_KEY] = external.toString()
+        }
+    }
+
+    override suspend fun saveNaSkaleMode(isOn: Boolean) {
+        prefs.edit { preference ->
+            preference[NA_SKALE_MODE_KEY] = isOn.toString()
         }
     }
 

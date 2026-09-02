@@ -15,5 +15,7 @@ data class SettingsState(
     val lastPalette: Palette = Palettes.defaultPalettes[0],
     val saveMiniatureToExternal: Boolean = false,
     val askedForPermissions: Boolean = false,
-    val grantedExternalStoragePermission: Boolean = false
+    val grantedExternalStoragePermission: Boolean = false,
+    val naSkaleMode: Boolean = false,
+    val isNaSkalePopupVisible: Boolean = false
 )
