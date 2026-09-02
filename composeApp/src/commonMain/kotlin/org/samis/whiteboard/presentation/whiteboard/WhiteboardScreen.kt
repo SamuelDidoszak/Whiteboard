@@ -197,6 +197,8 @@ fun WhiteboardScreen(
                         canvasScale = state.canvasScale,
                         selectedDrawingTool = state.selectedDrawingTool,
                         isZoomSliderOpen = state.isZoomSliderOpen,
+                        isUndoEnabled = state.updatePointer != null,
+                        isRedoEnabled = state.undoArray.isNotEmpty() && (state.updatePointer ?: -1) < state.updates.size,
                         onHomeIconClick = {
                             onEvent(WhiteboardEvent.SaveMiniature(scope))
                             onHomeIconClick.invoke()
@@ -415,6 +417,8 @@ fun WhiteboardScreen(
                         canvasScale = state.canvasScale,
                         selectedDrawingTool = state.selectedDrawingTool,
                         isZoomSliderOpen = state.isZoomSliderOpen,
+                        isUndoEnabled = state.updatePointer != null,
+                        isRedoEnabled = state.undoArray.isNotEmpty() && (state.updatePointer ?: -1) < state.updates.size,
                         onMenuIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteIconClick) },
                         onSaveIconClick = {
                             if (!state.grantedExternalStoragePermission)
@@ -652,6 +656,8 @@ fun WhiteboardScreen(
                         canvasScale = state.canvasScale,
                         selectedDrawingTool = state.selectedDrawingTool,
                         isZoomSliderOpen = state.isZoomSliderOpen,
+                        isUndoEnabled = state.updatePointer != null,
+                        isRedoEnabled = state.undoArray.isNotEmpty() && (state.updatePointer ?: -1) < state.updates.size,
                         onMenuIconClick = { onEvent(WhiteboardEvent.OnCommandPaletteIconClick) },
                         onSaveIconClick = {
                             if (!state.grantedExternalStoragePermission)

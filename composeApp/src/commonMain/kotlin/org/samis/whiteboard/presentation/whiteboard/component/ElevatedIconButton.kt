@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.samis.whiteboard.presentation.theme.DarkGreen
+import org.samis.whiteboard.presentation.theme.DisabledDark
+import org.samis.whiteboard.presentation.theme.DisabledLight
 import org.samis.whiteboard.presentation.theme.LightGreen
 
 @Composable
@@ -32,22 +34,24 @@ fun ElevatedIconButton(
     isSelected: Boolean,
     onClick: () -> Unit,
     onDoubleClick: (() -> Unit)? = null,
+    isDisabled: Boolean = false,
     icon: @Composable () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    val elevation = if (isPressed) 1.dp else 3.dp
+    val elevation = if (isPressed || isDisabled) 1.dp else 3.dp
 
     Surface(
         shape = CircleShape,
         shadowElevation = elevation,
         tonalElevation = elevation,
         color = backgroundColor,
-        border = BorderStroke(if (isSelected) 2.dp else 1.dp, getBorderColor(isSelected, backgroundColor)),
+        border = BorderStroke(if (isSelected) 2.dp else 1.dp, getBorderColor(isSelected, backgroundColor, isDisabled)),
         modifier = modifier.size(size)
             .then(
-                if (onDoubleClick != null) {
+                if (isDisabled) Modifier
+                else if (onDoubleClick != null) {
                     Modifier.combinedClickable(
                         interactionSource = interactionSource,
                         indication = null,
@@ -63,7 +67,7 @@ fun ElevatedIconButton(
                 }
             )
     ) {
-        CompositionLocalProvider(LocalContentColor provides getButtonContentColor(backgroundColor)) {
+        CompositionLocalProvider(LocalContentColor provides getButtonContentColor(backgroundColor, isDisabled)) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -74,16 +78,20 @@ fun ElevatedIconButton(
     }
 }
 
-private fun getButtonContentColor(backgroundColor: Color): Color {
+private fun getButtonContentColor(backgroundColor: Color, isDisabled: Boolean): Color {
     val isBackgroundLight = backgroundColor.luminance() > 0.5
-    return if (isBackgroundLight) Color.Black else Color.White
+    return if (!isDisabled) {
+        if (isBackgroundLight) Color.Black else Color.White
+    } else {
+        if (isBackgroundLight) DisabledDark else DisabledLight
+    }
 }
 
-private fun getBorderColor(isSelected: Boolean, backgroundColor: Color): Color {
+private fun getBorderColor(isSelected: Boolean, backgroundColor: Color, isDisabled: Boolean): Color {
     return if (isSelected) {
         if (backgroundColor.luminance() > 0.5)
             DarkGreen
         else
             LightGreen
-    } else getButtonContentColor(backgroundColor)
+    } else getButtonContentColor(backgroundColor, isDisabled)
 }

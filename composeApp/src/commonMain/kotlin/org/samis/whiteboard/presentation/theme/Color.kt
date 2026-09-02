@@ -91,6 +91,9 @@ val eraserHandle = Color(0xFF606060)
 val LightGreen = Color(0xFF52b367)
 val DarkGreen = Color(0xFF28ad40)
 
+val DisabledDark = Color(0xFF6C6E76)
+val DisabledLight = Color(0xFFA1A6B1)
+
 val defaultCanvasColors = listOf(
     LightBlue,
     LightPink,

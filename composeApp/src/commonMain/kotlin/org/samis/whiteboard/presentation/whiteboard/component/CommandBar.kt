@@ -32,6 +32,8 @@ fun CommandBarHorizontal(
     canvasScale: Float,
     selectedDrawingTool: DrawingTool,
     isZoomSliderOpen: Boolean,
+    isUndoEnabled: Boolean,
+    isRedoEnabled: Boolean,
     onHomeIconClick: () -> Unit,
     onMenuIconClick: () -> Unit,
     onSaveIconClick: () -> Unit,
@@ -75,7 +77,7 @@ fun CommandBarHorizontal(
             )
         }
         Spacer(modifier = Modifier.weight(1f))
-        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onUndoIconClick) {
+        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, isDisabled = !isUndoEnabled, onClick = onUndoIconClick) {
             Icon(
                 painter = painterResource(Res.drawable.ic_undo),
                 contentDescription = "Undo",
@@ -83,7 +85,7 @@ fun CommandBarHorizontal(
             )
         }
         Spacer(modifier = Modifier.size(6.dp))
-        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onRedoIconClick) {
+        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, isDisabled = !isRedoEnabled, onClick = onRedoIconClick) {
             Icon(
                 painter = painterResource(Res.drawable.ic_redo),
                 contentDescription = "Redo",
@@ -100,6 +102,8 @@ fun CommandBarVertical(
     canvasScale: Float,
     selectedDrawingTool: DrawingTool,
     isZoomSliderOpen: Boolean,
+    isUndoEnabled: Boolean,
+    isRedoEnabled: Boolean,
     onHomeIconClick: () -> Unit,
     onMenuIconClick: () -> Unit,
     onSaveIconClick: () -> Unit,
@@ -125,7 +129,7 @@ fun CommandBarVertical(
             )
         }
         Spacer(modifier = Modifier.height(18.dp))
-        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onUndoIconClick) {
+        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, isDisabled = !isUndoEnabled, onClick = onUndoIconClick) {
             Icon(
                 painter = painterResource(Res.drawable.ic_undo),
                 contentDescription = "Undo",
@@ -133,7 +137,7 @@ fun CommandBarVertical(
             )
         }
         Spacer(modifier = Modifier.height(6.dp))
-        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, onClick = onRedoIconClick) {
+        ElevatedIconButton(backgroundColor = backgroundColor, isSelected = false, isDisabled = !isRedoEnabled, onClick = onRedoIconClick) {
             Icon(
                 painter = painterResource(Res.drawable.ic_redo),
                 contentDescription = "Redo",
