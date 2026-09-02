@@ -14,7 +14,6 @@ import androidx.navigation.toRoute
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -25,8 +24,8 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.todayIn
 import org.samis.whiteboard.data.mapper.toPaletteEntity
 import org.samis.whiteboard.domain.model.ColorPaletteType
@@ -126,7 +125,7 @@ class WhiteboardViewModel(
             is WhiteboardEvent.StartDrawing -> {
                 if (isFirstPath && _state.value.selectedDrawingTool != DrawingTool.LASER_PEN && _state.value.selectedDrawingTool != DrawingTool.DELETER) {
                     if (whiteboardId == null)
-                        _state.update { it.copy(whiteboardName = initializeWhiteboardName(translatePolish = _state.value.naSkaleMode)) }
+                        _state.update { it.copy(whiteboardName = initializeWhiteboardName(translatePolish = state.value.naSkaleMode)) }
 
                     viewModelScope.launch {
                         _state.first()
@@ -1131,31 +1130,11 @@ class WhiteboardViewModel(
     }
 
     private fun initializeWhiteboardName(translatePolish: Boolean): String {
-        fun getDayOfWeek(weekDay: DayOfWeek): String {
-            return when(weekDay) {
-                DayOfWeek.MONDAY -> "Monday"
-                DayOfWeek.TUESDAY -> "Tuesday"
-                DayOfWeek.WEDNESDAY -> "Wednesday"
-                DayOfWeek.THURSDAY -> "Thursday"
-                DayOfWeek.FRIDAY -> "Friday"
-                DayOfWeek.SATURDAY -> "Saturday"
-                DayOfWeek.SUNDAY -> "Sunday"
-            }
-        }
-        fun getDayOfWeekInPolish(weekDay: DayOfWeek): String {
-            return when(weekDay) {
-                DayOfWeek.MONDAY -> "Poniedziałek"
-                DayOfWeek.TUESDAY -> "Wtorek"
-                DayOfWeek.WEDNESDAY -> "Środa"
-                DayOfWeek.THURSDAY -> "Czwartek"
-                DayOfWeek.FRIDAY -> "Piątek"
-                DayOfWeek.SATURDAY -> "Sobota"
-                DayOfWeek.SUNDAY -> "Niedziela"
-            }
-        }
+        val englishDays = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+        val polishDays = listOf("Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek", "Sobota", "Niedziela")
 
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-        val weekDay = if (translatePolish) getDayOfWeekInPolish(today.dayOfWeek) else getDayOfWeek(today.dayOfWeek)
+        val weekDay = if (translatePolish) polishDays[today.dayOfWeek.isoDayNumber - 1] else englishDays[today.dayOfWeek.isoDayNumber - 1]
         return weekDay + " " + today.formatDate()
     }
 }
