@@ -54,6 +54,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
+import coil3.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -66,6 +67,7 @@ import org.samis.whiteboard.presentation.util.detectStylusDragGestures
 import org.samis.whiteboard.presentation.util.getUiType
 import org.samis.whiteboard.presentation.util.registerBackHandler
 import org.samis.whiteboard.presentation.util.rememberCaptureController
+import org.samis.whiteboard.presentation.util.rememberImagePicker
 import org.samis.whiteboard.presentation.util.rememberPicturePermissionRequester
 import org.samis.whiteboard.presentation.util.rememberScreenSizeSize
 import org.samis.whiteboard.presentation.whiteboard.component.ColorPickerCard
@@ -108,6 +110,11 @@ fun WhiteboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val requestPicturePermission = rememberPicturePermissionRequester(state.askedForPermissions)
 
+    val launchImagePicker = rememberImagePicker { uri ->
+        onEvent(WhiteboardEvent.OnPictureAdded(uri))
+        onEvent(WhiteboardEvent.HidePicturePicker)
+    }
+
     LaunchedEffect(drawerState.targetValue) {
         requestPicturePermission(
             false,
@@ -117,6 +124,11 @@ fun WhiteboardScreen(
         if (drawerState.targetValue == DrawerValue.Closed) {
             focusManager.clearFocus()
         }
+    }
+
+    LaunchedEffect(state.isPictureDialogOpen) {
+        if (state.isPictureDialogOpen)
+            launchImagePicker()
     }
 
     miniatureSaveHandle(scope, onEvent, navController)
@@ -857,6 +869,9 @@ private fun DrawingCanvas(
     state: WhiteboardState,
     onEvent: (WhiteboardEvent) -> Unit
 ) {
+    val painters = state.addedPictures.map { picture ->
+        rememberAsyncImagePainter(picture.picturePath)
+    }
 
     Canvas(
         modifier = modifier
@@ -952,6 +967,13 @@ private fun DrawingCanvas(
     ) {
         translate(top = state.canvasOffset.y, left = state.canvasOffset.x) {
             scale(scale = state.canvasScale, pivot = Offset.Zero) {
+                painters.zip(state.addedPictures).forEach { (painter, picture) ->
+                    if (picture.width > 0f && picture.height > 0f) {
+                        translate(left = picture.position.x, top = picture.position.y) {
+                            with(painter) { draw(painter.intrinsicSize) }
+                        }
+                    }
+                }
                 state.paths.forEach { path ->
                     drawCustomPath(path)
                 }

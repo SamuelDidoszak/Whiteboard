@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import org.samis.whiteboard.data.database.dao.UpdateDao
+import org.samis.whiteboard.data.database.entity.PathEntity
 import org.samis.whiteboard.data.mapper.toUpdate
 import org.samis.whiteboard.data.mapper.toUpdateEntity
 import org.samis.whiteboard.domain.model.Update
@@ -27,15 +28,18 @@ class UpdateRepositoryImpl(
         return updateDao.getWhiteboardUpdates(whiteboardId).flatMapLatest { updateEntities ->
             flow {
                 val updateTypes = updateEntities.map { updateEntity ->
-                    val pathEntity = updateEntity.pathId?.let { pathRepository.getPathById(it) }
-                    if (pathEntity == null)
-                        System.err.println("No path found for $updateEntity")
-                    pathEntity?.let {
-                        updateEntity.toUpdate(pathEntity)
+                    var pathEntity: PathEntity? = null
+                    if (updateEntity.updateType.hasPath()) {
+                        pathEntity = updateEntity.pathId?.let { pathRepository.getPathById(it) }
+                        if (pathEntity == null)
+                            System.err.println("No path found for $updateEntity")
                     }
-                }.filterNotNull()
+                    updateEntity.toUpdate(pathEntity)
+                }
                 emit(updateTypes)
             }
         }
     }
+
+    private fun String.hasPath() = this == "AddPath" || this == "RemovePath" || this == "Erase" || this == "RemoveErase"
 }

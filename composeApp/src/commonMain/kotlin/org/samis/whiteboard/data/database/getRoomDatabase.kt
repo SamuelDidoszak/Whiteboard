@@ -8,6 +8,7 @@ import androidx.sqlite.execSQL
 import kotlinx.coroutines.Dispatchers
 import org.samis.whiteboard.data.util.Constant.PALETTE_TABLE_NAME
 import org.samis.whiteboard.data.util.Constant.PATH_TABLE_NAME
+import org.samis.whiteboard.data.util.Constant.UPDATE_TABLE_NAME
 import org.samis.whiteboard.data.util.Constant.WHITEBOARD_TABLE_NAME
 
 fun getRoomDatabase(
@@ -16,8 +17,14 @@ fun getRoomDatabase(
     return builder
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
-        .addMigrations(MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17)
+        .addMigrations(MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18)
         .build()
+}
+
+val MIGRATION_17_18 = object : Migration(17, 18) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE $UPDATE_TABLE_NAME ADD COLUMN picturePath TEXT DEFAULT NULL")
+    }
 }
 
 private val MIGRATION_16_17 = object : Migration(16, 17) {

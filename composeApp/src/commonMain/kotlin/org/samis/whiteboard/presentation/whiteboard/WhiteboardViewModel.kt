@@ -11,6 +11,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.request.ImageRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -46,10 +49,13 @@ import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.IContextProvider
 import org.samis.whiteboard.presentation.util.Palette
 import org.samis.whiteboard.presentation.util.capture
+import org.samis.whiteboard.presentation.util.copyPictureToInternalStorage
 import org.samis.whiteboard.presentation.util.findPathsAt
 import org.samis.whiteboard.presentation.util.formatDate
 import org.samis.whiteboard.presentation.util.minusLast
 import org.samis.whiteboard.presentation.util.roundTo
+import org.samis.whiteboard.presentation.whiteboard.util.AddedPicture
+import org.samis.whiteboard.presentation.whiteboard.util.UniqueIdGenerator
 import java.io.File
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -68,6 +74,7 @@ class WhiteboardViewModel(
 ) : ViewModel() {
 
     private val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
+    private val uniqueIdGenerator = UniqueIdGenerator()
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
     private var initialPointer: Int? = null
     private var isFirstPath = true
@@ -185,23 +192,15 @@ class WhiteboardViewModel(
                                 _state.update { it.copy(previousOffset = null) }
                             }
 
-                            AppScope.scope.launch {
-                                _state.value.undoArray.forEach {
-                                    updateRepository.deleteUpdate(it)
-                                    val path = when (it) {
-                                        is Update.AddPath -> it.path
-                                        is Update.RemovePath -> it.path
-                                        is Update.RemoveErase -> it.path
-                                        is Update.Erase -> it.path
-                                    }
-                                    pathRepository.deletePath(path)
-                                }
-                                _state.update { it.copy(undoArray = emptyList()) }
-                            }
+                            clearUndoArray()
                         }
                     }
                 }
                 currentPathPoints.clear()
+
+                if (state.value.naSkaleMode && _state.value.selectedDrawingTool == DrawingTool.RECTANGLE) {
+                    _state.update { it.copy(selectedDrawingTool = _state.value.previousDrawingTool) }
+                }
 
                 _state.update {
                     it.copy(
@@ -216,6 +215,8 @@ class WhiteboardViewModel(
             }
 
             is WhiteboardEvent.OnDrawingToolSelected -> {
+                if (state.value.naSkaleMode && event.drawingTool == DrawingTool.RECTANGLE && !_state.value.selectedDrawingTool.isErasing())
+                    _state.update { it.copy(previousDrawingTool = _state.value.selectedDrawingTool) }
                 when (event.drawingTool) {
                     DrawingTool.ERASER, DrawingTool.DELETER -> {
                         val currentTool = _state.value.selectedDrawingTool
@@ -227,10 +228,17 @@ class WhiteboardViewModel(
                             selectedDrawingTool = event.drawingTool
                         ) }
                     }
+
                     DrawingTool.RECTANGLE, DrawingTool.CIRCLE, DrawingTool.TRIANGLE -> {
                         _state.update {
                             it.copy(selectedDrawingTool = event.drawingTool)
                         }
+                    }
+
+                    DrawingTool.ADD_PICTURE -> {
+                        if (_state.value.isPictureDialogOpen)
+                            _state.update { it.copy(isPictureDialogOpen = false) }
+                        _state.update { it.copy(isPictureDialogOpen = true) }
                     }
 
                     else -> {
@@ -651,12 +659,81 @@ class WhiteboardViewModel(
                     zoomChange = event.zoom / _state.value.canvasScale
                 ))
             }
+
+            is WhiteboardEvent.HidePicturePicker -> {
+                _state.update { it.copy(isPictureDialogOpen = false) }
+            }
+
+            is WhiteboardEvent.OnPictureAdded -> {
+                if (whiteboardId == null || updatedWhiteboardId.value == null)
+                    _state.update { it.copy(whiteboardName = initializeWhiteboardName(translatePolish = state.value.naSkaleMode)) }
+
+                viewModelScope.launch {
+                    val newPath = copyPictureToInternalStorage(event.path, _state.value.whiteboardName, contextProvider)
+
+                    val pictureSize = runCatching {
+                        SingletonImageLoader.get(contextProvider.applicationContext as PlatformContext)
+                            .execute(ImageRequest.Builder(contextProvider.applicationContext as PlatformContext).data(newPath).build())
+                            .image?.let { IntSize(it.width, it.height) }
+                    }.getOrNull()
+
+                    val current = _state.value
+                    val zoom = current.canvasScale.takeIf { it > 0f } ?: 1f
+                    val centerInCanvas = (Offset(
+                        x = current.canvasSize.width / 2f,
+                        y = current.canvasSize.height / 2f
+                    ) - current.canvasOffset) / zoom
+
+                    val upperLeft = if (pictureSize == null || pictureSize.width <= 0 || pictureSize.height <= 0) {
+                        centerInCanvas
+                    } else {
+                        centerInCanvas - Offset(pictureSize.width / 2f, pictureSize.height / 2f)
+                    }
+
+                    val addPictureUpdate = Update.AddPicture(
+                        picture = AddedPicture(
+                            id = uniqueIdGenerator.getId(),
+                            picturePath = newPath,
+                            position = upperLeft,
+                            width = pictureSize?.width ?: 0,
+                            height = pictureSize?.height ?: 0),
+                        id = null,
+                        whiteboardId = updatedWhiteboardId.value
+                    )
+
+                    if (whiteboardId == null || updatedWhiteboardId.value == null) {
+                        initializeWhiteboardWithPicture(addPictureUpdate)
+                        return@launch
+                    }
+
+                    addPictureUpdate.id = updateRepository.upsertUpdate(addPictureUpdate)
+                    onUpdate(addPictureUpdate)
+                    clearUndoArray()
+                }
+            }
+        }
+    }
+
+    private fun initializeWhiteboardWithPicture(addPictureUpdate: Update.AddPicture) {
+        viewModelScope.launch {
+            _state.first()
+            upsertWhiteboard()
+            isFirstPath = false
+            updatedWhiteboardId.collect { whiteboardId ->
+                if (whiteboardId != null) {
+                    addPictureUpdate.whiteboardId = whiteboardId
+                    val updateId = updateRepository.upsertUpdate(addPictureUpdate)
+                    addPictureUpdate.id = updateId
+                    onUpdate(addPictureUpdate)
+                }
+            }
         }
     }
 
     private fun onUpdate(update: Update, undo: Boolean? = null, skipMiniature: Boolean = false) {
         val add: Boolean
-        val path: DrawnPath
+        var path: DrawnPath? = null
+        var picture: AddedPicture? = null
         when (update) {
             is Update.AddPath -> {
                 add = true
@@ -675,6 +752,16 @@ class WhiteboardViewModel(
                 add = false
                 path = update.path
             }
+
+            is Update.AddPicture -> {
+                add = true
+                picture = update.picture
+            }
+
+            is Update.RemovePicture -> {
+                add = false
+                picture = update.picture
+            }
         }
 
         _state.update {
@@ -686,20 +773,51 @@ class WhiteboardViewModel(
                         it.updates.plus(update),
                 updatePointer = if (undo == null) it.updates.size else it.updatePointer, // it.updates.size is size - 1
                 paths =
-                    if (add) {
+                    if (path == null)
+                        it.paths
+                    else if (add) {
                         if (it.paths.findLast { it.id == path.id } == null)
                             it.paths.plus(path)
                         else
                             it.paths
                     }
                     else
-                        it.paths.filterNot { it.id == path.id || it.id == null }
+                        it.paths.filterNot { it.id == path.id || it.id == null },
+                addedPictures =
+                    if (picture == null)
+                        it.addedPictures
+                    else if (add)
+                        it.addedPictures.plus(picture)
+                    else
+                        it.addedPictures.filterNot { it.id == picture.id }
             )
         }
         if (skipMiniature)
             return
         updateMiniature = true
         updateMiniatureTask.start(4000, _state.value.copy())
+    }
+
+    private fun clearUndoArray() {
+        AppScope.scope.launch {
+            _state.value.undoArray.forEach {
+                updateRepository.deleteUpdate(it)
+                if (it is Update.HasPath) {
+                    val path = when (it) {
+                        is Update.AddPath -> it.path
+                        is Update.RemovePath -> it.path
+                        is Update.RemoveErase -> it.path
+                        is Update.Erase -> it.path
+                        else -> DrawnPath.Placeholder
+                    }
+                    pathRepository.deletePath(path)
+                } else if (it is Update.AddPicture) {
+                    val picture = File(it.picture.picturePath)
+                    picture.delete()
+                }
+            }
+            _state.update { it.copy(undoArray = emptyList()) }
+        }
     }
 
     private fun insertUpdate(update: Update) {
@@ -763,6 +881,17 @@ class WhiteboardViewModel(
                         )
                         Update.AddPath(drawnPath, it.id, it.whiteboardId)
                     } else it
+
+                    if (update is Update.AddPicture) {
+                        update.picture.id = uniqueIdGenerator.getId()
+                        val pictureSize = runCatching {
+                            SingletonImageLoader.get(contextProvider.applicationContext as PlatformContext)
+                                .execute(ImageRequest.Builder(contextProvider.applicationContext as PlatformContext).data(update.picture.picturePath).build())
+                                .image?.let { IntSize(it.width, it.height) }
+                        }.getOrNull()
+                        update.picture.width = pictureSize?.width ?: 0
+                        update.picture.height = pictureSize?.height ?: 0
+                    }
 
                     if (initialPointer == null || (initialPointer != null && i > initialPointer!!))
                         undoArray += update
@@ -886,10 +1015,8 @@ class WhiteboardViewModel(
     }
 
     private fun updateContinuingOffsets(continuingOffset: Offset) {
-
-        val startOffset = state.value.startingOffset
-
-        val updatedPath: Path? = when (state.value.selectedDrawingTool) {
+        val startOffset = _state.value.startingOffset
+        val updatedPath: Path? = when (_state.value.selectedDrawingTool) {
             DrawingTool.PEN, DrawingTool.HIGHLIGHTER, DrawingTool.DASHER, DrawingTool.LASER_PEN, DrawingTool.ERASER -> {
                 createFreehandPath(start = startOffset, continuingOffset = continuingOffset)
             }
@@ -897,7 +1024,7 @@ class WhiteboardViewModel(
             DrawingTool.DELETER -> {
                 updatePathsToBeDeleted(
                     start = startOffset,
-                    previousOffset = state.value.previousOffset,
+                    previousOffset = _state.value.previousOffset,
                     continuingOffset = continuingOffset
                 )
                 for (path in _state.value.pathsToBeDeleted) {
@@ -939,6 +1066,11 @@ class WhiteboardViewModel(
 
             DrawingTool.CANVAS_PANNER -> {
                 println("Canvas Panner | Marquee should not create any paths")
+                null
+            }
+
+            DrawingTool.ADD_PICTURE -> {
+                println("Add_Picture should not create any paths")
                 null
             }
         }
@@ -983,11 +1115,11 @@ class WhiteboardViewModel(
     }
 
     private fun createFreehandPath(start: Offset, continuingOffset: Offset): Path {
-        val existingPath = state.value.currentPath?.path ?: Path().apply {
+        val existingPath = _state.value.currentPath?.path ?: Path().apply {
             moveTo(start.x, start.y)
         }
 
-        val previousOffset = state.value.previousOffset ?: start
+        val previousOffset = _state.value.previousOffset ?: start
         val mid = Offset(
             x = (previousOffset.x + continuingOffset.x) / 2f,
             y = (previousOffset.y + continuingOffset.y) / 2f
@@ -997,7 +1129,7 @@ class WhiteboardViewModel(
 
         return Path().apply {
             addPath(existingPath)
-            if (state.value.previousOffset == null || distance < 1f || distanceToMid < 2f)
+            if (_state.value.previousOffset == null || distance < 1f || distanceToMid < 2f)
                 lineTo(continuingOffset.x, continuingOffset.y)
             else
                 quadraticBezierTo(

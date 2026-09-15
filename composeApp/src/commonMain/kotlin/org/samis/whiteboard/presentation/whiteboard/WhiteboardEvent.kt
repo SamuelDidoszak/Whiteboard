@@ -49,6 +49,9 @@ sealed class WhiteboardEvent {
     data class SavePicture(val scope: CoroutineScope): WhiteboardEvent()
     data class SaveMiniature(val scope: CoroutineScope, val stateSnapshot: WhiteboardState? = null): WhiteboardEvent()
 
+    data object HidePicturePicker: WhiteboardEvent()
+    data class OnPictureAdded(val path: String): WhiteboardEvent()
+
     data class StrokeWidthButtonClicked(val strokeNum: Int): WhiteboardEvent()
     data object OnStrokeWidthSliderClose: WhiteboardEvent()
 

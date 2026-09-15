@@ -1,6 +1,7 @@
 package org.samis.whiteboard.domain.model
 
 import org.jetbrains.compose.resources.DrawableResource
+import whiteboard.composeapp.generated.resources.AddPicture
 import whiteboard.composeapp.generated.resources.PanZoom
 import whiteboard.composeapp.generated.resources.Pen
 import whiteboard.composeapp.generated.resources.Res
@@ -24,6 +25,7 @@ enum class DrawingTool(
     DELETER(res = Res.drawable.img_eraser),
     ERASER(res = Res.drawable.img_eraser),
 //    MARQUEE(res = Res.drawable.Select),
+    ADD_PICTURE(res = Res.drawable.AddPicture),
     CANVAS_PANNER(res = Res.drawable.PanZoom),
     LINE(res = Res.drawable.ic_line),
     ARROW(res = Res.drawable.ic_arrow),

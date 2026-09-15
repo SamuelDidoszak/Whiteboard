@@ -10,5 +10,6 @@ data class UpdateEntity(
     val id: Long? = null,
     val updateType: String,
     val pathId: Long?,
+    val picturePath: String? = null,
     val whiteboardId: Long
 )

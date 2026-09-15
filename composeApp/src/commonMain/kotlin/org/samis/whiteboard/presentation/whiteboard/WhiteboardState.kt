@@ -11,6 +11,7 @@ import org.samis.whiteboard.presentation.theme.defaultCanvasColors
 import org.samis.whiteboard.presentation.theme.defaultDrawingColors
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.Palette
+import org.samis.whiteboard.presentation.whiteboard.util.AddedPicture
 
 data class WhiteboardState(
     val updates: List<Update> = emptyList(),
@@ -21,6 +22,8 @@ data class WhiteboardState(
     val pathsToBeDeleted: HashSet<DrawnPath> = hashSetOf(),
     var currentPath: DrawnPath? = null,
     val laserPenPath: DrawnPath? = null,
+
+    val addedPictures: List<AddedPicture> = emptyList(),
 
     val startingOffset: Offset = Offset.Zero,
     val previousOffset: Offset? = null,
@@ -38,6 +41,7 @@ data class WhiteboardState(
     val opacity: Float = 100f,
 
     val isDrawingToolDialogOpen: Boolean = true,
+    val isPictureDialogOpen: Boolean = false,
     val isCommandPaletteOpen: Boolean = false,
     val isPaletteEditMode: Boolean = false,
     val selectedColorPaletteType: ColorPaletteType = ColorPaletteType.STROKE,

@@ -11,4 +11,8 @@ data class DrawnPath(
     var strokeColor: Color,
     val fillColor: Color,
     val opacity: Float
-)
+) {
+    companion object {
+        val Placeholder = DrawnPath(null, Path(), DrawingTool.PEN, 1f, Color.Black, Color.Transparent, 1f)
+    }
+}

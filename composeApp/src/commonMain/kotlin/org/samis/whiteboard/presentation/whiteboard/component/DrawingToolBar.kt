@@ -39,9 +39,11 @@ fun DrawingToolBar(
 
 //        if (isVisible(DrawingTool.MARQUEE))
 //            AddButton(DrawingTool.MARQUEE, backgroundColor, isTool(DrawingTool.MARQUEE), onDrawingToolClick, 28.dp)
+        if (isVisible(DrawingTool.ADD_PICTURE))
+            AddButton(DrawingTool.ADD_PICTURE, backgroundColor, isTool(DrawingTool.ADD_PICTURE), onDrawingToolClick, 28.dp)
         if (isVisible(DrawingTool.CANVAS_PANNER))
             AddButton(DrawingTool.CANVAS_PANNER, backgroundColor, isTool(DrawingTool.CANVAS_PANNER), onDrawingToolClick, 28.dp)
-        if (isVisible(DrawingTool.CANVAS_PANNER))
+        if (isVisible(DrawingTool.ADD_PICTURE) || isVisible(DrawingTool.CANVAS_PANNER))
             Spacer(modifier = Modifier.height(12.dp))
 
         if (isVisible(DrawingTool.LINE))

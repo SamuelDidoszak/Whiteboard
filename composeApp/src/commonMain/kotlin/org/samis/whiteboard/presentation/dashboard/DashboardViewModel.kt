@@ -23,6 +23,8 @@ import org.samis.whiteboard.domain.repository.WhiteboardRepository
 import org.samis.whiteboard.presentation.settings.util.DashboardSizeOption
 import org.samis.whiteboard.presentation.util.AppScope
 import org.samis.whiteboard.presentation.util.IContextProvider
+import org.samis.whiteboard.presentation.util.copyPictureToInternalStorage
+import org.samis.whiteboard.presentation.whiteboard.util.AddedPicture
 import java.io.File
 
 class DashboardViewModel(
@@ -115,6 +117,7 @@ class DashboardViewModel(
                     is Update.RemovePath -> pathRepository.deletePath(it.path)
                     is Update.Erase -> pathRepository.deletePath(it.path)
                     is Update.RemoveErase -> pathRepository.deletePath(it.path)
+                    else -> {}
                 }
                 updateRepository.deleteUpdate(it)
             }
@@ -170,7 +173,8 @@ class DashboardViewModel(
             } catch (e: Error) { e.printStackTrace() }
 
             val whiteboardId = whiteboardRepository.upsertWhiteboard(newWhiteboard.copy(miniatureSrc = filePath))
-            val updates = updateRepository.getWhiteboardUpdates(whiteboard.id!!).first()
+            val updates = updateRepository.getWhiteboardUpdates(whiteboard.id!!).first().toMutableList()
+            val pictureUpdates = mutableListOf<Update>()
 
             updates.forEach {
                 it.id = null
@@ -194,9 +198,44 @@ class DashboardViewModel(
                         it.path.id = null
                         it.path.id = pathRepository.upsertPath(it.path, it.path.path.toPointList())
                     }
+
+                    is Update.HasPicture -> {
+                        pictureUpdates.add(it)
+                        return@forEach
+                    }
+                    else -> {}
                 }
                 it.whiteboardId = whiteboardId
+
                 upsertUpdate(it)
+            }
+
+            val changedPaths = mutableMapOf<String, String>()
+            pictureUpdates.forEach { it ->
+                val path = changedPaths.getOrPut((it as Update.HasPicture).picture.picturePath) {
+                    copyPictureToInternalStorage((it as Update.HasPicture).picture.picturePath, whiteboard.name, contextProvider)
+                }
+                val newUpdate = when (it) {
+                    is Update.AddPicture -> {
+                        Update.AddPicture(
+                            AddedPicture(picturePath = path, position = it.picture.position, width = it.picture.width, height = it.picture.height, rotation = it.picture.rotation),
+                            id = null,
+                            whiteboardId = whiteboardId
+                        )
+                    }
+
+                    is Update.RemovePicture -> {
+                        Update.RemovePicture(
+                            AddedPicture(picturePath = path, position = it.picture.position, width = it.picture.width, height = it.picture.height, rotation = it.picture.rotation),
+                            id = null,
+                            whiteboardId = whiteboardId
+                        )
+                    }
+
+                    else -> null
+                }
+
+                newUpdate?.let { upsertUpdate(it) }
             }
         }
     }
