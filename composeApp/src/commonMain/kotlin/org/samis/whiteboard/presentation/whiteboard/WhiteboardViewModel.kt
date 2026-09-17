@@ -55,6 +55,7 @@ import org.samis.whiteboard.presentation.util.formatDate
 import org.samis.whiteboard.presentation.util.minusLast
 import org.samis.whiteboard.presentation.util.roundTo
 import org.samis.whiteboard.presentation.whiteboard.util.AddedPicture
+import org.samis.whiteboard.presentation.whiteboard.util.DrawnElement
 import org.samis.whiteboard.presentation.whiteboard.util.UniqueIdGenerator
 import java.io.File
 import kotlin.math.atan2
@@ -166,7 +167,8 @@ class WhiteboardViewModel(
                             drawnPath.strokeColor = _state.value.canvasColor
                             insertPathAndUpdate(
                                 drawnPath,
-                                Update.Erase(drawnPath, whiteboardId = updatedWhiteboardId.value)
+                                Update.Erase(drawnPath, whiteboardId = updatedWhiteboardId.value),
+                                currentPathPoints.toList()
                             )
                             _state.update { it.copy(
                                 selectedDrawingTool = _state.value.previousDrawingTool,
@@ -187,7 +189,8 @@ class WhiteboardViewModel(
                             } else {
                                 insertPathAndUpdate(
                                     drawnPath,
-                                    Update.AddPath(drawnPath, whiteboardId = updatedWhiteboardId.value)
+                                    Update.AddPath(drawnPath, whiteboardId = updatedWhiteboardId.value),
+                                    currentPathPoints.toList()
                                 )
                                 _state.update { it.copy(previousOffset = null) }
                             }
@@ -207,7 +210,7 @@ class WhiteboardViewModel(
                         // removes flickering
                         paths =
                             if (it.selectedDrawingTool != DrawingTool.LASER_PEN && it.currentPath?.drawingTool != DrawingTool.DELETER && it.currentPath != null)
-                                it.paths.plus(it.currentPath!!)
+                                it.paths.plus(DrawnElement.Path(it.currentPath!!))
                             else it.paths,
                         currentPath = null
                     )
@@ -732,35 +735,34 @@ class WhiteboardViewModel(
 
     private fun onUpdate(update: Update, undo: Boolean? = null, skipMiniature: Boolean = false) {
         val add: Boolean
-        var path: DrawnPath? = null
-        var picture: AddedPicture? = null
+        var drawnElement: DrawnElement?
         when (update) {
             is Update.AddPath -> {
                 add = true
-                path = update.path
+                drawnElement = DrawnElement.Path(update.path)
             }
             is Update.Erase -> {
                 add = true
-                path = update.path
-                path.strokeColor = state.value.canvasColor
+                drawnElement = DrawnElement.Path(update.path)
+                drawnElement.path.strokeColor = state.value.canvasColor
             }
             is Update.RemovePath -> {
                 add = false
-                path = update.path
+                drawnElement = DrawnElement.Path(update.path)
             }
             is Update.RemoveErase -> {
                 add = false
-                path = update.path
+                drawnElement = DrawnElement.Path(update.path)
             }
 
             is Update.AddPicture -> {
                 add = true
-                picture = update.picture
+                drawnElement = DrawnElement.Picture(update.picture)
             }
 
             is Update.RemovePicture -> {
                 add = false
-                picture = update.picture
+                drawnElement = DrawnElement.Picture(update.picture)
             }
         }
 
@@ -773,23 +775,13 @@ class WhiteboardViewModel(
                         it.updates.plus(update),
                 updatePointer = if (undo == null) it.updates.size else it.updatePointer, // it.updates.size is size - 1
                 paths =
-                    if (path == null)
-                        it.paths
-                    else if (add) {
-                        if (it.paths.findLast { it.id == path.id } == null)
-                            it.paths.plus(path)
+                    if (add) {
+                        if (drawnElement is DrawnElement.Picture || it.paths.findLast { it is DrawnElement.Path && it.id == drawnElement.id } == null)
+                            it.paths.plus(drawnElement)
                         else
                             it.paths
-                    }
-                    else
-                        it.paths.filterNot { it.id == path.id || it.id == null },
-                addedPictures =
-                    if (picture == null)
-                        it.addedPictures
-                    else if (add)
-                        it.addedPictures.plus(picture)
-                    else
-                        it.addedPictures.filterNot { it.id == picture.id }
+                    } else
+                        it.paths.filterNot { it.id == drawnElement.id || (it is DrawnElement.Path && it.id == null) }
             )
         }
         if (skipMiniature)
@@ -805,8 +797,6 @@ class WhiteboardViewModel(
                 if (it is Update.HasPath) {
                     val path = when (it) {
                         is Update.AddPath -> it.path
-                        is Update.RemovePath -> it.path
-                        is Update.RemoveErase -> it.path
                         is Update.Erase -> it.path
                         else -> DrawnPath.Placeholder
                     }
@@ -908,7 +898,7 @@ class WhiteboardViewModel(
     }
 
     // Creates a new path and update with correct ids
-    private fun insertPathAndUpdate(path: DrawnPath, update: Update) {
+    private fun insertPathAndUpdate(path: DrawnPath, update: Update, currentPathPoints: List<Offset>) {
         viewModelScope.launch {
             val currentPath: DrawnPath? = _state.value.currentPath
             val pathId = pathRepository.upsertPath(path, currentPathPoints)
@@ -917,7 +907,7 @@ class WhiteboardViewModel(
             insertUpdate(update)
             onUpdate(update)
             if (currentPath != null && currentPath.id == null)
-                _state.update { it.copy(paths = _state.value.paths.minusLast(currentPath)) }
+                _state.update { it.copy(paths = _state.value.paths.minusLast(DrawnElement.Path(currentPath))) }
         }
     }
 
@@ -1027,20 +1017,28 @@ class WhiteboardViewModel(
                     previousOffset = _state.value.previousOffset,
                     continuingOffset = continuingOffset
                 )
-                for (path in _state.value.pathsToBeDeleted) {
-                    if (path.drawingTool == DrawingTool.ERASER) {
-                        _state.update { it.copy(pathsToBeDeleted = hashSetOf()) }
+                for (element in _state.value.elementsToBeDeleted) {
+                    if (element is DrawnElement.Path && element.path.drawingTool == DrawingTool.ERASER) {
+                        _state.update { it.copy(elementsToBeDeleted = hashSetOf()) }
                         return
                     }
                 }
-                for (path in _state.value.pathsToBeDeleted) {
-                    if (path.drawingTool == DrawingTool.ERASER)
-                        continue
-                    val update = Update.RemovePath(path, whiteboardId = updatedWhiteboardId.value)
+                for (element in _state.value.elementsToBeDeleted) {
+                    val update = when (element) {
+                        is DrawnElement.Path -> {
+                            if (element.path.drawingTool == DrawingTool.ERASER)
+                                continue
+                            Update.RemovePath(element.path, whiteboardId = updatedWhiteboardId.value)
+                        }
+                        is DrawnElement.Picture -> {
+                            Update.RemovePicture(element.picture, whiteboardId = updatedWhiteboardId.value)
+                        }
+                    }
+
                     insertUpdate(update)
                     onUpdate(update)
                 }
-                _state.update { it.copy(pathsToBeDeleted = hashSetOf()) }
+                _state.update { it.copy(elementsToBeDeleted = hashSetOf()) }
                 createDeleterPath(continuingOffset = continuingOffset)
             }
 
@@ -1233,7 +1231,7 @@ class WhiteboardViewModel(
     }
 
     private fun updatePathsToBeDeleted(start: Offset, previousOffset: Offset?, continuingOffset: Offset) {
-        val pathsToBeDeleted = _state.value.pathsToBeDeleted.toHashSet()
+        val elementsToBeDeleted = _state.value.elementsToBeDeleted.toHashSet()
         val from = previousOffset ?: start
         val distance = continuingOffset - from
         val segmentDistance = (continuingOffset - from).getDistance()
@@ -1242,16 +1240,16 @@ class WhiteboardViewModel(
         for (i in 0..steps) {
             val fraction = i / steps.toFloat()
             val position = from + distance * fraction
-            pathsToBeDeleted += findPathsAt(
+            elementsToBeDeleted += findPathsAt(
                 touchPoint = position,
-                drawnPaths = _state.value.paths,
-                rejectedPaths = pathsToBeDeleted,
+                drawnElements = _state.value.paths,
+                rejectedElements = elementsToBeDeleted,
                 canvasOffset = _state.value.canvasOffset,
                 canvasScale = _state.value.canvasScale
             )
         }
 
-        _state.update { it.copy(pathsToBeDeleted = pathsToBeDeleted) }
+        _state.update { it.copy(elementsToBeDeleted = elementsToBeDeleted) }
     }
 
     private fun addColorToPreferredList(

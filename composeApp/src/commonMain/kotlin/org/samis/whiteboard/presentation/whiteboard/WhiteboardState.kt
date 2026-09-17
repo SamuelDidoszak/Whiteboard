@@ -11,19 +11,17 @@ import org.samis.whiteboard.presentation.theme.defaultCanvasColors
 import org.samis.whiteboard.presentation.theme.defaultDrawingColors
 import org.samis.whiteboard.presentation.util.DrawingToolVisibility
 import org.samis.whiteboard.presentation.util.Palette
-import org.samis.whiteboard.presentation.whiteboard.util.AddedPicture
+import org.samis.whiteboard.presentation.whiteboard.util.DrawnElement
 
 data class WhiteboardState(
     val updates: List<Update> = emptyList(),
     val undoArray: List<Update> = emptyList(),
     val updatePointer: Int? = null,
 
-    val paths: List<DrawnPath> = emptyList(),
-    val pathsToBeDeleted: HashSet<DrawnPath> = hashSetOf(),
+    val paths: List<DrawnElement> = emptyList(),
+    val elementsToBeDeleted: HashSet<DrawnElement> = hashSetOf(),
     var currentPath: DrawnPath? = null,
     val laserPenPath: DrawnPath? = null,
-
-    val addedPictures: List<AddedPicture> = emptyList(),
 
     val startingOffset: Offset = Offset.Zero,
     val previousOffset: Offset? = null,

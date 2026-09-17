@@ -33,6 +33,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
@@ -84,6 +85,7 @@ import org.samis.whiteboard.presentation.whiteboard.component.RemovePaletteDialo
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthBar
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthSliderCard
 import org.samis.whiteboard.presentation.whiteboard.component.ZoomSliderCard
+import org.samis.whiteboard.presentation.whiteboard.util.DrawnElement
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.logoWithName
 
@@ -869,9 +871,11 @@ private fun DrawingCanvas(
     state: WhiteboardState,
     onEvent: (WhiteboardEvent) -> Unit
 ) {
-    val painters = state.addedPictures.map { picture ->
-        rememberAsyncImagePainter(picture.picturePath)
-    }
+    val painters = state.paths
+        .filterIsInstance<DrawnElement.Picture>()
+        .associate { element ->
+            element.picture.id to rememberAsyncImagePainter(element.picture.picturePath)
+        }
 
     Canvas(
         modifier = modifier
@@ -967,15 +971,19 @@ private fun DrawingCanvas(
     ) {
         translate(top = state.canvasOffset.y, left = state.canvasOffset.x) {
             scale(scale = state.canvasScale, pivot = Offset.Zero) {
-                painters.zip(state.addedPictures).forEach { (painter, picture) ->
-                    if (picture.width > 0f && picture.height > 0f) {
-                        translate(left = picture.position.x, top = picture.position.y) {
-                            with(painter) { draw(painter.intrinsicSize) }
+                state.paths.forEach { element ->
+                    when (element) {
+                        is DrawnElement.Path -> drawCustomPath(element.path)
+                        is DrawnElement.Picture -> {
+                            val picture = element.picture
+                            val painter = painters[picture.id] ?: return@forEach
+                            if (picture.width > 0 && picture.height > 0) {
+                                translate(left = picture.position.x, top = picture.position.y) {
+                                    with(painter) { draw(Size(picture.width.toFloat(), picture.height.toFloat())) }
+                                }
+                            }
                         }
                     }
-                }
-                state.paths.forEach { path ->
-                    drawCustomPath(path)
                 }
 
                 state.currentPath?.let { path ->
