@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -55,6 +56,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavController
+import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -85,6 +87,7 @@ import org.samis.whiteboard.presentation.whiteboard.component.RemovePaletteDialo
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthBar
 import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthSliderCard
 import org.samis.whiteboard.presentation.whiteboard.component.ZoomSliderCard
+import org.samis.whiteboard.presentation.whiteboard.util.AddedPicture
 import org.samis.whiteboard.presentation.whiteboard.util.DrawnElement
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.logoWithName
@@ -871,7 +874,7 @@ private fun DrawingCanvas(
     state: WhiteboardState,
     onEvent: (WhiteboardEvent) -> Unit
 ) {
-    val painters = state.paths
+    val painters = state.drawnElements
         .filterIsInstance<DrawnElement.Picture>()
         .associate { element ->
             element.picture.id to rememberAsyncImagePainter(element.picture.picturePath)
@@ -895,6 +898,11 @@ private fun DrawingCanvas(
                         onEvent(WhiteboardEvent.FinishDrawing)
                     }
                 )
+            }
+            .pointerInput(Unit) {
+                detectTapGestures { position ->
+                    onEvent(WhiteboardEvent.CanvasTapped(position))
+                }
             }
             .pointerInput(state.selectedDrawingTool) {
                 if (state.selectedDrawingTool != DrawingTool.CANVAS_PANNER) return@pointerInput
@@ -971,17 +979,24 @@ private fun DrawingCanvas(
     ) {
         translate(top = state.canvasOffset.y, left = state.canvasOffset.x) {
             scale(scale = state.canvasScale, pivot = Offset.Zero) {
-                state.paths.forEach { element ->
+                state.drawnElements.forEach { element ->
+                    val isSelected = element in state.selectedElements
                     when (element) {
-                        is DrawnElement.Path -> drawCustomPath(element.path)
-                        is DrawnElement.Picture -> {
-                            val picture = element.picture
-                            val painter = painters[picture.id] ?: return@forEach
-                            if (picture.width > 0 && picture.height > 0) {
-                                translate(left = picture.position.x, top = picture.position.y) {
-                                    with(painter) { draw(Size(picture.width.toFloat(), picture.height.toFloat())) }
-                                }
+                        is DrawnElement.Path -> {
+                            if (isSelected) {
+                                drawCustomPath(element.path.copy(strokeWidth = element.path.strokeWidth + 5f, strokeColor = Color(0xFF85EAFF), opacity = 60f))
+                                drawCustomPath(element.path.copy(strokeWidth = element.path.strokeWidth + 3f, strokeColor = Color(0xFF50DEFF), opacity = 80f))
                             }
+                            drawCustomPath(element.path)
+                        }
+                        is DrawnElement.Picture -> {
+                            if (isSelected) {
+                                val boundaries = element.picture.getBoundsPath()
+                                val drawnPath = DrawnPath(path = boundaries, strokeWidth = 3f, strokeColor = Color(0xFF50DEFF), opacity = 80f, drawingTool = DrawingTool.ADD_PICTURE, fillColor = Color.Transparent)
+                                drawCustomPath(drawnPath.copy(strokeWidth = 5f, strokeColor = Color(0xFF85EAFF), opacity = 60f))
+                                drawCustomPath(drawnPath)
+                            }
+                            drawPicture(element.picture, painters)
                         }
                     }
                 }
@@ -997,6 +1012,15 @@ private fun DrawingCanvas(
         state,
         onPathAnimationComplete = { onEvent(WhiteboardEvent.OnLaserPathAnimationComplete) }
     )
+}
+
+private fun DrawScope.drawPicture(picture: AddedPicture, painters: Map<Long?, AsyncImagePainter>) {
+    val painter = painters[picture.id] ?: return
+    if (picture.width > 0 && picture.height > 0) {
+        translate(left = picture.position.x, top = picture.position.y) {
+            with(painter) { draw(Size(picture.width.toFloat(), picture.height.toFloat())) }
+        }
+    }
 }
 
 private fun DrawScope.drawCustomPath(path: DrawnPath) {

@@ -208,10 +208,10 @@ class WhiteboardViewModel(
                 _state.update {
                     it.copy(
                         // removes flickering
-                        paths =
+                        drawnElements =
                             if (it.selectedDrawingTool != DrawingTool.LASER_PEN && it.currentPath?.drawingTool != DrawingTool.DELETER && it.currentPath != null)
-                                it.paths.plus(DrawnElement.Path(it.currentPath!!))
-                            else it.paths,
+                                it.drawnElements.plus(DrawnElement.Path(it.currentPath!!))
+                            else it.drawnElements,
                         currentPath = null
                     )
                 }
@@ -592,7 +592,7 @@ class WhiteboardViewModel(
                     _state.update { it.copy(canvasSize = newSize) }
                     return
                 }
-                if (_state.value.paths.isEmpty()) {
+                if (_state.value.drawnElements.isEmpty()) {
                     pendingInitCanvasSize = newSize
                     return
                 }
@@ -663,6 +663,23 @@ class WhiteboardViewModel(
                 ))
             }
 
+            is WhiteboardEvent.CanvasTapped -> {
+                val logicalPosition = (event.position - _state.value.canvasOffset) / _state.value.canvasScale
+                val clickedElements = findPathsAt(
+                    touchPoint = logicalPosition,
+                    drawnElements = _state.value.drawnElements.asReversed(),
+                    rejectedElements = _state.value.elementsToBeDeleted,
+                    canvasOffset = _state.value.canvasOffset,
+                    canvasScale = _state.value.canvasScale,
+                    hitPadding = 0.5f
+                )
+                val clickedPicture = clickedElements.filterIsInstance<DrawnElement.Picture>().firstOrNull()
+                if (clickedElements.size > 1 || clickedPicture == null)
+                    _state.update { it.copy(selectedElements = emptyList()) }
+                else if (!_state.value.selectedElements.contains(clickedPicture))
+                    _state.update { it.copy(selectedElements = it.selectedElements.plus(clickedPicture)) }
+            }
+
             is WhiteboardEvent.HidePicturePicker -> {
                 _state.update { it.copy(isPictureDialogOpen = false) }
             }
@@ -712,6 +729,7 @@ class WhiteboardViewModel(
                     addPictureUpdate.id = updateRepository.upsertUpdate(addPictureUpdate)
                     onUpdate(addPictureUpdate)
                     clearUndoArray()
+                    _state.update { it.copy(selectedElements = it.selectedElements.plus(DrawnElement.Picture(addPictureUpdate.picture))) }
                 }
             }
         }
@@ -774,14 +792,15 @@ class WhiteboardViewModel(
                     else
                         it.updates.plus(update),
                 updatePointer = if (undo == null) it.updates.size else it.updatePointer, // it.updates.size is size - 1
-                paths =
+                drawnElements =
                     if (add) {
-                        if (drawnElement is DrawnElement.Picture || it.paths.findLast { it is DrawnElement.Path && it.id == drawnElement.id } == null)
-                            it.paths.plus(drawnElement)
+                        if (drawnElement is DrawnElement.Picture || it.drawnElements.findLast { it is DrawnElement.Path && it.id == drawnElement.id } == null)
+                            it.drawnElements.plus(drawnElement)
                         else
-                            it.paths
+                            it.drawnElements
                     } else
-                        it.paths.filterNot { it.id == drawnElement.id || (it is DrawnElement.Path && it.id == null) }
+                        it.drawnElements.filterNot { it.id == drawnElement.id || (it is DrawnElement.Path && it.id == null) },
+                selectedElements = if (undo == true) it.selectedElements.minus(drawnElement) else it.selectedElements
             )
         }
         if (skipMiniature)
@@ -907,7 +926,7 @@ class WhiteboardViewModel(
             insertUpdate(update)
             onUpdate(update)
             if (currentPath != null && currentPath.id == null)
-                _state.update { it.copy(paths = _state.value.paths.minusLast(DrawnElement.Path(currentPath))) }
+                _state.update { it.copy(drawnElements = _state.value.drawnElements.minusLast(DrawnElement.Path(currentPath))) }
         }
     }
 
@@ -1242,10 +1261,11 @@ class WhiteboardViewModel(
             val position = from + distance * fraction
             elementsToBeDeleted += findPathsAt(
                 touchPoint = position,
-                drawnElements = _state.value.paths,
+                drawnElements = _state.value.drawnElements,
                 rejectedElements = elementsToBeDeleted,
                 canvasOffset = _state.value.canvasOffset,
-                canvasScale = _state.value.canvasScale
+                canvasScale = _state.value.canvasScale,
+                hitPadding = 2f
             )
         }
 

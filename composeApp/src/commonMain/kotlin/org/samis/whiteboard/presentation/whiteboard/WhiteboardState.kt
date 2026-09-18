@@ -18,7 +18,8 @@ data class WhiteboardState(
     val undoArray: List<Update> = emptyList(),
     val updatePointer: Int? = null,
 
-    val paths: List<DrawnElement> = emptyList(),
+    val drawnElements: List<DrawnElement> = emptyList(),
+    val selectedElements: List<DrawnElement> = emptyList(),
     val elementsToBeDeleted: HashSet<DrawnElement> = hashSetOf(),
     var currentPath: DrawnPath? = null,
     val laserPenPath: DrawnPath? = null,
