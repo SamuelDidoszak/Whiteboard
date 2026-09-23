@@ -1,11 +1,15 @@
 package org.samis.whiteboard.presentation.util
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 fun LocalDate.formatDate(): String {
     return this.format(
@@ -35,4 +39,14 @@ fun <T> List<T>.minusLast(element: T): List<T> {
             return this.subList(0, i) + this.subList(i + 1, this.size)
     }
     return this
+}
+
+fun Offset.rotateBy(degrees: Float): Offset {
+    val radians = degrees * PI.toFloat() / 180f
+    val cosine = cos(radians)
+    val sine = sin(radians)
+    return Offset(
+        x = x * cosine - y * sine,
+        y = x * sine + y * cosine
+    )
 }

@@ -7,8 +7,9 @@ import kotlinx.coroutines.CoroutineScope
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.presentation.util.Palette
-import org.samis.whiteboard.presentation.whiteboard.util.AddedPicture
-import org.samis.whiteboard.presentation.whiteboard.util.PictureControl
+import org.samis.whiteboard.presentation.whiteboard.util.DrawnElement
+import org.samis.whiteboard.presentation.whiteboard.util.SelectionControl
+import org.samis.whiteboard.presentation.whiteboard.util.SelectionFrame
 
 sealed class WhiteboardEvent {
     data class StartDrawing(val offset: Offset) : WhiteboardEvent()
@@ -59,11 +60,11 @@ sealed class WhiteboardEvent {
 
     data class OnPalettePicked(val palette: Palette): WhiteboardEvent()
 
-    data class PictureControlClicked(val picture: AddedPicture, val control: PictureControl, val position: Offset): WhiteboardEvent()
-    data class PictureControlDragStarted(val picture: AddedPicture, val control: PictureControl, val position: Offset): WhiteboardEvent()
-    data class PictureControlDragged(val picture: AddedPicture, val control: PictureControl, val position: Offset, val delta: Offset): WhiteboardEvent()
-    data class PictureControlDragEnded(val picture: AddedPicture, val control: PictureControl, val position: Offset): WhiteboardEvent()
-    data class PictureControlDragCancelled(val picture: AddedPicture, val control: PictureControl): WhiteboardEvent()
+    data class SelectionControlClicked(val elements: List<DrawnElement>, val control: SelectionControl, val position: Offset): WhiteboardEvent()
+    data class SelectionControlDragStarted(val elements: List<DrawnElement>, val frame: SelectionFrame, val control: SelectionControl, val position: Offset): WhiteboardEvent()
+    data class SelectionControlDragged(val elements: List<DrawnElement>, val control: SelectionControl, val position: Offset): WhiteboardEvent()
+    data class SelectionControlDragEnded(val elements: List<DrawnElement>, val control: SelectionControl, val position: Offset): WhiteboardEvent()
+    data class SelectionControlDragCancelled(val elements: List<DrawnElement>, val control: SelectionControl): WhiteboardEvent()
 
     data class CanvasTapped(val position: Offset): WhiteboardEvent()
     data class CanvasTransformed(val center: Offset, val offset: Offset, val zoomChange: Float): WhiteboardEvent()

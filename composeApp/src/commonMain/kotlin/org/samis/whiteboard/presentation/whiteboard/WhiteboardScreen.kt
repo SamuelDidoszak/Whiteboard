@@ -92,9 +92,9 @@ import org.samis.whiteboard.presentation.whiteboard.component.ZoomSliderCard
 import org.samis.whiteboard.presentation.whiteboard.util.AddedPicture
 import org.samis.whiteboard.presentation.whiteboard.util.DrawnElement
 import org.samis.whiteboard.presentation.whiteboard.util.detectPictureControlGestures
-import org.samis.whiteboard.presentation.whiteboard.util.drawPictureSelectionBounds
-import org.samis.whiteboard.presentation.whiteboard.util.drawPictureSelectionControls
-import org.samis.whiteboard.presentation.whiteboard.util.pictureControlAt
+import org.samis.whiteboard.presentation.whiteboard.util.drawSelectionBounds
+import org.samis.whiteboard.presentation.whiteboard.util.drawSelectionControls
+import org.samis.whiteboard.presentation.whiteboard.util.editControlAt
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.logoWithName
 
@@ -901,7 +901,7 @@ private fun DrawingCanvas(
             .pointerInput(state.stylusInput) {
                 detectStylusDragGestures(
                     stylusInput = state.stylusInput,
-                    shouldStart = { position -> pictureControlAt(latestState.value, position) == null },
+                    shouldStart = { position -> editControlAt(latestState.value, position) == null },
                     onDragStart = { offset ->
                         onEvent(WhiteboardEvent.StartDrawing(offset))
                     },
@@ -916,7 +916,7 @@ private fun DrawingCanvas(
             }
             .pointerInput(Unit) {
                 detectTapGestures { position ->
-                    if (pictureControlAt(latestState.value, position) == null) {
+                    if (editControlAt(latestState.value, position) == null) {
                         latestOnEvent.value(WhiteboardEvent.CanvasTapped(position))
                     }
                 }
@@ -926,7 +926,7 @@ private fun DrawingCanvas(
 
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
-                    if (pictureControlAt(latestState.value, down.position) != null) return@awaitEachGesture
+                    if (editControlAt(latestState.value, down.position) != null) return@awaitEachGesture
                     var previousPosition = down.position
 
                     do {
@@ -1013,16 +1013,17 @@ private fun DrawingCanvas(
                     }
                 }
 
-                state.selectedElements.filterIsInstance<DrawnElement.Picture>().forEach {
-                    drawPictureSelectionBounds(picture = it.picture, canvasScale = state.canvasScale)
-                    drawPictureSelectionControls(
-                        picture = it.picture,
-                        canvasScale = state.canvasScale
-                    )
+                if (state.selectedElements.isNotEmpty()) {
+                    drawSelectionBounds(elements = state.selectedElements, canvasScale = state.canvasScale)
+                    drawSelectionControls(elements = state.selectedElements, canvasScale = state.canvasScale)
                 }
 
                 state.currentPath?.let { path ->
                     drawCustomPath(path)
+                }
+
+                if (state.selectedDrawingTool == DrawingTool.MARQUEE || state.selectedDrawingTool == DrawingTool.CANVAS_PANNER) {
+                    drawSelectionBounds(elements = listOf(), canvasScale = state.canvasScale, marqueeOffsets = Pair(state.startingOffset, state.previousOffset))
                 }
             }
         }

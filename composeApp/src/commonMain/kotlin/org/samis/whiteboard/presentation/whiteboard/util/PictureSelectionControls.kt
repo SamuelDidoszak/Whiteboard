@@ -4,6 +4,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ClipOp
@@ -26,6 +27,8 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
 
@@ -34,7 +37,7 @@ private const val ROTATION_RADIUS_DP = 16f
 private const val ROTATION_SWEEP_DEGREES = 155f
 private const val DELETE_INSET_DP = 20f
 
-enum class PictureResizeHandle(val horizontal: Int, val vertical: Int) {
+enum class SelectionResizeHandle(val horizontal: Int, val vertical: Int) {
     TOP_LEFT(-1, -1),
     TOP(0, -1),
     TOP_RIGHT(1, -1),
@@ -47,96 +50,143 @@ enum class PictureResizeHandle(val horizontal: Int, val vertical: Int) {
     val isCorner get() = horizontal != 0 && vertical != 0
 }
 
-enum class PictureCorner(val outwardDiagonalAngle: Float) {
+enum class SelectionCorner(val outwardDiagonalAngle: Float) {
     TOP_LEFT(225f),
     TOP_RIGHT(315f),
     BOTTOM_RIGHT(45f),
     BOTTOM_LEFT(135f)
 }
 
-sealed interface PictureControl {
-    data class Resize(val handle: PictureResizeHandle) : PictureControl
-    data class Rotate(val corner: PictureCorner) : PictureControl
-    data object Delete : PictureControl
+sealed interface SelectionControl {
+    data class Resize(val handle: SelectionResizeHandle) : SelectionControl
+    data class Rotate(val corner: SelectionCorner) : SelectionControl
+    data object Delete : SelectionControl
 }
 
-data class PictureControlHit(val picture: AddedPicture, val control: PictureControl)
+data class SelectionFrame(val bounds: Rect, val rotation: Float = 0f) {
+    val center: Offset get() = bounds.center
+}
+
+data class EditControlHit(
+    val elements: List<DrawnElement>,
+    val frame: SelectionFrame,
+    val control: SelectionControl
+)
+
+private fun Density.selectionFrame(elements: List<DrawnElement>): SelectionFrame? {
+    if (elements.isEmpty()) return null
+    if (elements.size == 1 && elements.single() is DrawnElement.Picture) {
+        val picture = (elements.single() as DrawnElement.Picture).picture
+        if (picture.width <= 0 || picture.height <= 0) return null
+        return SelectionFrame(
+            Rect(picture.position, Size(picture.width.toFloat(), picture.height.toFloat())),
+            picture.rotation
+        )
+    }
+
+    val bounds = elements.mapNotNull { element ->
+        when (element) {
+            is DrawnElement.Path -> element.path.path.getBounds().inflate(element.path.strokeWidth.dp.toPx() / 2f)
+            is DrawnElement.Picture -> {
+                val picture = element.picture
+                if (picture.width <= 0 || picture.height <= 0) null else picture.getBoundsPath().getBounds()
+            }
+        }
+    }
+
+    if (bounds.isEmpty()) return null
+    val rect = Rect(
+        left = bounds.minOf { it.left },
+        top = bounds.minOf { it.top },
+        right = bounds.maxOf { it.right },
+        bottom = bounds.maxOf { it.bottom }
+    ).let { if (it.width < 50f || it.height < 50f) it.inflate(50f) else it }
+    return SelectionFrame(rect)
+}
+
+private fun selectionFrame(offsets: Pair<Offset?, Offset?>): SelectionFrame? {
+    val first = offsets.first ?: return null
+    val second = offsets.second ?: return null
+    val topLeft = Offset(min(first.x, second.x), min(first.y, second.y))
+    val bottomRight = Offset(max(first.x, second.x), max(first.y, second.y))
+    return SelectionFrame(Rect(topLeft, bottomRight))
+}
 
 private data class ResizeControl(
-    val handle: PictureResizeHandle,
+    val handle: SelectionResizeHandle,
     val center: Offset
 )
 
 private data class RotationControl(
-    val corner: PictureCorner,
+    val corner: SelectionCorner,
     val arcMidpoint: Offset,
     val outwardDiagonalAngle: Float
 )
 
-private data class PictureControlLayout(
+private data class SelectionControlLayout(
     val resizeControls: List<ResizeControl>,
     val rotationControls: List<RotationControl>,
     val deleteCenter: Offset
 )
 
-private fun AddedPicture.getControlLayout(
+private fun SelectionFrame.getControlLayout(
     rotationControlDistance: Float,
     deleteInset: Float
-): PictureControlLayout {
-    val left = position.x
-    val top = position.y
-    val right = left + width.toFloat()
-    val bottom = top + height.toFloat()
-    val center = Offset(left + width / 2f, top + height / 2f)
+): SelectionControlLayout {
+    val left = bounds.left
+    val top = bounds.top
+    val right = bounds.right
+    val bottom = bounds.bottom
+    val center = bounds.center
 
     fun transform(point: Offset): Offset = point.rotateAround(center, rotation)
 
     val resizeControls = listOf(
-        ResizeControl(PictureResizeHandle.TOP_LEFT, transform(Offset(left, top))),
-        ResizeControl(PictureResizeHandle.TOP, transform(Offset(center.x, top))),
-        ResizeControl(PictureResizeHandle.TOP_RIGHT, transform(Offset(right, top))),
-        ResizeControl(PictureResizeHandle.RIGHT, transform(Offset(right, center.y))),
-        ResizeControl(PictureResizeHandle.BOTTOM_RIGHT, transform(Offset(right, bottom))),
-        ResizeControl(PictureResizeHandle.BOTTOM, transform(Offset(center.x, bottom))),
-        ResizeControl(PictureResizeHandle.BOTTOM_LEFT, transform(Offset(left, bottom))),
-        ResizeControl(PictureResizeHandle.LEFT, transform(Offset(left, center.y)))
+        ResizeControl(SelectionResizeHandle.TOP_LEFT, transform(Offset(left, top))),
+        ResizeControl(SelectionResizeHandle.TOP, transform(Offset(center.x, top))),
+        ResizeControl(SelectionResizeHandle.TOP_RIGHT, transform(Offset(right, top))),
+        ResizeControl(SelectionResizeHandle.RIGHT, transform(Offset(right, center.y))),
+        ResizeControl(SelectionResizeHandle.BOTTOM_RIGHT, transform(Offset(right, bottom))),
+        ResizeControl(SelectionResizeHandle.BOTTOM, transform(Offset(center.x, bottom))),
+        ResizeControl(SelectionResizeHandle.BOTTOM_LEFT, transform(Offset(left, bottom))),
+        ResizeControl(SelectionResizeHandle.LEFT, transform(Offset(left, center.y)))
     )
 
     val diagonalOffset = rotationControlDistance / kotlin.math.sqrt(2f)
     val rotationControls = listOf(
         RotationControl(
-            corner = PictureCorner.TOP_LEFT,
+            corner = SelectionCorner.TOP_LEFT,
             arcMidpoint = transform(Offset(left - diagonalOffset, top - diagonalOffset)),
-            outwardDiagonalAngle = PictureCorner.TOP_LEFT.outwardDiagonalAngle + rotation
+            outwardDiagonalAngle = SelectionCorner.TOP_LEFT.outwardDiagonalAngle + rotation
         ),
         RotationControl(
-            corner = PictureCorner.TOP_RIGHT,
+            corner = SelectionCorner.TOP_RIGHT,
             arcMidpoint = transform(Offset(right + diagonalOffset, top - diagonalOffset)),
-            outwardDiagonalAngle = PictureCorner.TOP_RIGHT.outwardDiagonalAngle + rotation
+            outwardDiagonalAngle = SelectionCorner.TOP_RIGHT.outwardDiagonalAngle + rotation
         ),
         RotationControl(
-            corner = PictureCorner.BOTTOM_RIGHT,
+            corner = SelectionCorner.BOTTOM_RIGHT,
             arcMidpoint = transform(Offset(right + diagonalOffset, bottom + diagonalOffset)),
-            outwardDiagonalAngle = PictureCorner.BOTTOM_RIGHT.outwardDiagonalAngle + rotation
+            outwardDiagonalAngle = SelectionCorner.BOTTOM_RIGHT.outwardDiagonalAngle + rotation
         ),
         RotationControl(
-            corner = PictureCorner.BOTTOM_LEFT,
+            corner = SelectionCorner.BOTTOM_LEFT,
             arcMidpoint = transform(Offset(left - diagonalOffset, bottom + diagonalOffset)),
-            outwardDiagonalAngle = PictureCorner.BOTTOM_LEFT.outwardDiagonalAngle + rotation
+            outwardDiagonalAngle = SelectionCorner.BOTTOM_LEFT.outwardDiagonalAngle + rotation
         )
     )
 
     val deleteCenter = transform(Offset(right - deleteInset, top + deleteInset))
 
-    return PictureControlLayout(resizeControls, rotationControls, deleteCenter)
+    return SelectionControlLayout(resizeControls, rotationControls, deleteCenter)
 }
 
-fun Density.hitTestPictureControls(
-    pictures: List<AddedPicture>,
+fun Density.hitTestEditControls(
+    elements: List<DrawnElement>,
     screenPosition: Offset,
     canvasOffset: Offset,
     canvasScale: Float
-): PictureControlHit? {
+): EditControlHit? {
     val zoom = canvasScale.coerceAtLeast(0.001f)
     val logicalPosition = (screenPosition - canvasOffset) / zoom
     val layoutDistance = pictureChromeDp(ROTATION_DISTANCE_DP, zoom)
@@ -146,34 +196,32 @@ fun Density.hitTestPictureControls(
     val rotationHitWidth = pictureChromeDp(11f, zoom)
     val rotationRadius = pictureChromeDp(ROTATION_RADIUS_DP, zoom)
 
-    for (picture in pictures.asReversed()) {
-        if (picture.width <= 0 || picture.height <= 0) continue
-        val layout = picture.getControlLayout(layoutDistance, deleteInset)
+    val frame = selectionFrame(elements) ?: return null
+    val layout = frame.getControlLayout(layoutDistance, deleteInset)
 
-        if ((logicalPosition - layout.deleteCenter).getDistance() <= deleteHitRadius) {
-            return PictureControlHit(picture, PictureControl.Delete)
-        }
+    if ((logicalPosition - layout.deleteCenter).getDistance() <= deleteHitRadius) {
+        return EditControlHit(elements, frame, SelectionControl.Delete)
+    }
 
-        layout.resizeControls.firstOrNull {
-            (logicalPosition - it.center).getDistance() <= resizeHitRadius
-        }?.let {
-            return PictureControlHit(picture, PictureControl.Resize(it.handle))
-        }
+    layout.resizeControls.firstOrNull {
+        (logicalPosition - it.center).getDistance() <= resizeHitRadius
+    }?.let {
+        return EditControlHit(elements, frame, SelectionControl.Resize(it.handle))
+    }
 
-        layout.rotationControls.firstOrNull { control ->
-            val center = control.arcMidpoint - directionVector(control.outwardDiagonalAngle, rotationRadius)
-            val fromCenter = logicalPosition - center
-            val angle = atan2(fromCenter.y, fromCenter.x) * 180f / PI.toFloat()
-            val startAngle = control.outwardDiagonalAngle - ROTATION_SWEEP_DEGREES / 2f
-            val angleFromStart = ((angle - startAngle) % 360f + 360f) % 360f
-            val onArc = angleFromStart <= ROTATION_SWEEP_DEGREES &&
-                abs(fromCenter.getDistance() - rotationRadius) <= rotationHitWidth
-            val nearStart = (logicalPosition - pointOnCircle(center, rotationRadius, startAngle)).getDistance() <= rotationHitWidth
-            val nearEnd = (logicalPosition - pointOnCircle(center, rotationRadius, startAngle + ROTATION_SWEEP_DEGREES)).getDistance() <= rotationHitWidth
-            onArc || nearStart || nearEnd
-        }?.let {
-            return PictureControlHit(picture, PictureControl.Rotate(it.corner))
-        }
+    layout.rotationControls.firstOrNull { control ->
+        val center = control.arcMidpoint - directionVector(control.outwardDiagonalAngle, rotationRadius)
+        val fromCenter = logicalPosition - center
+        val angle = atan2(fromCenter.y, fromCenter.x) * 180f / PI.toFloat()
+        val startAngle = control.outwardDiagonalAngle - ROTATION_SWEEP_DEGREES / 2f
+        val angleFromStart = ((angle - startAngle) % 360f + 360f) % 360f
+        val onArc = angleFromStart <= ROTATION_SWEEP_DEGREES &&
+            abs(fromCenter.getDistance() - rotationRadius) <= rotationHitWidth
+        val nearStart = (logicalPosition - pointOnCircle(center, rotationRadius, startAngle)).getDistance() <= rotationHitWidth
+        val nearEnd = (logicalPosition - pointOnCircle(center, rotationRadius, startAngle + ROTATION_SWEEP_DEGREES)).getDistance() <= rotationHitWidth
+        onArc || nearStart || nearEnd
+    }?.let {
+        return EditControlHit(elements, frame, SelectionControl.Rotate(it.corner))
     }
 
     return null
@@ -194,27 +242,30 @@ private fun Offset.rotateAround(center: Offset, degrees: Float): Offset {
     )
 }
 
-fun DrawScope.drawPictureSelectionBounds(
-    picture: AddedPicture,
-    canvasScale: Float
+fun DrawScope.drawSelectionBounds(
+    elements: List<DrawnElement>,
+    canvasScale: Float,
+    marqueeOffsets: Pair<Offset?, Offset?>? = null
 ) {
-    if (picture.width <= 0 || picture.height <= 0) return
+    val frame = selectionFrame(elements) ?:
+        if (marqueeOffsets != null) selectionFrame(marqueeOffsets) ?: return
+        else return
 
     fun screenDp(value: Float): Float = pictureChromeDp(value, canvasScale)
 
-    val center = picture.position + Offset(picture.width / 2f, picture.height / 2f)
+    val center = frame.center
     val accent = Color(0xFF50DEFF)
     val cornerRadius = CornerRadius(screenDp(2.5f))
     val bounds = RoundRect(
-        left = picture.position.x,
-        top = picture.position.y,
-        right = picture.position.x + picture.width,
-        bottom = picture.position.y + picture.height,
+        left = frame.bounds.left,
+        top = frame.bounds.top,
+        right = frame.bounds.right,
+        bottom = frame.bounds.bottom,
         cornerRadius = cornerRadius
     )
     val interior = Path().apply { addRoundRect(bounds) }
 
-    rotate(degrees = picture.rotation, pivot = center) {
+    rotate(degrees = frame.rotation, pivot = center) {
         clipPath(interior, clipOp = ClipOp.Difference) {
             listOf(
                 8f to 0.05f,
@@ -225,8 +276,8 @@ fun DrawScope.drawPictureSelectionBounds(
             ).forEach { (width, alpha) ->
                 drawRoundRect(
                     color = accent.copy(alpha = alpha),
-                    topLeft = picture.position,
-                    size = Size(picture.width.toFloat(), picture.height.toFloat()),
+                    topLeft = frame.bounds.topLeft,
+                    size = frame.bounds.size,
                     cornerRadius = cornerRadius,
                     style = Stroke(
                         width = screenDp(width),
@@ -239,16 +290,16 @@ fun DrawScope.drawPictureSelectionBounds(
     }
 }
 
-fun DrawScope.drawPictureSelectionControls(
-    picture: AddedPicture,
+fun DrawScope.drawSelectionControls(
+    elements: List<DrawnElement>,
     canvasScale: Float
 ) {
-    if (picture.width <= 0 || picture.height <= 0) return
+    val frame = selectionFrame(elements) ?: return
 
     fun screenDp(value: Float): Float = pictureChromeDp(value, canvasScale)
 
     val accent = Color(0xFF50DEFF)
-    val layout = picture.getControlLayout(
+    val layout = frame.getControlLayout(
         rotationControlDistance = screenDp(ROTATION_DISTANCE_DP),
         deleteInset = screenDp(DELETE_INSET_DP)
     )
@@ -392,9 +443,9 @@ private fun DrawScope.drawDeleteControl(
 }
 
 
-fun Density.pictureControlAt(state: WhiteboardState, screenPosition: Offset): PictureControlHit? =
-    hitTestPictureControls(
-        pictures = state.selectedElements.filterIsInstance<DrawnElement.Picture>().map { it.picture },
+fun Density.editControlAt(state: WhiteboardState, screenPosition: Offset): EditControlHit? =
+    hitTestEditControls(
+        elements = state.selectedElements,
         screenPosition = screenPosition,
         canvasOffset = state.canvasOffset,
         canvasScale = state.canvasScale
@@ -407,7 +458,7 @@ suspend fun PointerInputScope.detectPictureControlGestures(
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
         val stateAtDown = stateProvider()
-        val hit = pictureControlAt(stateAtDown, down.position) ?: return@awaitEachGesture
+        val hit = editControlAt(stateAtDown, down.position) ?: return@awaitEachGesture
         val zoom = stateAtDown.canvasScale.coerceAtLeast(0.001f)
         val canvasOffset = stateAtDown.canvasOffset
         fun logicalPosition(screenPosition: Offset): Offset = (screenPosition - canvasOffset) / zoom
@@ -421,7 +472,7 @@ suspend fun PointerInputScope.detectPictureControlGestures(
                 val event = awaitPointerEvent(pass = PointerEventPass.Initial)
                 if (event.changes.count { it.pressed } > 1) {
                     if (dragging) {
-                        onEvent(WhiteboardEvent.PictureControlDragCancelled(hit.picture, hit.control))
+                        onEvent(WhiteboardEvent.SelectionControlDragCancelled(hit.elements, hit.control))
                     }
                     break
                 }
@@ -429,7 +480,7 @@ suspend fun PointerInputScope.detectPictureControlGestures(
                 val change = event.changes.firstOrNull { it.id == down.id }
                 if (change == null) {
                     if (dragging) {
-                        onEvent(WhiteboardEvent.PictureControlDragCancelled(hit.picture, hit.control))
+                        onEvent(WhiteboardEvent.SelectionControlDragCancelled(hit.elements, hit.control))
                     }
                     break
                 }
@@ -439,14 +490,14 @@ suspend fun PointerInputScope.detectPictureControlGestures(
                     change.consume()
                     if (dragging) {
                         onEvent(
-                            WhiteboardEvent.PictureControlDragEnded(
-                                hit.picture, hit.control, logicalPosition(currentPosition)
+                            WhiteboardEvent.SelectionControlDragEnded(
+                                hit.elements, hit.control, logicalPosition(currentPosition)
                             )
                         )
                     } else if ((currentPosition - down.position).getDistance() <= viewConfiguration.touchSlop) {
                         onEvent(
-                            WhiteboardEvent.PictureControlClicked(
-                                hit.picture, hit.control, logicalPosition(currentPosition)
+                            WhiteboardEvent.SelectionControlClicked(
+                                hit.elements, hit.control, logicalPosition(currentPosition)
                             )
                         )
                     }
@@ -454,26 +505,24 @@ suspend fun PointerInputScope.detectPictureControlGestures(
                 }
 
                 change.consume()
-                if (!dragging && hit.control != PictureControl.Delete &&
+                if (!dragging && hit.control != SelectionControl.Delete &&
                     (currentPosition - down.position).getDistance() > viewConfiguration.touchSlop
                 ) {
                     dragging = true
                     onEvent(
-                        WhiteboardEvent.PictureControlDragStarted(
-                            hit.picture, hit.control, logicalPosition(down.position)
+                        WhiteboardEvent.SelectionControlDragStarted(
+                            hit.elements, hit.frame, hit.control, logicalPosition(down.position)
                         )
                     )
                     onEvent(
-                        WhiteboardEvent.PictureControlDragged(
-                            hit.picture, hit.control, logicalPosition(currentPosition),
-                            (currentPosition - down.position) / zoom
+                        WhiteboardEvent.SelectionControlDragged(
+                            hit.elements, hit.control, logicalPosition(currentPosition)
                         )
                     )
                 } else if (dragging && currentPosition != previousPosition) {
                     onEvent(
-                        WhiteboardEvent.PictureControlDragged(
-                            hit.picture, hit.control, logicalPosition(currentPosition),
-                            (currentPosition - previousPosition) / zoom
+                        WhiteboardEvent.SelectionControlDragged(
+                            hit.elements, hit.control, logicalPosition(currentPosition)
                         )
                     )
                 }
@@ -481,7 +530,7 @@ suspend fun PointerInputScope.detectPictureControlGestures(
             }
         } catch (cancellation: CancellationException) {
             if (dragging) {
-                onEvent(WhiteboardEvent.PictureControlDragCancelled(hit.picture, hit.control))
+                onEvent(WhiteboardEvent.SelectionControlDragCancelled(hit.elements, hit.control))
             }
             throw cancellation
         }

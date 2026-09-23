@@ -5,6 +5,7 @@ import whiteboard.composeapp.generated.resources.AddPicture
 import whiteboard.composeapp.generated.resources.PanZoom
 import whiteboard.composeapp.generated.resources.Pen
 import whiteboard.composeapp.generated.resources.Res
+import whiteboard.composeapp.generated.resources.Select
 import whiteboard.composeapp.generated.resources.dotted_line
 import whiteboard.composeapp.generated.resources.ic_arrow
 import whiteboard.composeapp.generated.resources.ic_circle
@@ -24,7 +25,7 @@ enum class DrawingTool(
     HIGHLIGHTER(res = Res.drawable.img_highlighter),
     DELETER(res = Res.drawable.img_eraser),
     ERASER(res = Res.drawable.img_eraser),
-//    MARQUEE(res = Res.drawable.Select),
+    MARQUEE(res = Res.drawable.Select),
     ADD_PICTURE(res = Res.drawable.AddPicture),
     CANVAS_PANNER(res = Res.drawable.PanZoom),
     LINE(res = Res.drawable.ic_line),
