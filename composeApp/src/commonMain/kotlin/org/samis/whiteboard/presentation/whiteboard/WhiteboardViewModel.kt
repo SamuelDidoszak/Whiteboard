@@ -56,12 +56,17 @@ import org.samis.whiteboard.presentation.util.minusLast
 import org.samis.whiteboard.presentation.util.roundTo
 import org.samis.whiteboard.presentation.whiteboard.util.AddedPicture
 import org.samis.whiteboard.presentation.whiteboard.util.DrawnElement
+import org.samis.whiteboard.presentation.whiteboard.util.PictureControl
+import org.samis.whiteboard.presentation.whiteboard.util.PictureResizeHandle
+import org.samis.whiteboard.presentation.whiteboard.util.SelectionData
 import org.samis.whiteboard.presentation.whiteboard.util.UniqueIdGenerator
 import java.io.File
+import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 class WhiteboardViewModel(
@@ -76,6 +81,7 @@ class WhiteboardViewModel(
 
     private val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
     private val uniqueIdGenerator = UniqueIdGenerator()
+    private val selectionData = SelectionData()
     private val whiteboardId = savedStateHandle.toRoute<Routes.WhiteboardScreen>().whiteboardId
     private var initialPointer: Int? = null
     private var isFirstPath = true
@@ -144,7 +150,7 @@ class WhiteboardViewModel(
                 val logicalOffset = (event.offset - _state.value.canvasOffset) / _state.value.canvasScale
                 currentPathPoints.clear()
                 currentPathPoints.add(logicalOffset)
-                _state.update { it.copy(startingOffset = logicalOffset, previousOffset = null) }
+                _state.update { it.copy(startingOffset = logicalOffset, previousOffset = null, selectedElements = emptyList()) }
                 if (_state.value.selectedDrawingTool != DrawingTool.LASER_PEN)
                     updateMiniature = false
             }
@@ -663,6 +669,61 @@ class WhiteboardViewModel(
                 ))
             }
 
+            is WhiteboardEvent.PictureControlClicked -> {
+                when (event.control) {
+                    is PictureControl.Resize, is PictureControl.Rotate -> {
+                        selectionData.previous = event.position
+                    }
+                    is PictureControl.Delete -> {
+                        onUpdate(Update.RemovePicture(event.picture, null, whiteboardId))
+                        _state.update { it.copy(selectedElements = it.selectedElements.minus(DrawnElement.Picture(event.picture))) }
+                    }
+                }
+            }
+
+            is WhiteboardEvent.PictureControlDragStarted -> {
+                if (event.control is PictureControl.Resize || event.control is PictureControl.Rotate) {
+                    selectionData.start(event.picture, event.position)
+                }
+            }
+
+            is WhiteboardEvent.PictureControlDragged -> {
+                when (event.control) {
+                    is PictureControl.Resize -> {
+                        val original = selectionData.original ?: event.picture
+                        val drag = event.position - (selectionData.previous ?: event.position)
+                        modifySelectedPicture(event.picture) {
+                            original.resize(event.control.handle, drag)
+                        }
+                    }
+
+                    is PictureControl.Rotate -> {
+                        val previous = selectionData.previous ?: event.position
+                        modifySelectedPicture(event.picture) { picture ->
+                            val center = picture.position + Offset(picture.width / 2f, picture.height / 2f)
+                            val previousAngle = atan2(previous.y - center.y, previous.x - center.x)
+                            val currentAngle = atan2(event.position.y - center.y, event.position.x - center.x)
+                            var angleDelta = (currentAngle - previousAngle) * 180f / PI.toFloat()
+                            if (angleDelta > 180f) angleDelta -= 360f
+                            if (angleDelta < -180f) angleDelta += 360f
+                            picture.copy(rotation = picture.rotation + angleDelta)
+                        }
+                        selectionData.previous = event.position
+                    }
+                    is PictureControl.Delete -> {}
+                }
+            }
+            is WhiteboardEvent.PictureControlDragEnded -> {
+                // Add an update and save it into the DB
+                selectionData.reset()
+            }
+            is WhiteboardEvent.PictureControlDragCancelled -> {
+                selectionData.original?.let { original ->
+                    modifySelectedPicture(event.picture) { original }
+                }
+                selectionData.reset()
+            }
+
             is WhiteboardEvent.CanvasTapped -> {
                 val logicalPosition = (event.position - _state.value.canvasOffset) / _state.value.canvasScale
                 val clickedElements = findPathsAt(
@@ -673,11 +734,11 @@ class WhiteboardViewModel(
                     canvasScale = _state.value.canvasScale,
                     hitPadding = 0.5f
                 )
-                val clickedPicture = clickedElements.filterIsInstance<DrawnElement.Picture>().firstOrNull()
-                if (clickedElements.size > 1 || clickedPicture == null)
+                val clickedElement = clickedElements.firstOrNull()
+                if (clickedElement == null)
                     _state.update { it.copy(selectedElements = emptyList()) }
-                else if (!_state.value.selectedElements.contains(clickedPicture))
-                    _state.update { it.copy(selectedElements = it.selectedElements.plus(clickedPicture)) }
+                else if (clickedElement is DrawnElement.Picture && !_state.value.selectedElements.contains(clickedElement))
+                    _state.update { it.copy(selectedElements = it.selectedElements.plus(clickedElement)) }
             }
 
             is WhiteboardEvent.HidePicturePicker -> {
@@ -733,6 +794,71 @@ class WhiteboardViewModel(
                 }
             }
         }
+    }
+
+    private fun modifySelectedPicture(
+        source: AddedPicture,
+        transform: (AddedPicture) -> AddedPicture
+    ) {
+        val pictureId = source.id ?: return
+        _state.update { current ->
+            val picture = current.drawnElements.filterIsInstance<DrawnElement.Picture>()
+                .firstOrNull { it.picture.id == pictureId }?.picture ?: return@update current
+            val updated = transform(picture)
+            if (updated == picture) return@update current
+
+            fun replace(elements: List<DrawnElement>): List<DrawnElement> = elements.map { element ->
+                if (element is DrawnElement.Picture && element.picture.id == pictureId)
+                    DrawnElement.Picture(updated)
+                else
+                    element
+            }
+
+            current.copy(
+                drawnElements = replace(current.drawnElements),
+                selectedElements = replace(current.selectedElements)
+            )
+        }
+    }
+
+    private fun AddedPicture.resize(handle: PictureResizeHandle, drag: Offset): AddedPicture {
+        val localDrag = drag.rotateBy(-rotation)
+        val width: Int
+        val height: Int
+
+        if (handle.isCorner) {
+            val diagonal = Offset(handle.horizontal * this.width.toFloat(), handle.vertical * this.height.toFloat())
+            val lengthSquared = diagonal.x * diagonal.x + diagonal.y * diagonal.y
+            val scale = if (lengthSquared == 0f) 1f else
+                (1f + (localDrag.x * diagonal.x + localDrag.y * diagonal.y) / lengthSquared).coerceAtLeast(0f)
+            width = (this.width * scale).roundToInt().coerceAtLeast(1)
+            height = (this.height * scale).roundToInt().coerceAtLeast(1)
+        } else {
+            width = (this.width + handle.horizontal * localDrag.x.roundToInt()).coerceAtLeast(1)
+            height = (this.height + handle.vertical * localDrag.y.roundToInt()).coerceAtLeast(1)
+        }
+
+        val oldCenter = position + Offset(this.width / 2f, this.height / 2f)
+        val centerShift = Offset(
+            handle.horizontal * (width - this.width) / 2f,
+            handle.vertical * (height - this.height) / 2f
+        ).rotateBy(rotation)
+
+        return copy(
+            position = oldCenter + centerShift - Offset(width / 2f, height / 2f),
+            width = width,
+            height = height
+        )
+    }
+
+    private fun Offset.rotateBy(degrees: Float): Offset {
+        val radians = degrees * PI.toFloat() / 180f
+        val cosine = cos(radians)
+        val sine = sin(radians)
+        return Offset(
+            x = x * cosine - y * sine,
+            y = x * sine + y * cosine
+        )
     }
 
     private fun initializeWhiteboardWithPicture(addPictureUpdate: Update.AddPicture) {
@@ -821,8 +947,11 @@ class WhiteboardViewModel(
                     }
                     pathRepository.deletePath(path)
                 } else if (it is Update.AddPicture) {
-                    val picture = File(it.picture.picturePath)
-                    picture.delete()
+                    val pictureInUse =
+                        _state.value.drawnElements.filterIsInstance<DrawnElement.Picture>()
+                            .any { element -> element.picture.id != it.picture.id && element.picture.picturePath == it.picture.picturePath }
+                    if (!pictureInUse)
+                        File(it.picture.picturePath).delete()
                 }
             }
             _state.update { it.copy(undoArray = emptyList()) }

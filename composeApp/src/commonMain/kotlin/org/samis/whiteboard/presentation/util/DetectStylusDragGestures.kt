@@ -12,6 +12,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 suspend fun PointerInputScope.detectStylusDragGestures(
     stylusInput: Boolean,
+    shouldStart: (Offset) -> Boolean = { true },
     onDragStart: (Offset) -> Unit = {},
     onDrag: (PointerInputChange, Offset) -> Unit = { _, _ -> },
     onDragEnd: () -> Unit = {},
@@ -27,6 +28,8 @@ suspend fun PointerInputScope.detectStylusDragGestures(
             down.consume()
             return@awaitEachGesture
         }
+
+        if (!shouldStart(down.position)) return@awaitEachGesture
 
         onDragStart(down.position)
 

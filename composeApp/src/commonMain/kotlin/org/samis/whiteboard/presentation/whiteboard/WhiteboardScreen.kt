@@ -31,6 +31,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -44,6 +45,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.luminance
@@ -89,6 +91,10 @@ import org.samis.whiteboard.presentation.whiteboard.component.StrokeWidthSliderC
 import org.samis.whiteboard.presentation.whiteboard.component.ZoomSliderCard
 import org.samis.whiteboard.presentation.whiteboard.util.AddedPicture
 import org.samis.whiteboard.presentation.whiteboard.util.DrawnElement
+import org.samis.whiteboard.presentation.whiteboard.util.detectPictureControlGestures
+import org.samis.whiteboard.presentation.whiteboard.util.drawPictureSelectionBounds
+import org.samis.whiteboard.presentation.whiteboard.util.drawPictureSelectionControls
+import org.samis.whiteboard.presentation.whiteboard.util.pictureControlAt
 import whiteboard.composeapp.generated.resources.Res
 import whiteboard.composeapp.generated.resources.logoWithName
 
@@ -879,14 +885,23 @@ private fun DrawingCanvas(
         .associate { element ->
             element.picture.id to rememberAsyncImagePainter(element.picture.picturePath)
         }
+    val latestState = rememberUpdatedState(state)
+    val latestOnEvent = rememberUpdatedState(onEvent)
 
     Canvas(
         modifier = modifier
             .capturable(state.captureController)
             .background(state.canvasColor)
             .pointerInput(Unit) {
+                detectPictureControlGestures(
+                    stateProvider = { latestState.value },
+                    onEvent = { latestOnEvent.value(it) }
+                )
+            }
+            .pointerInput(state.stylusInput) {
                 detectStylusDragGestures(
                     stylusInput = state.stylusInput,
+                    shouldStart = { position -> pictureControlAt(latestState.value, position) == null },
                     onDragStart = { offset ->
                         onEvent(WhiteboardEvent.StartDrawing(offset))
                     },
@@ -901,7 +916,9 @@ private fun DrawingCanvas(
             }
             .pointerInput(Unit) {
                 detectTapGestures { position ->
-                    onEvent(WhiteboardEvent.CanvasTapped(position))
+                    if (pictureControlAt(latestState.value, position) == null) {
+                        latestOnEvent.value(WhiteboardEvent.CanvasTapped(position))
+                    }
                 }
             }
             .pointerInput(state.selectedDrawingTool) {
@@ -909,6 +926,7 @@ private fun DrawingCanvas(
 
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
+                    if (pictureControlAt(latestState.value, down.position) != null) return@awaitEachGesture
                     var previousPosition = down.position
 
                     do {
@@ -990,15 +1008,17 @@ private fun DrawingCanvas(
                             drawCustomPath(element.path)
                         }
                         is DrawnElement.Picture -> {
-                            if (isSelected) {
-                                val boundaries = element.picture.getBoundsPath()
-                                val drawnPath = DrawnPath(path = boundaries, strokeWidth = 3f, strokeColor = Color(0xFF50DEFF), opacity = 80f, drawingTool = DrawingTool.ADD_PICTURE, fillColor = Color.Transparent)
-                                drawCustomPath(drawnPath.copy(strokeWidth = 5f, strokeColor = Color(0xFF85EAFF), opacity = 60f))
-                                drawCustomPath(drawnPath)
-                            }
                             drawPicture(element.picture, painters)
                         }
                     }
+                }
+
+                state.selectedElements.filterIsInstance<DrawnElement.Picture>().forEach {
+                    drawPictureSelectionBounds(picture = it.picture, canvasScale = state.canvasScale)
+                    drawPictureSelectionControls(
+                        picture = it.picture,
+                        canvasScale = state.canvasScale
+                    )
                 }
 
                 state.currentPath?.let { path ->
@@ -1017,8 +1037,15 @@ private fun DrawingCanvas(
 private fun DrawScope.drawPicture(picture: AddedPicture, painters: Map<Long?, AsyncImagePainter>) {
     val painter = painters[picture.id] ?: return
     if (picture.width > 0 && picture.height > 0) {
-        translate(left = picture.position.x, top = picture.position.y) {
-            with(painter) { draw(Size(picture.width.toFloat(), picture.height.toFloat())) }
+        val center = picture.position + Offset(
+            picture.width / 2f,
+            picture.height / 2f
+        )
+
+        rotate(degrees = picture.rotation, pivot = center) {
+            translate(left = picture.position.x, top = picture.position.y) {
+                with(painter) { draw(Size(picture.width.toFloat(), picture.height.toFloat())) }
+            }
         }
     }
 }

@@ -7,6 +7,8 @@ import kotlinx.coroutines.CoroutineScope
 import org.samis.whiteboard.domain.model.ColorPaletteType
 import org.samis.whiteboard.domain.model.DrawingTool
 import org.samis.whiteboard.presentation.util.Palette
+import org.samis.whiteboard.presentation.whiteboard.util.AddedPicture
+import org.samis.whiteboard.presentation.whiteboard.util.PictureControl
 
 sealed class WhiteboardEvent {
     data class StartDrawing(val offset: Offset) : WhiteboardEvent()
@@ -56,6 +58,12 @@ sealed class WhiteboardEvent {
     data object OnStrokeWidthSliderClose: WhiteboardEvent()
 
     data class OnPalettePicked(val palette: Palette): WhiteboardEvent()
+
+    data class PictureControlClicked(val picture: AddedPicture, val control: PictureControl, val position: Offset): WhiteboardEvent()
+    data class PictureControlDragStarted(val picture: AddedPicture, val control: PictureControl, val position: Offset): WhiteboardEvent()
+    data class PictureControlDragged(val picture: AddedPicture, val control: PictureControl, val position: Offset, val delta: Offset): WhiteboardEvent()
+    data class PictureControlDragEnded(val picture: AddedPicture, val control: PictureControl, val position: Offset): WhiteboardEvent()
+    data class PictureControlDragCancelled(val picture: AddedPicture, val control: PictureControl): WhiteboardEvent()
 
     data class CanvasTapped(val position: Offset): WhiteboardEvent()
     data class CanvasTransformed(val center: Offset, val offset: Offset, val zoomChange: Float): WhiteboardEvent()
